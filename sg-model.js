@@ -1,8 +1,17 @@
+// sg-model.js 1.0.0
+
+// (c) 2019-2020 Ilya Kalashnikov and Vedix System
+// SGModel may be freely distributed under the MIT license.
+// For all details and documentation:
+// https://github.com/VediX/SGModel
+
 "use strict";
 
-export default class SG2DModel {
+export default class SGModel {
 	
+	// Property data types
 	static typeProperties = {};
+	
 	static TYPE_NUMBER = 1;
 	static TYPE_STRING = 2;
 	static TYPE_BOOL = 3;
@@ -10,14 +19,20 @@ export default class SG2DModel {
 	static TYPE_ARRAY_NUMBERS = 5;
 	static TYPE_OBJECT_NUMBERS = 6;
 	
+	// The flag passed in the .on(...) call so that the callback is executed once at once (Флаг, передаваемый в вызове .on(...), что бы колбэк выполнился один раз сразу)
 	static RUNNOW = 1;
+	
 	static OBJECT_EMPTY = Object.freeze({});
-	static IGNORE_OWN_SETTER = true;
+	
+	// List of properties for which to use their own setters first (Список свойств для которых вначале использовать собственные сеттеры)
 	static ownSetters = {};
 	
-	static _UID = 0;
+	// The flag passed in the .set(...) call so that the custom setter is not called (Флаг передаваемый в вызове .set(...), что бы не был вызван пользовательский сеттер)
+	static IGNORE_OWN_SETTER = true;
+	
+	static _uid = 0;
 	static uid() {
-		return ++SG2DModel._UID;
+		return ++SGModel._uid;
 	}
 	
 	// for single instance of a class
@@ -34,7 +49,7 @@ export default class SG2DModel {
 	static _prevValue = void 0;
 	
 	/**
-	 * SG2DModel constructor
+	 * SGModel constructor
 	 * @param {object} props Свойства
 	 * @param {object} thisProps Свойства и методы передающиеся в контекст this созданного экземпляра
 	 * @param {object} options Пользовательские настройки
@@ -47,12 +62,12 @@ export default class SG2DModel {
 		for (var p in properties) {
 			var value = properties[p];
 			switch (this.constructor.typeProperties[p]) {
-				case SG2DModel.TYPE_NUMBER: properties[p] = (value === void 0 ? void 0 : +value); break;
-				case SG2DModel.TYPE_ARRAY_NUMBERS: {
+				case SGModel.TYPE_NUMBER: properties[p] = (value === void 0 ? void 0 : +value); break;
+				case SGModel.TYPE_ARRAY_NUMBERS: {
 					for (var i = 0; i < value.length; i++) value[i] = +value[i];
 					break;
 				}
-				case SG2DModel.TYPE_OBJECT_NUMBERS: {
+				case SGModel.TYPE_OBJECT_NUMBERS: {
 					if (Array.isArray(value)) {
 						var valueDefault = defaults[p];
 						if (! valueDefault) { debugger; throw "No default value was set for an object named \""+p+"\" ("+this.constructor.name+")! An object structure is required to fill in the data!"; }
@@ -69,9 +84,9 @@ export default class SG2DModel {
 					} else { debugger; throw "Error! Property \""+p+"\" ("+this.constructor.name+") must be an object or an array!"; }
 					break;
 				}
-				case SG2DModel.TYPE_STRING: properties[p] = ''+value; break;
-				case SG2DModel.TYPE_BOOL: properties[p] = !! value; break;
-				case SG2DModel.TYPE_OBJECT:
+				case SGModel.TYPE_STRING: properties[p] = ''+value; break;
+				case SGModel.TYPE_BOOL: properties[p] = !! value; break;
+				case SGModel.TYPE_OBJECT:
 					if (Array.isArray(value)) {
 						var valueDefault = defaults[p];
 						if (! valueDefault) { debugger; throw "No default value was set for an object named \""+p+"\" ("+this.constructor.name+")! An object structure is required to fill in the data!"; }
@@ -91,15 +106,15 @@ export default class SG2DModel {
 
 		this.properties = _.extend({}, defaults, properties);
 
-		if (! this.properties.id) this.properties.id = SG2DModel.uid();
+		if (! this.properties.id) this.properties.id = SGModel.uid();
 
 		if (thisProps) {
-			Object.assign(this, thisProps); // добавляем к объекту внутренние свойства, доступные через this.%
+			Object.assign(this, thisProps); // add internal properties to the object, accessible through this.*
 		} else {
-			thisProps = SG2DModel.OBJECT_EMPTY;
+			thisProps = SGModel.OBJECT_EMPTY;
 		}
 		
-		//if (! options) options = SG2DModel.OBJECT_EMPTY;
+		this.destroyed = false;
 
 		this.onChangeCallbacks = {};
 		
@@ -109,20 +124,17 @@ export default class SG2DModel {
 			for (var p in this.constructor.ownSetters) {
 				if (this.constructor.ownSetters[p] === true) {
 					this.constructor.ownSetters[p] = this["set" + p.charAt(0).toUpperCase() + p.slice(1)];
-					//if (! this.constructor.ownSetters[p]) debugger; // TODO DEL
 				}
 			}
 		}
 		
-		this.changed = false; // сбрасывайте вручную!
+		this.changed = false; // reset manually!
 		
 		this.initialize.call(this, props, thisProps, options);
 	}
 	
-	/**
-	 * Вызывается при создании экземпляра
-	 */
-	initialize() {} // override
+	// Called when an instance is created. Override in your classes.
+	initialize() {}
 	
 	/**
 	* Задать значение свойства
@@ -142,29 +154,29 @@ export default class SG2DModel {
 			return this.constructor.ownSetters[name].call(this, val, options);
 		}
 		
-		options = options || SG2DModel.OBJECT_EMPTY;
+		options = options || SGModel.OBJECT_EMPTY;
 		
 		var type = this.constructor.typeProperties[name];
 		if (type) {
 			switch (type) {
-				case SG2DModel.TYPE_NUMBER: {
+				case SGModel.TYPE_NUMBER: {
 					if (val !== void 0) {
 						val = (options.precision ? Math.roundTo(val, options.precision) : +val);
 					}
 					break;
 				}
-				case SG2DModel.TYPE_STRING: val = ''+val; break;
-				case SG2DModel.TYPE_BOOL: val = !! val; break;
-				case SG2DModel.TYPE_OBJECT: return this.setObject.apply(this, arguments);
-				case SG2DModel.TYPE_ARRAY_NUMBERS: return this.setArray.apply(this, arguments);
-				case SG2DModel.TYPE_OBJECT_NUMBERS: return this.setObject.apply(this, arguments);
+				case SGModel.TYPE_STRING: val = ''+val; break;
+				case SGModel.TYPE_BOOL: val = !! val; break;
+				case SGModel.TYPE_OBJECT: return this.setObject.apply(this, arguments);
+				case SGModel.TYPE_ARRAY_NUMBERS: return this.setArray.apply(this, arguments);
+				case SGModel.TYPE_OBJECT_NUMBERS: return this.setObject.apply(this, arguments);
 			}
 		}
 		
 		var value = this.properties[name];
 		if (value === val) return false;
 		
-		SG2DModel._prevValue = (options.prev_value !== void 0 ? options.prev_value : (options.prev_value_clone ? _.clone(value) : value));
+		SGModel._prevValue = (options.prev_value !== void 0 ? options.prev_value : (options.prev_value_clone ? _.clone(value) : value));
 		this.properties[name] = val;
 		this.changed = true;
 		
@@ -172,13 +184,15 @@ export default class SG2DModel {
 			var callbacks = this.onChangeCallbacks[name];
 			if (callbacks) {
 				if (options.off_may_be) callbacks = _.clone(callbacks);
+				var _val = void 0;
 				for (var i in callbacks) {
 					var c = callbacks[i];
 					if (c.d) {
-						c.f.call(c.c ? c.c : this, c.d, val, SG2DModel._prevValue);
+						_val = c.f.call(c.c ? c.c : this, c.d, val, SGModel._prevValue);
 					} else {
-						c.f.call(c.c ? c.c : this, val, SG2DModel._prevValue);
+						_val = c.f.call(c.c ? c.c : this, val, SGModel._prevValue);
 					}
+					if (_val !== void 0) val = _val;
 				}
 			}
 		}
@@ -186,11 +200,11 @@ export default class SG2DModel {
 	}
 	
 	/**
-	 * Задать значение без использования own-setter'а, если он задан
+	 * Задать значение без использования own-setter'а, если он задан. При value === void 0 всегда возвращает true
 	 * Используется в связке со статическим свойством ownSetters в котором перечисляются поля, для которых сначала выполняется пользовательский setter
 	 */
 	setWoOwnSetter(name, value, options) {
-		return (value !== void 0 && this.set(name, value, options, SG2DModel.IGNORE_OWN_SETTER) || value === void 0);
+		return (value !== void 0 && this.set(name, value, options, SGModel.IGNORE_OWN_SETTER) || value === void 0);
 	}
 
 	/**
@@ -211,41 +225,43 @@ export default class SG2DModel {
 			return this.constructor.ownSetters[name].call(this, aValues, options);
 		}
 		
-		options = options || SG2DModel.OBJECT_EMPTY;
+		options = options || SGModel.OBJECT_EMPTY;
 
 		if (! Array.isArray(aValues)) { debugger; throw "aValues should be must Array! ("+this.constructor.name+")"; }
 
 		var type = this.constructor.typeProperties[name];
 		var values = this.properties[name];
 
-		SG2DModel._prevValue = options.prev_value || void 0;
-		SG2DModel._bChanged = false;
+		SGModel._prevValue = options.prev_value || void 0;
+		SGModel._bChanged = false;
 		for (var i = 0; i < aValues.length; i++) {
 			var v = aValues[i];
-			if (type === SG2DModel.TYPE_ARRAY_NUMBERS) {
+			if (type === SGModel.TYPE_ARRAY_NUMBERS) {
 				v = (options.precision ? Math.roundTo(v, options.precision) : +v);
 			}
 			if (values[i] !== v) {
-				SG2DModel._bChanged = true;
-				if (options.prev_value_clone && ! SG2DModel._prevValue) SG2DModel._prevValue = _.clone(values);
+				SGModel._bChanged = true;
+				if (options.prev_value_clone && ! SGModel._prevValue) SGModel._prevValue = _.clone(values);
 				values[i] = v;
 			}
 		}
 		
-		if (SG2DModel._bChanged) {
+		if (SGModel._bChanged) {
 			this.changed = true;
 		
 			if (! options.no_triggers) {
 				var callbacks = this.onChangeCallbacks[name];
 				if (callbacks) {
-					if (options.off_may_be) callbacks = _.clone(callbacks); // Если при set могут быть off то нужно передать этот флаг
+					if (options.off_may_be) callbacks = _.clone(callbacks);
+					var _val = void 0;
 					for (var i in callbacks) {
 						var c = callbacks[i];
 						if (c.d) {
-							c.f.call(c.c ? c.c : this, c.d, values, SG2DModel._prevValue);
+							_val = c.f.call(c.c ? c.c : this, c.d, values, SGModel._prevValue);
 						} else {
-							c.f.call(c.c ? c.c : this, values, SG2DModel._prevValue);
+							_val = c.f.call(c.c ? c.c : this, values, SGModel._prevValue);
 						}
+						if (_val !== void 0) values = _val;
 					}
 				}
 			}
@@ -274,55 +290,57 @@ export default class SG2DModel {
 			return this.constructor.ownSetters[name].call(this, oValues, options);
 		}
 		
-		options = options || SG2DModel.OBJECT_EMPTY;
+		options = options || SGModel.OBJECT_EMPTY;
 
 		var type = this.constructor.typeProperties[name];
 		var values = this.properties[name];
 
-		SG2DModel._prevValue = options.prev_value || void 0;
-		SG2DModel._bChanged = false;
+		SGModel._prevValue = options.prev_value || void 0;
+		SGModel._bChanged = false;
 		if (Array.isArray(oValues)) {
-			SG2DModel._index = 0;
+			SGModel._index = 0;
 			for (var p in values) {
-				var v = oValues[SG2DModel._index];
-				if (type === SG2DModel.TYPE_OBJECT_NUMBERS) {
+				var v = oValues[SGModel._index];
+				if (type === SGModel.TYPE_OBJECT_NUMBERS) {
 					v = (options.precision ? Math.roundTo(v, options.precision) : +v);
 				}
 				if (values[p] !== v) {
-					SG2DModel._bChanged = true;
-					if (options.prev_value_clone && ! SG2DModel._prevValue) SG2DModel._prevValue = _.clone(values);
+					SGModel._bChanged = true;
+					if (options.prev_value_clone && ! SGModel._prevValue) SGModel._prevValue = _.clone(values);
 					values[p] = v;
 				}
-				SG2DModel._index++;
+				SGModel._index++;
 			}
 		} else {
 			for (var p in oValues) {
 				var v = oValues[p];
-				if (type === SG2DModel.TYPE_OBJECT_NUMBERS) {
+				if (type === SGModel.TYPE_OBJECT_NUMBERS) {
 					v = (options.precision ? Math.roundTo(v, options.precision) : +v);
 				}
 				if (values[p] !== v) {
-					SG2DModel._bChanged = true;
-					if (options.prev_value_clone && ! SG2DModel._prevValue) SG2DModel._prevValue = _.clone(values);
+					SGModel._bChanged = true;
+					if (options.prev_value_clone && ! SGModel._prevValue) SGModel._prevValue = _.clone(values);
 					values[p] = v; 
 				}
 			}
 		}
 
-		if (SG2DModel._bChanged) {
+		if (SGModel._bChanged) {
 			this.changed = true;
 		
 			if (! options.no_triggers) {
 				var callbacks = this.onChangeCallbacks[name];
 				if (callbacks) {
-					if (options.off_may_be) callbacks = _.clone(callbacks); // Если при set могут быть off то нужно передать этот флаг
+					if (options.off_may_be) callbacks = _.clone(callbacks);
+					var _val = void 0;
 					for (var i in callbacks) {
 						var c = callbacks[i];
 						if (c.d) {
-							c.f.call(c.c ? c.c : this, c.d, values, SG2DModel._prevValue);
+							_val = c.f.call(c.c ? c.c : this, c.d, values, SGModel._prevValue);
 						} else {
-							c.f.call(c.c ? c.c : this, values, SG2DModel._prevValue);
+							_val = c.f.call(c.c ? c.c : this, values, SGModel._prevValue);
 						}
+						if (_val !== void 0) values = _val;
 					}
 				}
 			}
@@ -335,10 +353,6 @@ export default class SG2DModel {
 	get(name) {
 		return this.properties[name];
 	}
-
-	/*gets(name, index) {
-		return this.properties[name][index];
-	}*/
 
 	/**
 	 * Задать триггер на изменение свойства
@@ -362,7 +376,6 @@ export default class SG2DModel {
 	}
 
 	off(name, func) {
-		if (arguments.length === 2 && ! arguments[1]) { debugger; throw "Error 1944222"; } // TODO DEL
 		if (name) {
 			if (this.onChangeCallbacks[name]) {
 				if (func) {
@@ -388,7 +401,7 @@ export default class SG2DModel {
 	 */
 	trigger(name, options) {
 		
-		options = options || SG2DModel.OBJECT_EMPTY;
+		options = options || SGModel.OBJECT_EMPTY;
 		
 		var callbacks = this.onChangeCallbacks[name];
 		if (callbacks) {
@@ -400,6 +413,7 @@ export default class SG2DModel {
 	}
 	
 	destroy() {
+		this.destroyed = true;
 		this.off();
 	}
 }
