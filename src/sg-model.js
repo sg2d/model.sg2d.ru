@@ -1,9 +1,12 @@
-// sg-model.js 1.0.0
-
-// (c) 2019-2020 Ilya Kalashnikov and Vedix System
-// SGModel may be freely distributed under the MIT license.
-// For all details and documentation:
-// https://github.com/VediX/SGModel
+/**
+ * SGModel 1.0.0
+ * A fast lightweight library (ES6) for structuring web applications using binding models and custom events. This is a faster and more simplified analogue of Backbone.js!
+ * https://github.com/VediX/SGModel
+ *
+ * Copyright 2020 VediX Systems
+ *
+ * SGModel may be freely distributed under the MIT license.
+ */
 
 "use strict";
 
@@ -33,6 +36,13 @@ export default class SGModel {
 	static _uid = 0;
 	static uid() {
 		return ++SGModel._uid;
+	}
+	
+	static defaults(dest, source) {
+		for (var p in source) {
+			if (dest[p] === void 0) dest[p] = source[p];
+		}
+		return dest;
 	}
 	
 	// for single instance of a class
@@ -227,22 +237,34 @@ export default class SGModel {
 		
 		options = options || SGModel.OBJECT_EMPTY;
 
-		if (! Array.isArray(aValues)) { debugger; throw "aValues should be must Array! ("+this.constructor.name+")"; }
-
 		var type = this.constructor.typeProperties[name];
 		var values = this.properties[name];
 
 		SGModel._prevValue = options.prev_value || void 0;
 		SGModel._bChanged = false;
-		for (var i = 0; i < aValues.length; i++) {
-			var v = aValues[i];
-			if (type === SGModel.TYPE_ARRAY_NUMBERS) {
-				v = (options.precision ? Math.roundTo(v, options.precision) : +v);
+		if (Array.isArray(aValues)) {
+			for (var i = 0; i < aValues.length; i++) {
+				var v = aValues[i];
+				if (type === SGModel.TYPE_ARRAY_NUMBERS) {
+					v = (options.precision ? Math.roundTo(v, options.precision) : +v);
+				}
+				if (values[i] !== v) {
+					SGModel._bChanged = true;
+					if (options.prev_value_clone && ! SGModel._prevValue) SGModel._prevValue = _.clone(values);
+					values[i] = v;
+				}
 			}
-			if (values[i] !== v) {
-				SGModel._bChanged = true;
-				if (options.prev_value_clone && ! SGModel._prevValue) SGModel._prevValue = _.clone(values);
-				values[i] = v;
+		} else if (aValues) {
+			debugger;
+			throw "aValues should be must Array or empty! ("+this.constructor.name+")";
+		} else { // ! aValues
+			var v = (type === SGModel.TYPE_OBJECT_NUMBERS ? 0 : void 0);
+			for (var i = 0; i < values.length; i++) {
+				if (values[i] !== v) {
+					SGModel._bChanged = true;
+					if (options.prev_value_clone && ! SGModel._prevValue) SGModel._prevValue = _.clone(values);
+					values[i] = v;
+				}
 			}
 		}
 		
@@ -311,7 +333,7 @@ export default class SGModel {
 				}
 				SGModel._index++;
 			}
-		} else {
+		} else if (oValues) {
 			for (var p in oValues) {
 				var v = oValues[p];
 				if (type === SGModel.TYPE_OBJECT_NUMBERS) {
@@ -321,6 +343,15 @@ export default class SGModel {
 					SGModel._bChanged = true;
 					if (options.prev_value_clone && ! SGModel._prevValue) SGModel._prevValue = _.clone(values);
 					values[p] = v; 
+				}
+			}
+		} else { // ! oValues
+			var v = (type === SGModel.TYPE_OBJECT_NUMBERS ? 0 : void 0);
+			for (var p in values) {
+				if (values[p] !== v) {
+					SGModel._bChanged = true;
+					if (options.prev_value_clone && ! SGModel._prevValue) SGModel._prevValue = _.clone(values);
+					values[p] = v;
 				}
 			}
 		}
@@ -363,9 +394,9 @@ export default class SGModel {
 	 * @param {boolean} bRunNow Если true, то func выполниться один раз сейчас
 	 */
 	on(name, func, context, data, bRunNow = false) {
-		var a = this.onChangeCallbacks[name];
-		if (! a) a = this.onChangeCallbacks[name] = [];
-		a.push({f: func, c: context, d: data});
+		var callbacks = this.onChangeCallbacks[name];
+		if (! callbacks) callbacks = this.onChangeCallbacks[name] = [];
+		callbacks.push({f: func, c: context, d: data});
 		if (bRunNow) {
 			if (data) {
 				func.call(context ? context : this, data, this.properties[name], this.properties[name]);
@@ -377,15 +408,17 @@ export default class SGModel {
 
 	off(name, func) {
 		if (name) {
-			if (this.onChangeCallbacks[name]) {
+			var callbacks = this.onChangeCallbacks[name];
+			if (callbacks) {
 				if (func) {
-					for (var i in this.onChangeCallbacks[name]) {
-						if (this.onChangeCallbacks[name][i].f === func) {
-							this.onChangeCallbacks[name].splice(i, 1);
+					for (var i = 0; i < callbacks.length; i++) {
+						if (callbacks[i].f === func) {
+							callbacks.splice(i, 1);
+							i--;
 						}
 					}
 				} else {
-					this.onChangeCallbacks[name].length = 0;
+					callbacks.length = 0;
 				}
 			}
 		} else {
