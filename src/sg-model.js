@@ -38,12 +38,85 @@ export default class SGModel {
 		return ++SGModel._uid;
 	}
 	
-	static defaults(dest, source) {
-		for (var p in source) {
-			if (dest[p] === void 0) dest[p] = source[p];
+	static defaults(dest, ...sources) {
+		for (var i = sources.length; i--; ) {
+			var source = sources[i];
+			for (var p in source) {
+				if (dest[p] === void 0) {
+					dest[p] = (typeof source[p] === "object" ? SGModel.clone(source[p]) : source[p]);
+				}
+			}
 		}
 		return dest;
 	}
+	
+	static clone(source) {
+		let dest;
+		if (Array.isArray(source)) {
+			dest = [];
+			for (var i = 0; i < source.length; i++) {
+				dest[i] = (typeof source[i] === "object" ? SGModel.clone(source[i]) : source[i]);
+			}
+		} else if (typeof source === "object") {
+			dest = {};
+			for (var p in source) {
+				dest[p] = (typeof source[p] === "object" ? SGModel.clone(source[p]) : source[p]);
+			}
+		} else {
+			dest = source;
+		}
+		return dest;
+	}
+	
+	/**
+	 * Заполнить значения объекта/массива dest значениями из объекта/массива source (с рекурсией)
+	 */
+	static revertDefaults(dest, source) {
+		if (Array.isArray(dest)) {
+			for (var i = 0; i < dest.length; i++) {
+				if (source.hasOwnProperty(i)) {
+					if (typeof dest[i] === "object") {
+						this.revertDefaults(dest[i], source[i]);
+					} else {
+						dest[i] = source[i];
+					}
+				}
+			}
+		} else if (typeof dest === "object") {
+			for (var p in dest) {
+				if (source.hasOwnProperty(p)) {
+					if (typeof dest[p] === "object") {
+						this.revertDefaults(dest[p], source[p]);
+					} else {
+						dest[p] = source[p];
+					}
+				}
+			}
+		} else {
+			dest = source;
+		}
+		return dest;
+	}
+	
+	static upperFirstLetter(s) {
+		return s.charAt(0).toUpperCase() + s.slice(1);
+	}
+	
+	static singleInstance = false;
+	static _instance = null;
+	static getInstance(bIgnoreEmpty) {
+		if (this._instance) {
+			return this._instance;
+		} else if (! bIgnoreEmpty) {
+			debugger;
+			throw "Error! this._instance is empty!";
+		}
+		return null;
+	}
+	
+	// If a string value is given, then the data is synchronized with the local storage
+	// There is support for storing data of a single instance of a class, and for multiple instances: localStorageKey + "_" + id
+	static localStorageKey = "";
 	
 	// for single instance of a class
 	static get(...args) {
@@ -66,9 +139,25 @@ export default class SGModel {
 	 */
 	constructor(props, thisProps, options) {
 		
+		if (this.constructor.singleInstance) {
+			if (this.constructor._instance) throw "Error! this.constructor._instance not is empty!";
+			this.constructor._instance = this;
+		}
+		
 		var properties = props || {};
 		
-		var defaults = (typeof this.defaults === "function" ? this.defaults() : this.default);
+		var defaults = (typeof this.defaults === "function" ? this.defaults() : SGModel.clone(this.constructor.defaultProperties));
+		
+		// override defaults by localStorage data
+		let lsData = void 0;
+		if (this.constructor.localStorageKey) {
+			let data = localStorage.getItem(this.constructor.localStorageKey + (! this.constructor.singleInstance ? "_" + props.id : ""));
+			//try {
+				if (data) lsData = JSON.parse(data);
+			//} catch(e) {}
+			if (lsData) SGModel.revertDefaults(defaults, lsData);
+		}
+		
 		for (var p in properties) {
 			var value = properties[p];
 			switch (this.constructor.typeProperties[p]) {
@@ -114,7 +203,7 @@ export default class SGModel {
 			}
 		}
 
-		this.properties = _.extend({}, defaults, properties);
+		this.properties = SGModel.defaults({}, defaults, properties);
 
 		if (! this.properties.id) this.properties.id = SGModel.uid();
 
@@ -133,7 +222,7 @@ export default class SGModel {
 			this.constructor._ownSettersInitialized = true;
 			for (var p in this.constructor.ownSetters) {
 				if (this.constructor.ownSetters[p] === true) {
-					this.constructor.ownSetters[p] = this["set" + p.charAt(0).toUpperCase() + p.slice(1)];
+					this.constructor.ownSetters[p] = this["set" + SGModel.upperFirstLetter(p)];
 				}
 			}
 		}
@@ -186,14 +275,14 @@ export default class SGModel {
 		var value = this.properties[name];
 		if (value === val) return false;
 		
-		SGModel._prevValue = (options.prev_value !== void 0 ? options.prev_value : (options.prev_value_clone ? _.clone(value) : value));
+		SGModel._prevValue = (options.prev_value !== void 0 ? options.prev_value : (options.prev_value_clone ? SGModel.clone(value) : value));
 		this.properties[name] = val;
 		this.changed = true;
 		
 		if (! options.no_triggers) {
 			var callbacks = this.onChangeCallbacks[name];
 			if (callbacks) {
-				if (options.off_may_be) callbacks = _.clone(callbacks);
+				if (options.off_may_be) callbacks = SGModel.clone(callbacks);
 				var _val = void 0;
 				for (var i in callbacks) {
 					var c = callbacks[i];
@@ -250,7 +339,7 @@ export default class SGModel {
 				}
 				if (values[i] !== v) {
 					SGModel._bChanged = true;
-					if (options.prev_value_clone && ! SGModel._prevValue) SGModel._prevValue = _.clone(values);
+					if (options.prev_value_clone && ! SGModel._prevValue) SGModel._prevValue = SGModel.clone(values);
 					values[i] = v;
 				}
 			}
@@ -262,7 +351,7 @@ export default class SGModel {
 			for (var i = 0; i < values.length; i++) {
 				if (values[i] !== v) {
 					SGModel._bChanged = true;
-					if (options.prev_value_clone && ! SGModel._prevValue) SGModel._prevValue = _.clone(values);
+					if (options.prev_value_clone && ! SGModel._prevValue) SGModel._prevValue = SGModel.clone(values);
 					values[i] = v;
 				}
 			}
@@ -274,7 +363,7 @@ export default class SGModel {
 			if (! options.no_triggers) {
 				var callbacks = this.onChangeCallbacks[name];
 				if (callbacks) {
-					if (options.off_may_be) callbacks = _.clone(callbacks);
+					if (options.off_may_be) callbacks = SGModel.clone(callbacks);
 					var _val = void 0;
 					for (var i in callbacks) {
 						var c = callbacks[i];
@@ -328,7 +417,7 @@ export default class SGModel {
 				}
 				if (values[p] !== v) {
 					SGModel._bChanged = true;
-					if (options.prev_value_clone && ! SGModel._prevValue) SGModel._prevValue = _.clone(values);
+					if (options.prev_value_clone && ! SGModel._prevValue) SGModel._prevValue = SGModel.clone(values);
 					values[p] = v;
 				}
 				SGModel._index++;
@@ -341,7 +430,7 @@ export default class SGModel {
 				}
 				if (values[p] !== v) {
 					SGModel._bChanged = true;
-					if (options.prev_value_clone && ! SGModel._prevValue) SGModel._prevValue = _.clone(values);
+					if (options.prev_value_clone && ! SGModel._prevValue) SGModel._prevValue = SGModel.clone(values);
 					values[p] = v; 
 				}
 			}
@@ -350,7 +439,7 @@ export default class SGModel {
 			for (var p in values) {
 				if (values[p] !== v) {
 					SGModel._bChanged = true;
-					if (options.prev_value_clone && ! SGModel._prevValue) SGModel._prevValue = _.clone(values);
+					if (options.prev_value_clone && ! SGModel._prevValue) SGModel._prevValue = SGModel.clone(values);
 					values[p] = v;
 				}
 			}
@@ -362,7 +451,7 @@ export default class SGModel {
 			if (! options.no_triggers) {
 				var callbacks = this.onChangeCallbacks[name];
 				if (callbacks) {
-					if (options.off_may_be) callbacks = _.clone(callbacks);
+					if (options.off_may_be) callbacks = SGModel.clone(callbacks);
 					var _val = void 0;
 					for (var i in callbacks) {
 						var c = callbacks[i];
@@ -438,15 +527,35 @@ export default class SGModel {
 		
 		var callbacks = this.onChangeCallbacks[name];
 		if (callbacks) {
-			if (options.off_may_be) callbacks = _.clone(callbacks);
+			if (options.off_may_be) callbacks = SGModel.clone(callbacks);
 			for (var i in callbacks) {
 				callbacks[i].f.call(callbacks[i].c ? callbacks[i].c : this, (callbacks[i].d ? callbacks[i].d : this.properties[name]));
 			}
 		}
 	}
 	
+	/**
+	 * Save data to localStorage
+	 */
+	save() {
+		if (! this.constructor.localStorageKey) { debugger; throw "Error 37722990!"; }
+		
+		let id;
+		if (this.constructor.singleInstance) {
+			id = this.properties.id;
+			delete this.properties.id;
+		}
+		
+		localStorage.setItem(this.constructor.localStorageKey + (! this.constructor.singleInstance ? "_" + id : ""), JSON.stringify(this.properties));
+		
+		if (this.constructor.singleInstance) {
+			this.properties.id = id;
+		}
+	}
+	
 	destroy() {
 		this.destroyed = true;
+		this.constructor._instance = null;
 		this.off();
 	}
 }
