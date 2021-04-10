@@ -15,6 +15,8 @@ export default class SGModel {
 	// Property data types
 	static typeProperties = {};
 	
+	static defaultsProperties = {}; // override
+	
 	static TYPE_NUMBER = 1;
 	static TYPE_STRING = 2;
 	static TYPE_BOOL = 3;
@@ -22,9 +24,10 @@ export default class SGModel {
 	static TYPE_ARRAY_NUMBERS = 5;
 	static TYPE_OBJECT_NUMBERS = 6;
 	
-	// The flag passed in the .on(...) call so that the callback is executed once at once (Флаг, передаваемый в вызове .on(...), что бы колбэк выполнился один раз сразу)
-	static RUNNOW = 1;
+	// The flag passed in the .on(...) call to execute the callback (Флаг, передаваемый в вызове .on(...), что бы выполнился колбэк)
+	static RUNNOW = true;
 	
+	// Private property
 	static OBJECT_EMPTY = Object.freeze({});
 	
 	// List of properties for which to use their own setters first (Список свойств для которых вначале использовать собственные сеттеры)
@@ -34,10 +37,12 @@ export default class SGModel {
 	static IGNORE_OWN_SETTER = true;
 	
 	static _uid = 0;
+	// Private method
 	static uid() {
 		return ++SGModel._uid;
 	}
 	
+	// Public method
 	static defaults(dest, ...sources) {
 		for (var i = sources.length; i--; ) {
 			var source = sources[i];
@@ -50,6 +55,7 @@ export default class SGModel {
 		return dest;
 	}
 	
+	// Public method
 	static clone(source) {
 		let dest;
 		if (Array.isArray(source)) {
@@ -98,13 +104,15 @@ export default class SGModel {
 		return dest;
 	}
 	
+	// Public method
 	static upperFirstLetter(s) {
 		return s.charAt(0).toUpperCase() + s.slice(1);
 	}
 	
 	static singleInstance = false;
 	static _instance = null;
-	static getInstance(bIgnoreEmpty) {
+	// Public method
+	static getInstance(bIgnoreEmpty = false) {
 		if (this._instance) {
 			return this._instance;
 		} else if (! bIgnoreEmpty) {
@@ -114,10 +122,6 @@ export default class SGModel {
 		return null;
 	}
 	
-	// If a string value is given, then the data is synchronized with the local storage
-	// There is support for storing data of a single instance of a class, and for multiple instances: localStorageKey + "_" + id
-	static localStorageKey = "";
-	
 	// for single instance of a class
 	static get(...args) {
 		return this._instance && this._instance.get(...args);
@@ -126,6 +130,10 @@ export default class SGModel {
 	static set(...args) {
 		return this._instance && this._instance.set(...args);
 	}
+	
+	// If a non-empty string value is specified, then the data is synchronized with the local storage.
+	// Support for storing data as one instance of a class (single instance), and several instances: localStorageKey + "_" + id
+	static localStorageKey = "";
 	
 	static _bChanged = false;
 	static _index = 0
@@ -480,7 +488,7 @@ export default class SGModel {
 	 * @param {function} func
 	 * @param {object} context Если не задано, то передаётся this текущего объекта
 	 * @param {mixed} data	Если data задано, то в колбэке в первом arguments[] передаётся это значение (data)
-	 * @param {boolean} bRunNow Если true, то func выполниться один раз сейчас
+	 * @param {boolean} bRunNow Если true, то func выполнится один раз сейчас
 	 */
 	on(name, func, context, data, bRunNow = false) {
 		var callbacks = this.onChangeCallbacks[name];
