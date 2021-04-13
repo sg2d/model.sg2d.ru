@@ -1,12 +1,9 @@
 {
   "name": "SGModel",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "A fast lightweight library for structuring web applications using binding models and custom events",
-  "main": "dist/sg-model.js",
-  "scripts": {
-    "dev": "cross-env NODE_ENV=development webpack --mode development",
-    "build": "cross-env NODE_ENV=production webpack --mode production"
-  },
+  "main": "sg-model.js",
+  "scripts": {},
   "repository": {
     "type": "git",
     "url": "https://github.com/VediX/SGModel.git"
@@ -16,17 +13,5 @@
   "bugs": {
     "url": "https://github.com/VediX/SGModel/issues"
   },
-  "homepage": "https://github.com/VediX/SGModel#readme",
-  "devDependencies": {
-    "@babel/core": "^7.12.3",
-    "@babel/plugin-proposal-class-properties": "^7.12.1",
-    "@babel/preset-env": "^7.12.1",
-    "babel-loader": "^8.1.0",
-    "clean-webpack-plugin": "^3.0.0",
-    "cross-env": "^7.0.2",
-    "terser-webpack-plugin": "^5.0.1",
-    "webpack": "^5.2.0",
-    "webpack-cli": "^4.1.0"
-  },
-  "dependencies": {}
+  "homepage": "https://github.com/VediX/SGModel#readme"
 }

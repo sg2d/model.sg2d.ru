@@ -1,9 +1,9 @@
 /**
- * SGModel 1.0.0
+ * SGModel 1.0.2
  * A fast lightweight library (ES6) for structuring web applications using binding models and custom events. This is a faster and more simplified analogue of Backbone.js!
  * https://github.com/VediX/SGModel
  *
- * Copyright 2020 VediX Systems
+ * Copyright 2021 VediX Systems
  *
  * SGModel may be freely distributed under the MIT license.
  */
@@ -17,32 +17,54 @@ export default class SGModel {
 	
 	static defaultsProperties = {}; // override
 	
+	static TYPE_ANY = void 0;
 	static TYPE_NUMBER = 1;
 	static TYPE_STRING = 2;
 	static TYPE_BOOL = 3;
 	static TYPE_OBJECT = 4;
-	static TYPE_ARRAY_NUMBERS = 5;
-	static TYPE_OBJECT_NUMBERS = 6;
+	static TYPE_ARRAY = 5;
+	static TYPE_ARRAY_NUMBERS = 6;
+	static TYPE_OBJECT_NUMBERS = 7;
 	
-	// The flag passed in the .on(...) call to execute the callback (Флаг, передаваемый в вызове .on(...), что бы выполнился колбэк)
-	static RUNNOW = true;
+	// The flag passed in the .on(...) call to execute the callback
+	static FLAG_IMMEDIATELY = true;
 	
 	// Private property
 	static OBJECT_EMPTY = Object.freeze({});
 	
-	// List of properties for which to use their own setters first (Список свойств для которых вначале использовать собственные сеттеры)
+	static FLAG_OFF_MAY_BE = 0b00000001; // if set can be .off(), then you need to pass this flag
+	static FLAG_PREV_VALUE_CLONE = 0b00000010; // Pass the previous value (heavy clone for objects / arrays)
+	static FLAG_NO_CALLBACKS = 0b00000100; // if given, no callbacks are executed
+	static FLAG_FORCED_CALLBACKS = 0b00001000; // execute callbacks even if there is no change
+	static FLAG_IGNORE_OWN_SETTER = 0b00010000; // ignore own setters
+	
+	/**
+	 * List of properties for which to use their own setters first
+	 * Better than .on(...) for speed of work with a large number of class instances.
+	 * Also used if there is a base class and a descendant class where specific behavior is needed when changing properties.
+	 * Example:
+	 *	...
+	 *	static ownSetters = Object.assign({
+	 *		state: true
+	 *	}, OurBaseModel.ownSetters);
+	 *	...
+	 *	setState(value, flags = 0, options) {
+	 *		if (this.set("state", value, flags | SGModel.FLAG_IGNORE_OWN_SETTER, options)) {
+	 *			//some code...
+	 *		}
+	 *	}
+	 */
 	static ownSetters = {};
 	
-	// The flag passed in the .set(...) call so that the custom setter is not called (Флаг передаваемый в вызове .set(...), что бы не был вызван пользовательский сеттер)
-	static IGNORE_OWN_SETTER = true;
-	
+	/** @private */
 	static _uid = 0;
-	// Private method
+	
+	/** @private */
 	static uid() {
 		return ++SGModel._uid;
 	}
 	
-	// Public method
+	/** @public */
 	static defaults(dest, ...sources) {
 		for (var i = sources.length; i--; ) {
 			var source = sources[i];
@@ -55,7 +77,7 @@ export default class SGModel {
 		return dest;
 	}
 	
-	// Public method
+	/** @public */
 	static clone(source) {
 		let dest;
 		if (Array.isArray(source)) {
@@ -75,14 +97,15 @@ export default class SGModel {
 	}
 	
 	/**
-	 * Заполнить значения объекта/массива dest значениями из объекта/массива source (с рекурсией)
+	 * Fill the values of the object / array dest with the values from the object / array source (with recursion)
+	 * @public
 	 */
-	static revertDefaults(dest, source) {
+	static initObjectByObject(dest, source) {
 		if (Array.isArray(dest)) {
 			for (var i = 0; i < dest.length; i++) {
 				if (source.hasOwnProperty(i)) {
 					if (typeof dest[i] === "object") {
-						this.revertDefaults(dest[i], source[i]);
+						this.initObjectByObject(dest[i], source[i]);
 					} else {
 						dest[i] = source[i];
 					}
@@ -92,7 +115,7 @@ export default class SGModel {
 			for (var p in dest) {
 				if (source.hasOwnProperty(p)) {
 					if (typeof dest[p] === "object") {
-						this.revertDefaults(dest[p], source[p]);
+						this.initObjectByObject(dest[p], source[p]);
 					} else {
 						dest[p] = source[p];
 					}
@@ -104,14 +127,18 @@ export default class SGModel {
 		return dest;
 	}
 	
-	// Public method
+	/** @public */
 	static upperFirstLetter(s) {
 		return s.charAt(0).toUpperCase() + s.slice(1);
 	}
 	
-	static singleInstance = false;
+	/** @private */
 	static _instance = null;
-	// Public method
+	
+	/** @public */
+	static singleInstance = false;
+	
+	/** @public */
 	static getInstance(bIgnoreEmpty = false) {
 		if (this._instance) {
 			return this._instance;
@@ -122,28 +149,40 @@ export default class SGModel {
 		return null;
 	}
 	
-	// for single instance of a class
+	/**
+	 * Method get() for single instance of a class
+	 * @public
+	 */
 	static get(...args) {
 		return this._instance && this._instance.get(...args);
 	}
-	// for single instance of a class
+	
+	/**
+	 * Method set() for single instance of a class
+	 * @public
+	 */
 	static set(...args) {
 		return this._instance && this._instance.set(...args);
 	}
 	
-	// If a non-empty string value is specified, then the data is synchronized with the local storage.
-	// Support for storing data as one instance of a class (single instance), and several instances: localStorageKey + "_" + id
+	/**
+	 * If a non-empty string value is specified, then the data is synchronized with the local storage.
+	 * Support for storing data as one instance of a class (single instance), and several instances: localStorageKey + "_" + id
+	 */
 	static localStorageKey = "";
 	
+	/** @private */
 	static _bChanged = false;
+	/** @private */
 	static _index = 0
+	/** @private */
 	static _prevValue = void 0;
 	
 	/**
 	 * SGModel constructor
-	 * @param {object} props Свойства
-	 * @param {object} thisProps Свойства и методы передающиеся в контекст this созданного экземпляра
-	 * @param {object} options Пользовательские настройки
+	 * @param {object} props Properties
+	 * @param {object} thisProps Properties and methods passed to the "this" context of the created instance
+	 * @param {object} options Custom settings
 	 */
 	constructor(props, thisProps, options) {
 		
@@ -157,18 +196,19 @@ export default class SGModel {
 		var defaults = (typeof this.defaults === "function" ? this.defaults() : SGModel.clone(this.constructor.defaultProperties));
 		
 		// override defaults by localStorage data
-		let lsData = void 0;
 		if (this.constructor.localStorageKey) {
+			let lsData = void 0;
 			let data = localStorage.getItem(this.constructor.localStorageKey + (! this.constructor.singleInstance ? "_" + props.id : ""));
 			//try {
 				if (data) lsData = JSON.parse(data);
 			//} catch(e) {}
-			if (lsData) SGModel.revertDefaults(defaults, lsData);
+			if (lsData) SGModel.initObjectByObject(defaults, lsData);
 		}
 		
 		for (var p in properties) {
 			var value = properties[p];
 			switch (this.constructor.typeProperties[p]) {
+				case SGModel.TYPE_ANY: case SGModel.TYPE_ARRAY: break;
 				case SGModel.TYPE_NUMBER: properties[p] = (value === void 0 ? void 0 : +value); break;
 				case SGModel.TYPE_ARRAY_NUMBERS: {
 					for (var i = 0; i < value.length; i++) value[i] = +value[i];
@@ -208,6 +248,7 @@ export default class SGModel {
 					} else { debugger; throw "Error! Property \""+p+"\" ("+this.constructor.name+") must be an object or an array!"; }
 					break;
 				default:
+					debugger; throw "Error! Unknown type specified for property \""+p+"\" ("+this.constructor.name+")!";
 			}
 		}
 
@@ -244,100 +285,94 @@ export default class SGModel {
 	initialize() {}
 	
 	/**
-	* Задать значение свойства
+	* Set property value
 	* @param {string} name
 	* @param {mixed} val
-	* @param {object} options	Допустимые флаги:
-	*					off_may_be - если при set могут быть off то нужно передать этот флаг
-	*					prev_value_clone - передавать пред.значение (делается тяжёлый clone)
-	*					prev_value - использовать это значение в качестве пред.значения
-	*					no_triggers - если задано, то колбэки не выполняются
-	* @param {boolean} ignoreOwnSetter=false
-	* @return {boolean} true если значение было изменено
+	* @param {number} flags	Valid flags: FLAG_OFF_MAY_BE | FLAG_PREV_VALUE_CLONE | FLAG_NO_CALLBACKS | FLAG_IGNORE_OWN_SETTER | FLAG_FORCED_CALLBACKS
+	* @param {object} options
+	*					precision - Rounding precision
+	*					previous_value - Use this value as the previous value
+	* @return {boolean} If the value was changed will return true
 	*/
-	set(name, val, options, ignoreOwnSetter = false) {
+	set(name, value, flags = 0, options) {
 		
-		if (ignoreOwnSetter === false && this.constructor.ownSetters[name]) {
-			return this.constructor.ownSetters[name].call(this, val, options);
-		}
+		if (typeof flags ==="object") debugger;
 		
 		options = options || SGModel.OBJECT_EMPTY;
+		
+		if (! (flags & SGModel.FLAG_IGNORE_OWN_SETTER) && this.constructor.ownSetters[name]) {
+			return this.constructor.ownSetters[name].call(this, value, flags, options);
+		}
 		
 		var type = this.constructor.typeProperties[name];
 		if (type) {
 			switch (type) {
+				case SGModel.TYPE_ANY: break;
 				case SGModel.TYPE_NUMBER: {
-					if (val !== void 0) {
-						val = (options.precision ? Math.roundTo(val, options.precision) : +val);
+					if (value !== void 0) {
+						value = (options.precision ? Math.roundTo(value, options.precision) : +value);
 					}
 					break;
 				}
-				case SGModel.TYPE_STRING: val = ''+val; break;
-				case SGModel.TYPE_BOOL: val = !! val; break;
-				case SGModel.TYPE_OBJECT: return this.setObject.apply(this, arguments);
-				case SGModel.TYPE_ARRAY_NUMBERS: return this.setArray.apply(this, arguments);
-				case SGModel.TYPE_OBJECT_NUMBERS: return this.setObject.apply(this, arguments);
+				case SGModel.TYPE_STRING: value = ''+value; break;
+				case SGModel.TYPE_BOOL: value = !! value; break;
+				case SGModel.TYPE_ARRAY: case SGModel.TYPE_ARRAY_NUMBERS: return this.setArray.apply(this, arguments);
+				case SGModel.TYPE_OBJECT: case SGModel.TYPE_OBJECT_NUMBERS: return this.setObject.apply(this, arguments);
 			}
 		}
 		
-		var value = this.properties[name];
-		if (value === val) return false;
+		var val = this.properties[name];
 		
-		SGModel._prevValue = (options.prev_value !== void 0 ? options.prev_value : (options.prev_value_clone ? SGModel.clone(value) : value));
-		this.properties[name] = val;
-		this.changed = true;
+		if (val === value) {
+			if (! (flags & SGModel.FLAG_FORCED_CALLBACKS)) return false;
+		} else {
+			this.properties[name] = value;
+			this.changed = true;
+		}
 		
-		if (! options.no_triggers) {
+		if (! (flags & SGModel.FLAG_NO_CALLBACKS)) {
+			SGModel._prevValue = (options.previous_value !== void 0 ? options.previous_value : ((flags & SGModel.FLAG_PREV_VALUE_CLONE) ? SGModel.clone(val) : val));
 			var callbacks = this.onChangeCallbacks[name];
 			if (callbacks) {
-				if (options.off_may_be) callbacks = SGModel.clone(callbacks);
+				if (flags & SGModel.FLAG_OFF_MAY_BE) callbacks = SGModel.clone(callbacks);
 				var _val = void 0;
 				for (var i in callbacks) {
 					var c = callbacks[i];
 					if (c.d) {
-						_val = c.f.call(c.c ? c.c : this, c.d, val, SGModel._prevValue);
+						_val = c.f.call(c.c ? c.c : this, c.d, value, SGModel._prevValue);
 					} else {
-						_val = c.f.call(c.c ? c.c : this, val, SGModel._prevValue);
+						_val = c.f.call(c.c ? c.c : this, value, SGModel._prevValue);
 					}
 					if (_val !== void 0) val = _val;
 				}
 			}
 		}
+		
 		return true;
-	}
-	
-	/**
-	 * Задать значение без использования own-setter'а, если он задан. При value === void 0 всегда возвращает true
-	 * Используется в связке со статическим свойством ownSetters в котором перечисляются поля, для которых сначала выполняется пользовательский setter
-	 */
-	setWoOwnSetter(name, value, options) {
-		return (value !== void 0 && this.set(name, value, options, SGModel.IGNORE_OWN_SETTER) || value === void 0);
 	}
 
 	/**
-	* Задать значение свойства в виде массива (изменяются только элементы). Если хотя бы один элемент массива изменился, то массив считается измененным и выполняются колбэки.
+	* Set the property value as an array (only elements are changed). If at least one element of the array has changed, then the array is considered changed and callbacks are executed.
 	* @param {string} name
 	* @param {array} aValues
-	* @param {object} options	Допустимые флаги:
-	*					off_may_be - если при set могут быть off то нужно передать этот флаг
-	*					prev_value_clone - передавать пред.значение (делается тяжёлый clone)
-	*					prev_value - использовать этот массив в качестве пред.значения
-	*					no_triggers - если задано, то колбэки не выполняются
-	* @param {boolean} ignoreOwnSetter=false
-	* @return {boolean} true если значение было изменено
+	* @param {number} flags	Valid flags: FLAG_OFF_MAY_BE | FLAG_PREV_VALUE_CLONE | FLAG_NO_CALLBACKS | FLAG_IGNORE_OWN_SETTER | FLAG_FORCED_CALLBACKS
+	* @param {object} options
+	*					precision - Rounding precision
+	*					previous_value - Use this value as the previous value
+	* @return {boolean} If the value was changed will return true
 	*/
-	setArray(name, aValues, options, ignoreOwnSetter = false) {
-		
-		if (ignoreOwnSetter === false && this.constructor.ownSetters[name]) {
-			return this.constructor.ownSetters[name].call(this, aValues, options);
-		}
+	setArray(name, aValues, flags = 0, options) {
 		
 		options = options || SGModel.OBJECT_EMPTY;
+		
+		if ( ! (flags & SGModel.FLAG_IGNORE_OWN_SETTER) && this.constructor.ownSetters[name]) {
+			return this.constructor.ownSetters[name].call(this, aValues, flags, options);
+		}
 
 		var type = this.constructor.typeProperties[name];
 		var values = this.properties[name];
 
-		SGModel._prevValue = options.prev_value || void 0;
+		SGModel._prevValue = options.previous_value || void 0;
 		SGModel._bChanged = false;
 		if (Array.isArray(aValues)) {
 			for (var i = 0; i < aValues.length; i++) {
@@ -347,7 +382,7 @@ export default class SGModel {
 				}
 				if (values[i] !== v) {
 					SGModel._bChanged = true;
-					if (options.prev_value_clone && ! SGModel._prevValue) SGModel._prevValue = SGModel.clone(values);
+					if ((flags & SGModel.FLAG_PREV_VALUE_CLONE) && ! SGModel._prevValue) SGModel._prevValue = SGModel.clone(values);
 					values[i] = v;
 				}
 			}
@@ -359,19 +394,20 @@ export default class SGModel {
 			for (var i = 0; i < values.length; i++) {
 				if (values[i] !== v) {
 					SGModel._bChanged = true;
-					if (options.prev_value_clone && ! SGModel._prevValue) SGModel._prevValue = SGModel.clone(values);
+					if ((flags & SGModel.FLAG_PREV_VALUE_CLONE) && ! SGModel._prevValue) SGModel._prevValue = SGModel.clone(values);
 					values[i] = v;
 				}
 			}
 		}
 		
-		if (SGModel._bChanged) {
-			this.changed = true;
+		if (SGModel._bChanged) this.changed = true;
 		
-			if (! options.no_triggers) {
+		if (SGModel._bChanged || (flags & SGModel.FLAG_FORCED_CALLBACKS)) {
+			
+			if (! (flags & FLAG_NO_CALLBACKS)) {
 				var callbacks = this.onChangeCallbacks[name];
 				if (callbacks) {
-					if (options.off_may_be) callbacks = SGModel.clone(callbacks);
+					if (flags & FLAG_OFF_MAY_BE) callbacks = SGModel.clone(callbacks);
 					var _val = void 0;
 					for (var i in callbacks) {
 						var c = callbacks[i];
@@ -392,29 +428,27 @@ export default class SGModel {
 	}
 	
 	/**
-	* Задать значение свойств объекта (изменяются только свойства). Если хотя бы одно свойство объекта изменилось, то объект считается измененным и выполняются колбэки.
+	* Set the value of the object's properties (only properties are changed). If at least one property of an object has changed, then the object is considered changed and callbacks are executed.
 	* @param {string} name
-	* @param {object} oValues Объект или массив. В случае массива свойства задаются в том порядке в каком они были объявлены ранее.
-	* @param {object} options	Допустимые флаги:
-	*					off_may_be - если при set могут быть off то нужно передать этот флаг
-	*					prev_value_clone - передавать пред.значение (делается тяжёлый clone)
-	*					prev_value - использовать этот объект в качестве пред.значения
-	*					no_triggers - если задано, то колбэки не выполняются
-	* @param {boolean} ignoreOwnSetter=false
-	* @return {boolean} true если значение было изменено
+	* @param {object} oValues Object or array. In the case of an array, properties are specified in the order in which they were previously declared.
+	* @param {number} flags	Valid flags: FLAG_OFF_MAY_BE | FLAG_PREV_VALUE_CLONE | FLAG_NO_CALLBACKS | FLAG_IGNORE_OWN_SETTER | FLAG_FORCED_CALLBACKS
+	* @param {object} options
+	*					precision - Rounding precision
+	*					previous_value - Use this value as the previous value
+	* @return {boolean} If the value was changed will return true
 	*/
-	setObject(name, oValues, options, ignoreOwnSetter = false) {
-		
-		if (ignoreOwnSetter === false && this.constructor.ownSetters[name]) {
-			return this.constructor.ownSetters[name].call(this, oValues, options);
-		}
+	setObject(name, oValues, flags = 0, options) {
 		
 		options = options || SGModel.OBJECT_EMPTY;
+		
+		if (! (flags & SGModel.FLAG_IGNORE_OWN_SETTER) && this.constructor.ownSetters[name]) {
+			return this.constructor.ownSetters[name].call(this, oValues, flags, options);
+		}
 
 		var type = this.constructor.typeProperties[name];
 		var values = this.properties[name];
 
-		SGModel._prevValue = options.prev_value || void 0;
+		SGModel._prevValue = options.previous_value || void 0;
 		SGModel._bChanged = false;
 		if (Array.isArray(oValues)) {
 			SGModel._index = 0;
@@ -425,7 +459,7 @@ export default class SGModel {
 				}
 				if (values[p] !== v) {
 					SGModel._bChanged = true;
-					if (options.prev_value_clone && ! SGModel._prevValue) SGModel._prevValue = SGModel.clone(values);
+					if ((flags & SGModel.FLAG_PREV_VALUE_CLONE) && ! SGModel._prevValue) SGModel._prevValue = SGModel.clone(values);
 					values[p] = v;
 				}
 				SGModel._index++;
@@ -438,7 +472,7 @@ export default class SGModel {
 				}
 				if (values[p] !== v) {
 					SGModel._bChanged = true;
-					if (options.prev_value_clone && ! SGModel._prevValue) SGModel._prevValue = SGModel.clone(values);
+					if ((flags & SGModel.FLAG_PREV_VALUE_CLONE) && ! SGModel._prevValue) SGModel._prevValue = SGModel.clone(values);
 					values[p] = v; 
 				}
 			}
@@ -447,19 +481,20 @@ export default class SGModel {
 			for (var p in values) {
 				if (values[p] !== v) {
 					SGModel._bChanged = true;
-					if (options.prev_value_clone && ! SGModel._prevValue) SGModel._prevValue = SGModel.clone(values);
+					if ((flags & SGModel.FLAG_PREV_VALUE_CLONE) && ! SGModel._prevValue) SGModel._prevValue = SGModel.clone(values);
 					values[p] = v;
 				}
 			}
 		}
-
-		if (SGModel._bChanged) {
-			this.changed = true;
 		
-			if (! options.no_triggers) {
+		if (SGModel._bChanged) this.changed = true;
+
+		if (SGModel._bChanged || (flags & SGModel.FLAG_FORCED_CALLBACKS)) {
+		
+			if (! (flags & SGModel.FLAG_NO_CALLBACKS)) {
 				var callbacks = this.onChangeCallbacks[name];
 				if (callbacks) {
-					if (options.off_may_be) callbacks = SGModel.clone(callbacks);
+					if (flags & SGModel.FLAG_OFF_MAY_BE) callbacks = SGModel.clone(callbacks);
 					var _val = void 0;
 					for (var i in callbacks) {
 						var c = callbacks[i];
@@ -483,18 +518,19 @@ export default class SGModel {
 	}
 
 	/**
-	 * Задать триггер на изменение свойства
+	 * Set trigger for property change
 	 * @param {string} name
 	 * @param {function} func
-	 * @param {object} context Если не задано, то передаётся this текущего объекта
-	 * @param {mixed} data	Если data задано, то в колбэке в первом arguments[] передаётся это значение (data)
-	 * @param {boolean} bRunNow Если true, то func выполнится один раз сейчас
+	 * @param {object} context If not specified, the "this" of the current object is passed
+	 * @param {mixed} data	If "data" is set, then this value (data) is passed in the first arguments [] callback
+	 * @param {number} flags Valid flags:
+	 *		SGModel.FLAG_IMMEDIATELY - "func" will be executed once now
 	 */
-	on(name, func, context, data, bRunNow = false) {
+	on(name, func, context, data, flags = 0) {
 		var callbacks = this.onChangeCallbacks[name];
 		if (! callbacks) callbacks = this.onChangeCallbacks[name] = [];
 		callbacks.push({f: func, c: context, d: data});
-		if (bRunNow) {
+		if (flags === SGModel.FLAG_IMMEDIATELY) {
 			if (data) {
 				func.call(context ? context : this, data, this.properties[name], this.properties[name]);
 			} else {
@@ -524,18 +560,16 @@ export default class SGModel {
 	}
 	
 	/**
-	 * Выполнить колбэки, которые выполняются при изменении значения свойства
+	 * Execute callbacks that are executed when the property value changes
 	 * @param {string} name
-	 * @param {object} options	Допустимые флаги:
-	 *					off_may_be - если при set могут быть off то нужно передать этот флаг
+	 * @param {number} flags Valid flags:
+	 *		SGModel.FLAG_OFF_MAY_BE - if set can be .off(), then you need to pass this flag
 	 */
-	trigger(name, options) {
-		
-		options = options || SGModel.OBJECT_EMPTY;
+	trigger(name, flags = 0) {
 		
 		var callbacks = this.onChangeCallbacks[name];
 		if (callbacks) {
-			if (options.off_may_be) callbacks = SGModel.clone(callbacks);
+			if (flags & SGModel.FLAG_OFF_MAY_BE) callbacks = SGModel.clone(callbacks);
 			for (var i in callbacks) {
 				callbacks[i].f.call(callbacks[i].c ? callbacks[i].c : this, (callbacks[i].d ? callbacks[i].d : this.properties[name]));
 			}
