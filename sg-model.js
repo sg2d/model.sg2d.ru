@@ -2,10 +2,8 @@
  * SGModel 1.0.2
  * A fast lightweight library (ES6) for structuring web applications using binding models and custom events. This is a faster and more simplified analogue of Backbone.js!
  * https://github.com/VediX/SGModel
- *
- * Copyright 2021 VediX Systems
- *
- * SGModel may be freely distributed under the MIT license.
+ * (c) 2019-2021 Kalashnikov Ilya and VediX Systems
+ * SGModel may be freely distributed under the MIT license
  */
 
 "use strict";
@@ -25,6 +23,7 @@ export default class SGModel {
 	static TYPE_ARRAY = 5;
 	static TYPE_ARRAY_NUMBERS = 6;
 	static TYPE_OBJECT_NUMBERS = 7;
+	static TYPE_NUMBER_OR_XY = 8;
 	
 	// The flag passed in the .on(...) call to execute the callback
 	static FLAG_IMMEDIATELY = true;
@@ -35,7 +34,7 @@ export default class SGModel {
 	static FLAG_OFF_MAY_BE = 0b00000001; // if set can be .off(), then you need to pass this flag
 	static FLAG_PREV_VALUE_CLONE = 0b00000010; // Pass the previous value (heavy clone for objects / arrays)
 	static FLAG_NO_CALLBACKS = 0b00000100; // if given, no callbacks are executed
-	static FLAG_FORCED_CALLBACKS = 0b00001000; // execute callbacks even if there is no change
+	static FLAG_FORCE_CALLBACKS = 0b00001000; // execute callbacks even if there is no change
 	static FLAG_IGNORE_OWN_SETTER = 0b00010000; // ignore own setters
 	
 	/**
@@ -48,7 +47,7 @@ export default class SGModel {
 	 *		state: true
 	 *	}, OurBaseModel.ownSetters);
 	 *	...
-	 *	setState(value, flags = 0, options) {
+	 *	setState(value, flags = 0, options = void 0) {
 	 *		if (this.set("state", value, flags | SGModel.FLAG_IGNORE_OWN_SETTER, options)) {
 	 *			//some code...
 	 *		}
@@ -132,6 +131,12 @@ export default class SGModel {
 		return s.charAt(0).toUpperCase() + s.slice(1);
 	}
 	
+	/** @public */
+	static roundTo(value, precision = 0) {
+		let m = 10 ** precision;
+		return Math.round(value * m) / m;
+	}
+	
 	/** @private */
 	static _instance = null;
 	
@@ -166,10 +171,26 @@ export default class SGModel {
 	}
 	
 	/**
+	 * Method on() for single instance of a class
+	 * @public
+	 */
+	static on(...args) {
+		return this._instance && this._instance.on(...args);
+	}
+	
+	/**
+	 * Method off() for single instance of a class
+	 * @public
+	 */
+	static off(...args) {
+		return this._instance && this._instance.off(...args);
+	}
+	
+	/**
 	 * If a non-empty string value is specified, then the data is synchronized with the local storage.
 	 * Support for storing data as one instance of a class (single instance), and several instances: localStorageKey + "_" + id
 	 */
-	static localStorageKey = "";
+	static localStorageKey = ""; // override
 	
 	/** @private */
 	static _bChanged = false;
@@ -177,6 +198,8 @@ export default class SGModel {
 	static _index = 0
 	/** @private */
 	static _prevValue = void 0;
+	/** @private */
+	static _xy = {x: 0, y: 0};
 	
 	/**
 	 * SGModel constructor
@@ -184,7 +207,7 @@ export default class SGModel {
 	 * @param {object} thisProps Properties and methods passed to the "this" context of the created instance
 	 * @param {object} options Custom settings
 	 */
-	constructor(props, thisProps, options) {
+	constructor(props, thisProps, options = void 0) {
 		
 		if (this.constructor.singleInstance) {
 			if (this.constructor._instance) throw "Error! this.constructor._instance not is empty!";
@@ -210,6 +233,15 @@ export default class SGModel {
 			switch (this.constructor.typeProperties[p]) {
 				case SGModel.TYPE_ANY: case SGModel.TYPE_ARRAY: break;
 				case SGModel.TYPE_NUMBER: properties[p] = (value === void 0 ? void 0 : +value); break;
+				case SGModel.TYPE_NUMBER_OR_XY: {
+					if (typeof value === "object") {
+						value.x = (value.x === void 0 ? void 0 : +value.x);
+						value.y = (value.y === void 0 ? void 0 : +value.y);
+					} else {
+						properties[p] = (value === void 0 ? void 0 : +value);
+					}
+					break;
+				}
 				case SGModel.TYPE_ARRAY_NUMBERS: {
 					for (var i = 0; i < value.length; i++) value[i] = +value[i];
 					break;
@@ -288,15 +320,15 @@ export default class SGModel {
 	* Set property value
 	* @param {string} name
 	* @param {mixed} val
-	* @param {number} flags	Valid flags: FLAG_OFF_MAY_BE | FLAG_PREV_VALUE_CLONE | FLAG_NO_CALLBACKS | FLAG_IGNORE_OWN_SETTER | FLAG_FORCED_CALLBACKS
-	* @param {object} options
-	*					precision - Rounding precision
-	*					previous_value - Use this value as the previous value
+	* @param {number} flags	- Valid flags: FLAG_OFF_MAY_BE | FLAG_PREV_VALUE_CLONE | FLAG_NO_CALLBACKS | FLAG_FORCE_CALLBACKS | FLAG_IGNORE_OWN_SETTER
+	* @param {object} [options]
+	* @param {number}		[options.precision] - Rounding precision
+	* @param {mixed}		[options.previous_value] - Use this value as the previous value
 	* @return {boolean} If the value was changed will return true
 	*/
-	set(name, value, flags = 0, options) {
+	set(name, value, flags = 0, options = void 0) {
 		
-		if (typeof flags ==="object") debugger;
+		if (typeof flags !=="number") { debugger; throw "Error 7892354! \"flags\" type is not a number!" }
 		
 		options = options || SGModel.OBJECT_EMPTY;
 		
@@ -310,21 +342,22 @@ export default class SGModel {
 				case SGModel.TYPE_ANY: break;
 				case SGModel.TYPE_NUMBER: {
 					if (value !== void 0) {
-						value = (options.precision ? Math.roundTo(value, options.precision) : +value);
+						value = (options.precision ? SGModel.roundTo(value, options.precision) : +value);
 					}
 					break;
 				}
+				case SGModel.TYPE_NUMBER_OR_XY: return this._setNumberOrXY.apply(this, arguments);
+				case SGModel.TYPE_ARRAY: case SGModel.TYPE_ARRAY_NUMBERS: return this._setArray.apply(this, arguments);
+				case SGModel.TYPE_OBJECT: case SGModel.TYPE_OBJECT_NUMBERS: return this._setObject.apply(this, arguments);
 				case SGModel.TYPE_STRING: value = ''+value; break;
 				case SGModel.TYPE_BOOL: value = !! value; break;
-				case SGModel.TYPE_ARRAY: case SGModel.TYPE_ARRAY_NUMBERS: return this.setArray.apply(this, arguments);
-				case SGModel.TYPE_OBJECT: case SGModel.TYPE_OBJECT_NUMBERS: return this.setObject.apply(this, arguments);
 			}
 		}
 		
 		var val = this.properties[name];
 		
 		if (val === value) {
-			if (! (flags & SGModel.FLAG_FORCED_CALLBACKS)) return false;
+			if (! (flags & SGModel.FLAG_FORCE_CALLBACKS)) return false;
 		} else {
 			this.properties[name] = value;
 			this.changed = true;
@@ -351,17 +384,8 @@ export default class SGModel {
 		return true;
 	}
 
-	/**
-	* Set the property value as an array (only elements are changed). If at least one element of the array has changed, then the array is considered changed and callbacks are executed.
-	* @param {string} name
-	* @param {array} aValues
-	* @param {number} flags	Valid flags: FLAG_OFF_MAY_BE | FLAG_PREV_VALUE_CLONE | FLAG_NO_CALLBACKS | FLAG_IGNORE_OWN_SETTER | FLAG_FORCED_CALLBACKS
-	* @param {object} options
-	*					precision - Rounding precision
-	*					previous_value - Use this value as the previous value
-	* @return {boolean} If the value was changed will return true
-	*/
-	setArray(name, aValues, flags = 0, options) {
+	/** @private */
+	_setArray(name, aValues, flags = 0, options = void 0) {
 		
 		options = options || SGModel.OBJECT_EMPTY;
 		
@@ -378,7 +402,7 @@ export default class SGModel {
 			for (var i = 0; i < aValues.length; i++) {
 				var v = aValues[i];
 				if (type === SGModel.TYPE_ARRAY_NUMBERS) {
-					v = (options.precision ? Math.roundTo(v, options.precision) : +v);
+					v = (options.precision ? SGModel.roundTo(v, options.precision) : +v);
 				}
 				if (values[i] !== v) {
 					SGModel._bChanged = true;
@@ -402,42 +426,16 @@ export default class SGModel {
 		
 		if (SGModel._bChanged) this.changed = true;
 		
-		if (SGModel._bChanged || (flags & SGModel.FLAG_FORCED_CALLBACKS)) {
-			
-			if (! (flags & FLAG_NO_CALLBACKS)) {
-				var callbacks = this.onChangeCallbacks[name];
-				if (callbacks) {
-					if (flags & FLAG_OFF_MAY_BE) callbacks = SGModel.clone(callbacks);
-					var _val = void 0;
-					for (var i in callbacks) {
-						var c = callbacks[i];
-						if (c.d) {
-							_val = c.f.call(c.c ? c.c : this, c.d, values, SGModel._prevValue);
-						} else {
-							_val = c.f.call(c.c ? c.c : this, values, SGModel._prevValue);
-						}
-						if (_val !== void 0) values = _val;
-					}
-				}
-			}
-			
+		if (SGModel._bChanged || (flags & SGModel.FLAG_FORCE_CALLBACKS)) {
+			this._runCallbacks(name, values, flags);
 			return true;
 		}
 		
 		return false;
 	}
 	
-	/**
-	* Set the value of the object's properties (only properties are changed). If at least one property of an object has changed, then the object is considered changed and callbacks are executed.
-	* @param {string} name
-	* @param {object} oValues Object or array. In the case of an array, properties are specified in the order in which they were previously declared.
-	* @param {number} flags	Valid flags: FLAG_OFF_MAY_BE | FLAG_PREV_VALUE_CLONE | FLAG_NO_CALLBACKS | FLAG_IGNORE_OWN_SETTER | FLAG_FORCED_CALLBACKS
-	* @param {object} options
-	*					precision - Rounding precision
-	*					previous_value - Use this value as the previous value
-	* @return {boolean} If the value was changed will return true
-	*/
-	setObject(name, oValues, flags = 0, options) {
+	/** @private */
+	_setObject(name, oValues, flags = 0, options = void 0) {
 		
 		options = options || SGModel.OBJECT_EMPTY;
 		
@@ -455,7 +453,7 @@ export default class SGModel {
 			for (var p in values) {
 				var v = oValues[SGModel._index];
 				if (type === SGModel.TYPE_OBJECT_NUMBERS) {
-					v = (options.precision ? Math.roundTo(v, options.precision) : +v);
+					v = (options.precision ? SGModel.roundTo(v, options.precision) : +v);
 				}
 				if (values[p] !== v) {
 					SGModel._bChanged = true;
@@ -468,7 +466,7 @@ export default class SGModel {
 			for (var p in oValues) {
 				var v = oValues[p];
 				if (type === SGModel.TYPE_OBJECT_NUMBERS) {
-					v = (options.precision ? Math.roundTo(v, options.precision) : +v);
+					v = (options.precision ? SGModel.roundTo(v, options.precision) : +v);
 				}
 				if (values[p] !== v) {
 					SGModel._bChanged = true;
@@ -489,28 +487,98 @@ export default class SGModel {
 		
 		if (SGModel._bChanged) this.changed = true;
 
-		if (SGModel._bChanged || (flags & SGModel.FLAG_FORCED_CALLBACKS)) {
-		
-			if (! (flags & SGModel.FLAG_NO_CALLBACKS)) {
-				var callbacks = this.onChangeCallbacks[name];
-				if (callbacks) {
-					if (flags & SGModel.FLAG_OFF_MAY_BE) callbacks = SGModel.clone(callbacks);
-					var _val = void 0;
-					for (var i in callbacks) {
-						var c = callbacks[i];
-						if (c.d) {
-							_val = c.f.call(c.c ? c.c : this, c.d, values, SGModel._prevValue);
-						} else {
-							_val = c.f.call(c.c ? c.c : this, values, SGModel._prevValue);
-						}
-						if (_val !== void 0) values = _val;
-					}
-				}
-			}
-			
+		if (SGModel._bChanged || (flags & SGModel.FLAG_FORCE_CALLBACKS)) {
+			this._runCallbacks(name, values, flags);
 			return true;
 		}
 		return false;
+	}
+	
+	/** @private */
+	_setNumberOrXY(name, value, flags = 0, options = void 0) {
+		
+		options = options || SGModel.OBJECT_EMPTY;
+		
+		if (! (flags & SGModel.FLAG_IGNORE_OWN_SETTER) && this.constructor.ownSetters[name]) {
+			return this.constructor.ownSetters[name].call(this, value, flags, options);
+		}
+		
+		let val = this.properties[name];
+		SGModel._prevValue = options.previous_value || void 0;
+		SGModel._bChanged = false;
+		
+		if (value !== void 0) {
+			if (typeof value === "object") {
+				value.x = (options.precision ? SGModel.roundTo(value.x, options.precision) : +value.x);
+				value.y = (options.precision ? SGModel.roundTo(value.y, options.precision) : +value.y);
+				if (typeof val === "object") {
+					if (val.x !== value.x || val.y !== value.y) {
+						SGModel._bChanged = true;
+						if ((flags & SGModel.FLAG_PREV_VALUE_CLONE) && ! SGModel._prevValue) SGModel._prevValue = SGModel.clone(val);
+						val.x = value.x;
+						val.y = value.y;
+					}
+				} else {
+					if (val !== value.x || val !== value.y) {
+						SGModel._bChanged = true;
+						SGModel._prevValue = val;
+						this.properties[name] = value; // TODO clone object?
+					}
+				}
+			} else {
+				value = (options.precision ? SGModel.roundTo(value, options.precision) : +value);
+				if (typeof val === "object") {
+					if (val.x !== value || val.y !== value) {
+						SGModel._bChanged = true;
+						if ((flags & SGModel.FLAG_PREV_VALUE_CLONE) && ! SGModel._prevValue) SGModel._prevValue = SGModel.clone(val);
+						this.properties[name] = value;
+					}
+				} else {
+					if (val !== value) {
+						SGModel._bChanged = true;
+						SGModel._prevValue = val;
+						this.properties[name] = value;
+					}
+				}
+			}
+		} else {
+			if (val !== value) {
+				SGModel._bChanged = true;
+				if ((flags & SGModel.FLAG_PREV_VALUE_CLONE) && ! SGModel._prevValue) SGModel._prevValue = SGModel.clone(val);
+				this.properties[name] = void 0;
+			}
+		}
+		
+		if (SGModel._bChanged) {
+			this.changed = true;
+		} else {
+			return false;
+		}
+		
+		if (SGModel._bChanged || (flags & SGModel.FLAG_FORCE_CALLBACKS)) {
+			this._runCallbacks(name, value, flags);
+		}
+		
+		return true;
+	}
+	
+	_runCallbacks(name, values, flags = 0) {
+		if (! (flags & SGModel.FLAG_NO_CALLBACKS)) {
+			var callbacks = this.onChangeCallbacks[name];
+			if (callbacks) {
+				if (flags & SGModel.FLAG_OFF_MAY_BE) callbacks = SGModel.clone(callbacks);
+				var _val = void 0;
+				for (var i in callbacks) {
+					var c = callbacks[i];
+					if (c.d) {
+						_val = c.f.call(c.c ? c.c : this, c.d, values, SGModel._prevValue);
+					} else {
+						_val = c.f.call(c.c ? c.c : this, values, SGModel._prevValue);
+					}
+					if (_val !== void 0) values = _val;
+				}
+			}
+		}
 	}
 
 	get(name) {
@@ -588,7 +656,14 @@ export default class SGModel {
 			delete this.properties.id;
 		}
 		
-		localStorage.setItem(this.constructor.localStorageKey + (! this.constructor.singleInstance ? "_" + id : ""), JSON.stringify(this.properties));
+		// Discard properties starting with "_"
+		let dest = {};
+		for (var p in this.properties) {
+			if (p[0] === "_") continue;
+			dest[p] = this.properties[p];
+		}
+		
+		localStorage.setItem(this.constructor.localStorageKey + (! this.constructor.singleInstance ? "_" + id : ""), JSON.stringify(dest));
 		
 		if (this.constructor.singleInstance) {
 			this.properties.id = id;
@@ -601,3 +676,5 @@ export default class SGModel {
 		this.off();
 	}
 }
+
+if (typeof window !== "undefined") window.SGModel = SGModel;
