@@ -1,7 +1,7 @@
 /**
  * SGModel 1.0.2
  * A fast lightweight library (ES6) for structuring web applications using binding models and custom events. This is a faster and more simplified analogue of Backbone.js!
- * https://github.com/VediX/SGModel
+ * https://github.com/VediX/SGModel | https://model.sg2d.ru
  * (c) 2019-2021 Kalashnikov Ilya and VediX Systems
  * SGModel may be freely distributed under the MIT license
  */
