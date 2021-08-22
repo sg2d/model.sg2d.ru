@@ -1,8 +1,8 @@
 /**
  * SGModel 1.0.2
  * A fast lightweight library (ES6) for structuring web applications using binding models and custom events. This is a faster and more simplified analogue of Backbone.js!
- * https://github.com/VediX/SGModel | https://model.sg2d.ru
- * (c) 2019-2021 Kalashnikov Ilya and VediX Systems
+ * https://github.com/VediX/SGModel
+ * (c) 2019-2021 Kalashnikov Ilya
  * SGModel may be freely distributed under the MIT license
  */
 
@@ -10,223 +10,35 @@
 
 export default class SGModel {
 	
-	// Property data types
-	static typeProperties = {};
-	
-	static defaultsProperties = {}; // override
-	
-	static TYPE_ANY = void 0;
-	static TYPE_NUMBER = 1;
-	static TYPE_STRING = 2;
-	static TYPE_BOOL = 3;
-	static TYPE_OBJECT = 4;
-	static TYPE_ARRAY = 5;
-	static TYPE_ARRAY_NUMBERS = 6;
-	static TYPE_OBJECT_NUMBERS = 7;
-	static TYPE_NUMBER_OR_XY = 8;
-	
-	// The flag passed in the .on(...) call to execute the callback
-	static FLAG_IMMEDIATELY = true;
-	
-	// Private property
-	static OBJECT_EMPTY = Object.freeze({});
-	
-	static FLAG_OFF_MAY_BE = 0b00000001; // if set can be .off(), then you need to pass this flag
-	static FLAG_PREV_VALUE_CLONE = 0b00000010; // Pass the previous value (heavy clone for objects / arrays)
-	static FLAG_NO_CALLBACKS = 0b00000100; // if given, no callbacks are executed
-	static FLAG_FORCE_CALLBACKS = 0b00001000; // execute callbacks even if there is no change
-	static FLAG_IGNORE_OWN_SETTER = 0b00010000; // ignore own setters
-	
-	/**
-	 * List of properties for which to use their own setters first
-	 * Better than .on(...) for speed of work with a large number of class instances.
-	 * Also used if there is a base class and a descendant class where specific behavior is needed when changing properties.
-	 * Example:
-	 *	...
-	 *	static ownSetters = Object.assign({
-	 *		state: true
-	 *	}, OurBaseModel.ownSetters);
-	 *	...
-	 *	setState(value, flags = 0, options = void 0) {
-	 *		if (this.set("state", value, flags | SGModel.FLAG_IGNORE_OWN_SETTER, options)) {
-	 *			//some code...
-	 *		}
-	 *	}
-	 */
-	static ownSetters = {};
-	
-	/** @private */
-	static _uid = 0;
-	
-	/** @private */
-	static uid() {
-		return ++SGModel._uid;
+	// overriden
+	defaults() {
+		return SGModel.clone(this.constructor.defaultProperties);
 	}
-	
-	/** @public */
-	static defaults(dest, ...sources) {
-		for (var i = sources.length; i--; ) {
-			var source = sources[i];
-			for (var p in source) {
-				if (dest[p] === void 0) {
-					dest[p] = (typeof source[p] === "object" ? SGModel.clone(source[p]) : source[p]);
-				}
-			}
-		}
-		return dest;
-	}
-	
-	/** @public */
-	static clone(source) {
-		let dest;
-		if (Array.isArray(source)) {
-			dest = [];
-			for (var i = 0; i < source.length; i++) {
-				dest[i] = (typeof source[i] === "object" ? SGModel.clone(source[i]) : source[i]);
-			}
-		} else if (typeof source === "object") {
-			dest = {};
-			for (var p in source) {
-				dest[p] = (typeof source[p] === "object" ? SGModel.clone(source[p]) : source[p]);
-			}
-		} else {
-			dest = source;
-		}
-		return dest;
-	}
-	
-	/**
-	 * Fill the values of the object / array dest with the values from the object / array source (with recursion)
-	 * @public
-	 */
-	static initObjectByObject(dest, source) {
-		if (Array.isArray(dest)) {
-			for (var i = 0; i < dest.length; i++) {
-				if (source.hasOwnProperty(i)) {
-					if (typeof dest[i] === "object") {
-						this.initObjectByObject(dest[i], source[i]);
-					} else {
-						dest[i] = source[i];
-					}
-				}
-			}
-		} else if (typeof dest === "object") {
-			for (var p in dest) {
-				if (source.hasOwnProperty(p)) {
-					if (typeof dest[p] === "object") {
-						this.initObjectByObject(dest[p], source[p]);
-					} else {
-						dest[p] = source[p];
-					}
-				}
-			}
-		} else {
-			dest = source;
-		}
-		return dest;
-	}
-	
-	/** @public */
-	static upperFirstLetter(s) {
-		return s.charAt(0).toUpperCase() + s.slice(1);
-	}
-	
-	/** @public */
-	static roundTo(value, precision = 0) {
-		let m = 10 ** precision;
-		return Math.round(value * m) / m;
-	}
-	
-	/** @private */
-	static _instance = null;
-	
-	/** @public */
-	static singleInstance = false;
-	
-	/** @public */
-	static getInstance(bIgnoreEmpty = false) {
-		if (this._instance) {
-			return this._instance;
-		} else if (! bIgnoreEmpty) {
-			debugger;
-			throw "Error! this._instance is empty!";
-		}
-		return null;
-	}
-	
-	/**
-	 * Method get() for single instance of a class
-	 * @public
-	 */
-	static get(...args) {
-		return this._instance && this._instance.get(...args);
-	}
-	
-	/**
-	 * Method set() for single instance of a class
-	 * @public
-	 */
-	static set(...args) {
-		return this._instance && this._instance.set(...args);
-	}
-	
-	/**
-	 * Method on() for single instance of a class
-	 * @public
-	 */
-	static on(...args) {
-		return this._instance && this._instance.on(...args);
-	}
-	
-	/**
-	 * Method off() for single instance of a class
-	 * @public
-	 */
-	static off(...args) {
-		return this._instance && this._instance.off(...args);
-	}
-	
-	/**
-	 * If a non-empty string value is specified, then the data is synchronized with the local storage.
-	 * Support for storing data as one instance of a class (single instance), and several instances: localStorageKey + "_" + id
-	 */
-	static localStorageKey = ""; // override
-	
-	/** @private */
-	static _bChanged = false;
-	/** @private */
-	static _index = 0
-	/** @private */
-	static _prevValue = void 0;
-	/** @private */
-	static _xy = {x: 0, y: 0};
 	
 	/**
 	 * SGModel constructor
-	 * @param {object} props Properties
-	 * @param {object} thisProps Properties and methods passed to the "this" context of the created instance
-	 * @param {object} options Custom settings
+	 * @param {object} [props={}] Properties
+	 * @param {object} [thisProps=void 0] Properties and methods passed to the "this" context of the created instance
+	 * @param {object} [options=void 0] Custom settings
 	 */
-	constructor(props, thisProps, options = void 0) {
+	constructor(properties = {}, thisProps = void 0, options = void 0) {
 		
 		if (this.constructor.singleInstance) {
 			if (this.constructor._instance) throw "Error! this.constructor._instance not is empty!";
 			this.constructor._instance = this;
 		}
 		
-		var properties = props || {};
-		
-		var defaults = (typeof this.defaults === "function" ? this.defaults() : SGModel.clone(this.constructor.defaultProperties));
+		let defaults = this.defaults();
 		
 		// override defaults by localStorage data
 		if (this.constructor.localStorageKey) {
 			let lsData = void 0;
-			let data = localStorage.getItem(this.constructor.localStorageKey + (! this.constructor.singleInstance ? "_" + props.id : ""));
-			//try {
-				if (data) lsData = JSON.parse(data);
-			//} catch(e) {}
+			let data = localStorage.getItem(this.constructor.localStorageKey + (! this.constructor.singleInstance ? "_" + properties.id : ""));
+			if (data) lsData = JSON.parse(data);
 			if (lsData) SGModel.initObjectByObject(defaults, lsData);
 		}
+		
+		if (typeof properties !== "object") properties = {};
 		
 		for (var p in properties) {
 			var value = properties[p];
@@ -264,7 +76,7 @@ export default class SGModel {
 					break;
 				}
 				case SGModel.TYPE_STRING: properties[p] = ''+value; break;
-				case SGModel.TYPE_BOOL: properties[p] = !! value; break;
+				case SGModel.TYPE_BOOLEAN: properties[p] = SGModel.toBoolean(value); break;
 				case SGModel.TYPE_OBJECT:
 					if (Array.isArray(value)) {
 						var valueDefault = defaults[p];
@@ -298,8 +110,8 @@ export default class SGModel {
 
 		this.onChangeCallbacks = {};
 		
-		this.ownSetters = {};
-		if (! this.constructor._ownSettersInitialized) {
+		// Crutch, since in JS there is no way to execute the code in the child class at the time of extends of the parent class
+		if (! this.constructor.hasOwnProperty("_ownSettersInitialized")) {
 			this.constructor._ownSettersInitialized = true;
 			for (var p in this.constructor.ownSetters) {
 				if (this.constructor.ownSetters[p] === true) {
@@ -310,7 +122,7 @@ export default class SGModel {
 		
 		this.changed = false; // reset manually!
 		
-		this.initialize.call(this, props, thisProps, options);
+		this.initialize.call(this, properties, thisProps, options);
 	}
 	
 	// Called when an instance is created. Override in your classes.
@@ -318,22 +130,23 @@ export default class SGModel {
 	
 	/**
 	* Set property value
-	* @param {string} name
-	* @param {mixed} val
-	* @param {number} flags	- Valid flags: FLAG_OFF_MAY_BE | FLAG_PREV_VALUE_CLONE | FLAG_NO_CALLBACKS | FLAG_FORCE_CALLBACKS | FLAG_IGNORE_OWN_SETTER
-	* @param {object} [options]
+	* @param {string}	name
+	* @param {mixed}	 val
+	* @param {object}	[options=void 0]
 	* @param {number}		[options.precision] - Rounding precision
 	* @param {mixed}		[options.previous_value] - Use this value as the previous value
+	* @param {number}	[flags=0] - Valid flags: FLAG_OFF_MAY_BE | FLAG_PREV_VALUE_CLONE | FLAG_NO_CALLBACKS | FLAG_FORCE_CALLBACKS | FLAG_IGNORE_OWN_SETTER
 	* @return {boolean} If the value was changed will return true
 	*/
-	set(name, value, flags = 0, options = void 0) {
+	set(name, value, options = void 0, flags = 0) {
 		
+		if (typeof options !=="object" && options !== void 0) { debugger; throw "Error 7610932! \"options\" type is not a object or undefined! Property: " + name + ", constructor: " + this.constructor.name; }
 		if (typeof flags !=="number") { debugger; throw "Error 7892354! \"flags\" type is not a number!" }
 		
 		options = options || SGModel.OBJECT_EMPTY;
 		
 		if (! (flags & SGModel.FLAG_IGNORE_OWN_SETTER) && this.constructor.ownSetters[name]) {
-			return this.constructor.ownSetters[name].call(this, value, flags, options);
+			return this.constructor.ownSetters[name].call(this, value, options, flags);
 		}
 		
 		var type = this.constructor.typeProperties[name];
@@ -350,7 +163,7 @@ export default class SGModel {
 				case SGModel.TYPE_ARRAY: case SGModel.TYPE_ARRAY_NUMBERS: return this._setArray.apply(this, arguments);
 				case SGModel.TYPE_OBJECT: case SGModel.TYPE_OBJECT_NUMBERS: return this._setObject.apply(this, arguments);
 				case SGModel.TYPE_STRING: value = ''+value; break;
-				case SGModel.TYPE_BOOL: value = !! value; break;
+				case SGModel.TYPE_BOOLEAN: value = SGModel.toBoolean(value); break;
 			}
 		}
 		
@@ -364,33 +177,38 @@ export default class SGModel {
 		}
 		
 		if (! (flags & SGModel.FLAG_NO_CALLBACKS)) {
+			
 			SGModel._prevValue = (options.previous_value !== void 0 ? options.previous_value : ((flags & SGModel.FLAG_PREV_VALUE_CLONE) ? SGModel.clone(val) : val));
+			
 			var callbacks = this.onChangeCallbacks[name];
+			
 			if (callbacks) {
 				if (flags & SGModel.FLAG_OFF_MAY_BE) callbacks = SGModel.clone(callbacks);
 				var _val = void 0;
 				for (var i in callbacks) {
 					var c = callbacks[i];
 					if (c.d) {
-						_val = c.f.call(c.c ? c.c : this, c.d, value, SGModel._prevValue);
+						_val = c.f.call(c.c ? c.c : this, c.d, value, SGModel._prevValue, name);
 					} else {
-						_val = c.f.call(c.c ? c.c : this, value, SGModel._prevValue);
+						_val = c.f.call(c.c ? c.c : this, value, SGModel._prevValue, name);
 					}
 					if (_val !== void 0) val = _val;
 				}
 			}
+			
+			if (this.onAllCallback) this.onAllCallback();
 		}
 		
 		return true;
 	}
 
 	/** @private */
-	_setArray(name, aValues, flags = 0, options = void 0) {
+	_setArray(name, aValues, options = void 0, flags = 0) {
 		
 		options = options || SGModel.OBJECT_EMPTY;
 		
 		if ( ! (flags & SGModel.FLAG_IGNORE_OWN_SETTER) && this.constructor.ownSetters[name]) {
-			return this.constructor.ownSetters[name].call(this, aValues, flags, options);
+			return this.constructor.ownSetters[name].call(this, aValues, options, flags);
 		}
 
 		var type = this.constructor.typeProperties[name];
@@ -435,12 +253,12 @@ export default class SGModel {
 	}
 	
 	/** @private */
-	_setObject(name, oValues, flags = 0, options = void 0) {
+	_setObject(name, oValues, options = void 0, flags = 0) {
 		
 		options = options || SGModel.OBJECT_EMPTY;
 		
 		if (! (flags & SGModel.FLAG_IGNORE_OWN_SETTER) && this.constructor.ownSetters[name]) {
-			return this.constructor.ownSetters[name].call(this, oValues, flags, options);
+			return this.constructor.ownSetters[name].call(this, oValues, options, flags);
 		}
 
 		var type = this.constructor.typeProperties[name];
@@ -495,12 +313,12 @@ export default class SGModel {
 	}
 	
 	/** @private */
-	_setNumberOrXY(name, value, flags = 0, options = void 0) {
+	_setNumberOrXY(name, value, options = void 0, flags = 0) {
 		
 		options = options || SGModel.OBJECT_EMPTY;
 		
 		if (! (flags & SGModel.FLAG_IGNORE_OWN_SETTER) && this.constructor.ownSetters[name]) {
-			return this.constructor.ownSetters[name].call(this, value, flags, options);
+			return this.constructor.ownSetters[name].call(this, value, options, flags);
 		}
 		
 		let val = this.properties[name];
@@ -571,9 +389,9 @@ export default class SGModel {
 				for (var i in callbacks) {
 					var c = callbacks[i];
 					if (c.d) {
-						_val = c.f.call(c.c ? c.c : this, c.d, values, SGModel._prevValue);
+						_val = c.f.call(c.c ? c.c : this, c.d, values, SGModel._prevValue, name);
 					} else {
-						_val = c.f.call(c.c ? c.c : this, values, SGModel._prevValue);
+						_val = c.f.call(c.c ? c.c : this, values, SGModel._prevValue, name);
 					}
 					if (_val !== void 0) values = _val;
 				}
@@ -587,7 +405,7 @@ export default class SGModel {
 
 	/**
 	 * Set trigger for property change
-	 * @param {string} name
+	 * @param {string|array} name
 	 * @param {function} func
 	 * @param {object} context If not specified, the "this" of the current object is passed
 	 * @param {mixed} data	If "data" is set, then this value (data) is passed in the first arguments [] callback
@@ -595,15 +413,52 @@ export default class SGModel {
 	 *		SGModel.FLAG_IMMEDIATELY - "func" will be executed once now
 	 */
 	on(name, func, context, data, flags = 0) {
+		if (Array.isArray(name)) {
+			for (var i = 0; i < name.length; i++) {
+				this._on.call(this,
+					name[i],
+					func,
+					Array.isArray(context) ? context[i] : context,
+					Array.isArray(data) ? data[i] : data,
+					flags
+				);
+			}
+		} else {
+			this._on.apply(this, arguments);
+		}
+	}
+	
+	/** @private */
+	_on(name, func, context, data, flags = 0) {
 		var callbacks = this.onChangeCallbacks[name];
 		if (! callbacks) callbacks = this.onChangeCallbacks[name] = [];
 		callbacks.push({f: func, c: context, d: data});
 		if (flags === SGModel.FLAG_IMMEDIATELY) {
 			if (data) {
-				func.call(context ? context : this, data, this.properties[name], this.properties[name]);
+				func.call(context ? context : this, data, this.properties[name], this.properties[name], name);
 			} else {
-				func.call(context ? context : this, this.properties[name], this.properties[name]);
+				func.call(context ? context : this, this.properties[name], this.properties[name], name);
 			}
+		}
+	}
+	
+	/**
+	 * Check if there is a property in the model
+	 */
+	has(name) {
+		return this.properties.hasOwnProperty(name);
+	}
+	
+	/**
+	 * Set trigger to change any property
+	 * @param {function} func
+	 * @param {number} flags Valid flags:
+	 *		SGModel.FLAG_IMMEDIATELY - "func" will be executed once now
+	 */
+	setOnAllCallback(func, flags = 0) {
+		this.onAllCallback = func;
+		if (flags === SGModel.FLAG_IMMEDIATELY) {
+			this.onAllCallback();
 		}
 	}
 
@@ -639,7 +494,12 @@ export default class SGModel {
 		if (callbacks) {
 			if (flags & SGModel.FLAG_OFF_MAY_BE) callbacks = SGModel.clone(callbacks);
 			for (var i in callbacks) {
-				callbacks[i].f.call(callbacks[i].c ? callbacks[i].c : this, (callbacks[i].d ? callbacks[i].d : this.properties[name]));
+				var cb = callbacks[i];
+				if (cb.d) {
+					cb.f.call( cb.c ? cb.c : this, cb.d, this.properties[name], this.properties[name], name );
+				} else {
+					cb.f.call( cb.c ? cb.c : this, this.properties[name], this.properties[name], name );
+				}
 			}
 		}
 	}
@@ -656,11 +516,20 @@ export default class SGModel {
 			delete this.properties.id;
 		}
 		
-		// Discard properties starting with "_"
 		let dest = {};
-		for (var p in this.properties) {
-			if (p[0] === "_") continue;
-			dest[p] = this.properties[p];
+		
+		if (this.constructor.localStorageProperties) {
+			debugger;
+			for (var i = 0; i < this.constructor.localStorageProperties.length; i++) {
+				let name = this.constructor.localStorageProperties[i];
+				dest[name] = this.properties[name];
+			}
+		} else {
+			// Discard properties starting with "_"
+			for (var p in this.properties) {
+				if (p[0] === "_") continue;
+				dest[p] = this.properties[p];
+			}
 		}
 		
 		localStorage.setItem(this.constructor.localStorageKey + (! this.constructor.singleInstance ? "_" + id : ""), JSON.stringify(dest));
@@ -677,4 +546,244 @@ export default class SGModel {
 	}
 }
 
-if (typeof window !== "undefined") window.SGModel = SGModel;
+// Property data types
+SGModel.typeProperties = {};
+	
+SGModel.defaultsProperties = {}; // override
+
+SGModel.TYPE_ANY = void 0;
+SGModel.TYPE_NUMBER = 1;
+SGModel.TYPE_STRING = 2;
+SGModel.TYPE_BOOLEAN = 3;
+SGModel.TYPE_OBJECT = 4;
+SGModel.TYPE_ARRAY = 5;
+SGModel.TYPE_ARRAY_NUMBERS = 6;
+SGModel.TYPE_OBJECT_NUMBERS = 7;
+SGModel.TYPE_NUMBER_OR_XY = 8;
+
+// The flag passed in the .on(...) call to execute the callback
+SGModel.FLAG_IMMEDIATELY = true;
+
+/** @private */
+SGModel.OBJECT_EMPTY = Object.preventExtensions({});
+
+SGModel.FLAG_OFF_MAY_BE = 0b00000001; // if set can be .off(), then you need to pass this flag
+SGModel.FLAG_PREV_VALUE_CLONE = 0b00000010; // Pass the previous value (heavy clone for objects / arrays)
+SGModel.FLAG_NO_CALLBACKS = 0b00000100; // if given, no callbacks are executed
+SGModel.FLAG_FORCE_CALLBACKS = 0b00001000; // execute callbacks even if there is no change
+SGModel.FLAG_IGNORE_OWN_SETTER = 0b00010000; // ignore own setters
+
+SGModel.OPTIONS_PRECISION_2 = Object.preventExtensions({ precision: 2 });
+SGModel.OPTIONS_PRECISION_3 = Object.preventExtensions({ precision: 3 });
+SGModel.OPTIONS_PRECISION_4 = Object.preventExtensions({ precision: 4 });
+SGModel.OPTIONS_PRECISION_5 = Object.preventExtensions({ precision: 5 });
+
+/**
+ * List of properties for which to use their own setters first
+ * Better than .on(...) for speed of work with a large number of class instances.
+ * Also used if there is a base class and a descendant class where specific behavior is needed when changing properties.
+ * Example:
+ *	...
+ *	static ownSetters = Object.assign({
+ *		state: true
+ *	}, OurBaseModel.ownSetters);
+ *	...
+ *	setState(value, options = SGModel.OBJECT_EMPTY, flags = 0) {
+ *		if (this.set("state", value, options, flags | SGModel.FLAG_IGNORE_OWN_SETTER)) {
+ *			//some code...
+ *		}
+ *	}
+ */
+SGModel.ownSetters = {};
+
+/** @private */
+SGModel._uid = 0;
+
+/** @private */
+SGModel.uid = function() {
+	return ++SGModel._uid;
+};
+
+/** @public */
+SGModel.defaults = function(dest, ...sources) {
+	for (var i = sources.length; i--; ) {
+		var source = sources[i];
+		for (var p in source) {
+			if (dest[p] === void 0) {
+				dest[p] = (typeof source[p] === "object" ? SGModel.clone(source[p]) : source[p]);
+			}
+		}
+	}
+	return dest;
+};
+
+/**
+ * Full cloning (with nested objects).
+ * Attention! There is no check for circular references. You cannot allow nested objects to refer to each other through properties, because recursion is used!
+ * @param {object|primitive} source
+ * @return {object|primitive}
+ */
+SGModel.clone = function(source) {
+	let dest;
+	if (Array.isArray(source)) {
+		dest = [];
+		for (var i = 0; i < source.length; i++) {
+			dest[i] = (typeof source[i] === "object" ? SGModel.clone(source[i]) : source[i]);
+		}
+	} else if (typeof source === "object") {
+		dest = {};
+		for (var p in source) {
+			dest[p] = (typeof source[p] === "object" ? SGModel.clone(source[p]) : source[p]);
+		}
+	} else {
+		dest = source;
+	}
+	return dest;
+};
+
+/**
+ * Fill the values of the object / array dest with the values from the object / array source (with recursion)
+ * @public
+ */
+SGModel.initObjectByObject = function(dest, source) {
+	if (Array.isArray(dest)) {
+		for (var i = 0; i < dest.length; i++) {
+			if (source.hasOwnProperty(i)) {
+				if (typeof dest[i] === "object") {
+					this.initObjectByObject(dest[i], source[i]);
+				} else {
+					dest[i] = source[i];
+				}
+			}
+		}
+	} else if (typeof dest === "object") {
+		for (var p in dest) {
+			if (source.hasOwnProperty(p)) {
+				if (typeof dest[p] === "object") {
+					this.initObjectByObject(dest[p], source[p]);
+				} else {
+					dest[p] = source[p];
+				}
+			}
+		}
+	} else {
+		dest = source;
+	}
+	return dest;
+};
+
+/** @public */
+SGModel.upperFirstLetter = function(s) {
+	return s.charAt(0).toUpperCase() + s.slice(1);
+};
+
+/** @public */
+SGModel.roundTo = function(value, precision = 0) {
+	let m = 10 ** precision;
+	return Math.round(value * m) / m;
+};
+
+/** @public */
+SGModel.toBoolean = function(value) {
+	return (typeof value === "string" ? (value === "1" || value.toUpperCase() === "TRUE" ? true : false) : !! value);
+};
+
+/** @private */
+SGModel._instance = null;
+
+/** @public */
+SGModel.singleInstance = false;
+
+/** @public */
+SGModel.getInstance = function(bIgnoreEmpty = false) {
+	if (this._instance) {
+		return this._instance;
+	} else if (! bIgnoreEmpty) {
+		debugger;
+		throw "Error! this._instance is empty!";
+	}
+	return null;
+};
+
+/** @public */
+SGModel.save = function() {
+	if (this._instance) {
+		if (this.singleInstance) {
+			return this._instance.save();
+		} else {
+			debugger; throw "Error! The class must be with singleInstance=true!";
+		}
+	} else {
+		debugger; throw "Error! this._instance is empty!";
+	}
+	return null;
+};
+
+/**
+ * Method get() for single instance of a class
+ * @public
+ */
+SGModel.get = function(...args) {
+	return this._instance && this._instance.get(...args);
+};
+
+/**
+ * Method set() for single instance of a class
+ * @public
+ */
+SGModel.set = function(...args) {
+	return this._instance && this._instance.set(...args);
+};
+
+/**
+ * Method on() for single instance of a class
+ * @public
+ */
+SGModel.on = function(...args) {
+	return this._instance && this._instance.on(...args);
+};
+
+/**
+ * Method off() for single instance of a class
+ * @public
+ */
+SGModel.off = function(...args) {
+	return this._instance && this._instance.off(...args);
+};
+
+/**
+ * Method getProperties() for single instance of a class
+ * @public
+ */
+SGModel.getProperties = function(...args) {
+	return this._instance && this._instance.properties;
+};
+
+/**
+ * If a non-empty string value is specified, then the data is synchronized with the local storage.
+ * Support for storing data as one instance of a class (single instance), and several instances: localStorageKey + "_" + id
+ */
+SGModel.localStorageKey = ""; // override
+
+/** @private */
+SGModel._bChanged = false;
+
+/** @private */
+SGModel._index = 0
+
+/** @private */
+SGModel._prevValue = void 0;
+
+/** @private */
+//static _ownSettersInitialized = false; // override
+
+/** @private */
+SGModel._xy = {x: 0, y: 0};
+
+SGModel.version = typeof __SGMODEL_VERSION__ !== 'undefined' ? __SGMODEL_VERSION__ : '*';
+
+if (typeof exports === 'object' && typeof module === 'object') module.exports = SGModel;
+else if (typeof define === 'function' && define.amd) define("SGModel", [], ()=>SGModel);
+else if (typeof exports === 'object') exports["SGModel"] = SGModel;
+else if (typeof window === 'object' && window.document) window["SGModel"] = SGModel;
+else this["SGModel"] = SGModel;

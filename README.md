@@ -1,6 +1,8 @@
-# SGModel
+# SGModel и SGModelView
 
-Быстрая легковесная библиотека-класс для структурирования веб-приложений с помощью биндинг-моделей и пользовательских событий. Это более быстрый и упрощенный аналог Backbone.js! Библиотека хорошо адаптирована для наследования классов (ES6).
+SGModel - Быстрая легковесная библиотека-класс для структурирования веб-приложений с помощью биндинг-моделей и пользовательских событий. Это более быстрый и упрощенный аналог Backbone.js! Библиотека хорошо адаптирована для наследования классов (ES6).
+
+SGModelView - надстройка над SGModel позволяющая связать данные в JavaScript с визуальными элементами HTML-документа, используя MVVM-паттерн. Это очень упрощенный аналог KnockoutJS или VueJS.
 
 ## Оглавление
 
@@ -15,6 +17,8 @@
 [Поддержка Singleton паттерна](#%D0%BF%D0%BE%D0%B4%D0%B4%D0%B5%D1%80%D0%B6%D0%BA%D0%B0-singleton-%D0%BF%D0%B0%D1%82%D1%82%D0%B5%D1%80%D0%BD%D0%B0)
 
 [Утилиты, используемые в SGModel](#%D1%83%D1%82%D0%B8%D0%BB%D0%B8%D1%82%D1%8B-%D0%B8%D1%81%D0%BF%D0%BE%D0%BB%D1%8C%D0%B7%D1%83%D0%B5%D0%BC%D1%8B%D0%B5-%D0%B2-sgmodel)
+
+[SGModelView](#sgmodelview)
 
 ## Простой пример использования
 
@@ -167,6 +171,10 @@ class Tank extends PlayerBase {
 Если задано не пустое строковое значение, то данные синхронизируются с локальным хранилищем.
 Поддержка хранения данных как одного экземпляра класса (single instance), так и нескольких экземпляров: `localStorageKey+"_"+id`
 
+### static localStorageProperties = []
+
+Если задан перечень названий свойст, то при выполнении save() записываются только эти свойства!
+
 ## Свойства и методы экземпляра
 
 ### id
@@ -225,12 +233,24 @@ class Tank extends PlayerBase {
 
 Задать колбэк на изменение свойства
 
-* name - имя свойства
+* name - имя свойства или массив имён свойств
 * func - колбэк
-* context - если не задано, то передаётся "this" текущего объекта
-* data	- если задано, то в колбэке в первом arguments[] передаётся это значение (data)
+* context - если не задано, то передаётся "this" текущего объекта. Для массива имён можно передать массив контекстов
+* data	- если задано, то в колбэке в первом arguments[] передаётся это значение (data). Для массива имён можно передать массив данных
 * flags - допустимые флаги:
 	* `SGModel.FLAG_IMMEDIATELY` - func выполнится сразу
+
+Пример выполнении колбэка и список параметров:
+
+```js
+this.on(
+	["field1", "field2", "field3", "field4"], // один колбэк для нескольких полей
+	(newValue, oldValue, name)=>{ // name - имя поля, значение которого изменилось
+		//...
+	}
+);
+
+```
 
 ### off(name, func)
 
@@ -247,7 +267,8 @@ class Tank extends PlayerBase {
 ### save()
 
 Сохраняет данные в локальное хранилище localStorage.
-При этом свойство, начинающееся с символа "_" не записывается в хранилище, а при инициализации экземпляра значение такого свойства берётся как по умолчанию!
+Если localStorageProperties не задан, то свойства, начинающиеся с символа "_" не записывается в хранилище.
+Если localStorageProperties задан, то в хранилище записываются только те свойства, которые указаны в массиве localStorageProperties.
 
 ### destroy()
 
@@ -363,6 +384,14 @@ new Application();
 
 Проекция на метод off экземпляра
 
+### static save(...)
+
+Проекция на метод save экземпляра
+
+### static getProperties()
+
+Возвращает объект со свойствами действующего экземпляра класса
+
 
 ## Утилиты, используемые в SGModel
 
@@ -385,3 +414,84 @@ new Application();
 ### static roundTo(value, precision = 0)
 
 Округление числа до заданной точности
+
+# SGModelView
+
+SGModelView - надстройка над SGModel позволяющая связать данные в JavaScript с визуальными элементами HTML-документа, используя MVVM-паттерн. Это очень упрощенный аналог KnockoutJS или VueJS.
+
+## bindHTML(root=void 0)
+
+Связать модель данных (экземпляр класса SGModel->SGModelView) с HTML-документом (его частью, например, с формой). При изменении значений в HTML-элементах автоматически обновляются данные в экземпляре модели и наоборот.
+
+```js
+initialize()
+	...
+	this.bindHTML("#my_form");
+	...
+}
+```
+
+## Атрибуты в HTML-документе
+
+### sg-property
+
+Поддерживаются следующие HTML-элементы ввода данных (и типы):
+
+- INPUT (text, range, checkbox, radio)
+- SELECT и OPTION (select-one, select-multiple)
+- BUTTON (button)
+
+Также sg-property можно указать на любом другом теге. В этом случае значение будет выводится через innerHTML.
+
+### Атрибуты sg-type, sg-value и sg-dropdown
+
+Для реализации кастомных выпадающих списков выбора значения, реализованных, например, в Bootstrap, нужно задать атрибут sg-type="dropdown". Пример, html-кода:
+
+```html
+	<label>Формат сотрудничества:</label>
+	<button sg-property="contract" sg-type="dropdown" type="button">Трудовой договор</button>
+	<ul class="dropdown-menu dropdown-menu-pointer" aria-labelledby="contract">
+		<li sg-value="1" sg-dropdown="contract">Трудовой договор</li>
+		<li sg-value="2" sg-dropdown="contract">Самозанятый</li>
+		<li sg-value="3" sg-dropdown="contract">Фриланс + Безопасная сделка</li>
+		<li sg-value="4" sg-dropdown="contract">Договор услуг</li>
+		<li sg-value="5" sg-dropdown="contract">Договор подряда</li>
+		<li sg-value="6" sg-dropdown="contract">ИП</li>
+	</ul>
+```
+
+```js
+class MyForm extends SGModelView {
+
+	static defaultProperties = {
+		contract: 1,
+		...
+	};
+	
+	...
+	
+	initialize()
+		...
+		this.bindHTML("#my_form");
+		...
+	}
+}
+```
+
+### sg-format
+
+Для форматирования значения можно использовать атрибут sg-format в значении которого имя функции обработчика. Пример HTML-кода:
+
+```html
+<span sg-property="salary" sg-format="getNumThinsp">1&thinsp;000&thinsp;000</span>&thinsp;руб./год
+```
+
+```js
+class MyForm extends SGModelView {
+	...
+	
+	getNumThinsp(value) {
+		return (''+value.toLocaleString()).replace(/\s/, "&thinsp;");
+	}
+}
+```
