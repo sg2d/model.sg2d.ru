@@ -462,23 +462,39 @@ export default class SGModel {
 		}
 	}
 
+	/**
+	 * Remove trigger on property change
+	 * @param {string|array} name
+	 * @param {function} func
+	 */
 	off(name, func) {
 		if (name) {
-			var callbacks = this.onChangeCallbacks[name];
-			if (callbacks) {
-				if (func) {
-					for (var i = 0; i < callbacks.length; i++) {
-						if (callbacks[i].f === func) {
-							callbacks.splice(i, 1);
-							i--;
-						}
-					}
-				} else {
-					callbacks.length = 0;
+			if (Array.isArray(name)) {
+				for (var i = 0; i < name.length; i++) {
+					this._off.call(this, name[i], func);
 				}
+			} else {
+				this._on.apply(this, arguments);
 			}
 		} else {
 			for (var f in this.onChangeCallbacks) this.onChangeCallbacks[f].length = 0;
+		}
+	}
+	
+	/** @private */
+	_off(name, func) {
+		var callbacks = this.onChangeCallbacks[name];
+		if (callbacks) {
+			if (func) {
+				for (var i = 0; i < callbacks.length; i++) {
+					if (callbacks[i].f === func) {
+						callbacks.splice(i, 1);
+						i--;
+					}
+				}
+			} else {
+				callbacks.length = 0;
+			}
 		}
 	}
 	

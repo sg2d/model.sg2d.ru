@@ -3,8 +3,8 @@
   <head>
 	<meta charset="utf-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
-	<meta name="description" content="Рассчитайте стоимость услуг, указав параметры">
-	<title>Конструктор зарплаты</title>
+	<meta name="description" content="Рассчитайте ожидаемую стоимость услуг (зарплату), указав параметры">
+	<title>Демонстрационный пример для SGModel и SGModelView - Форма расчёта зарплаты/стоимости услуг</title>
 	<link href="res/bootstrap/bootstrap.min.css" rel="stylesheet">
 	<meta name="theme-color" content="#7952b3">
 
@@ -32,6 +32,8 @@
 	<div class="container">
 		<main>
 			<div class="py-4 text-center">
+				<h2>Это демонстрационный пример использования SGModelView</h2>
+				<hr/>
 				<p class="lead fs-6">Форма расчёта стоимости услуг в зависимости от условий сотрудничества и технологий используемых в проектах!</p>
 			</div>
 
@@ -80,19 +82,21 @@
 					
 						<div class="container p-0">
 							<div class="row m-0">
-								<div class="col-md-8 p-0 pt-3 pe-1 position-relative" style="font-size: 10pt">
+								<div class="col-md-6 p-0 pt-3 pe-1 position-relative" style="font-size: 10pt">
 									<input sg-property="hours_in_day" type="range" class="form-range" min="1" max="8" aria-describedby="hours_in_day_desc" value="4">
-									<div class="position-absolute top-0 translate-middle-y label-hour lhour-1">1h</div>
-									<div class="position-absolute top-0 translate-middle-y label-hour lhour-2">2h</div>
-									<div class="position-absolute top-0 translate-middle-y label-hour lhour-3">3h</div>
+									<div class="position-absolute top-0 translate-middle-y label-hour lhour-1 text-success" title="-20%">1h</div>
+									<div class="position-absolute top-0 translate-middle-y label-hour lhour-2 text-success" title="-20%">2h</div>
+									<div class="position-absolute top-0 translate-middle-y label-hour lhour-3 text-success" title="-20%">3h</div>
 									<div class="position-absolute top-0 translate-middle-y label-hour lhour-4">4h</div>
-									<div class="position-absolute top-0 translate-middle-y label-hour lhour-5">5h</div>
-									<div class="position-absolute top-0 translate-middle-y label-hour lhour-6">6h</div>
-									<div class="position-absolute top-0 translate-middle-y label-hour lhour-7">7h</div>
-									<div class="position-absolute top-0 translate-middle-y label-hour lhour-8">8h</div>
+									<div class="position-absolute top-0 translate-middle-y label-hour lhour-5 text-danger" title="+28%">5h</div>
+									<div class="position-absolute top-0 translate-middle-y label-hour lhour-6 text-danger" title="+73%">6h</div>
+									<div class="position-absolute top-0 translate-middle-y label-hour lhour-7 text-danger" title="+140%">7h</div>
+									<div class="position-absolute top-0 translate-middle-y label-hour lhour-8 text-danger" title="+240%">8h</div>
 								</div>
-								<div class="col-md-4 p-0">
-									<div class="input-group-text bg-gradient" id="hours_in_day_desc" style="justify-content: center">4 часа/день</div>
+								<div class="col-md-6 p-0">
+									<div class="input-group-text bg-gradient" style="justify-content: center">
+										<span sg-property="hours_in_day_desc">4 часа/день</span>&nbsp;<span sg-property="hours_extra_charge" class="text-danger">+25%</span>
+									</div>
 								</div>
 							</div>
 						</div>
@@ -212,6 +216,11 @@
 	</div>
 
 	<script src="res/bootstrap/bootstrap.bundle.min.js"></script>
+	
+<!-- Yandex.Metrika counter -->
+<script type="text/javascript" >(function(m,e,t,r,i,k,a){m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)}; m[i].l=1*new Date();k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)})	   (window, document, "script", "https://mc.yandex.ru/metrika/tag.js", "ym"); ym(80080672, "init", { clickmap:true, trackLinks:true, accurateTrackBounce:true });</script>
+<noscript><div><img src="https://mc.yandex.ru/watch/80080672" style="position:absolute; left:-9999px;" alt="" /></div></noscript>
+<!-- /Yandex.Metrika counter -->
 
   </body>
 </html>
