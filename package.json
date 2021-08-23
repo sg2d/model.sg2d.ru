@@ -2,7 +2,7 @@
 	"name": "SGModel",
 	"version": "1.0.3",
 	"description": "A fast lightweight library for structuring web applications using binding models and custom events",
-	"main": "build/sg-model-view.js",
+	"main": "sg-model.js",
 	"repository": {
 		"type": "git",
 		"url": "https://github.com/VediX/model.sg2d.github.io.git"
@@ -20,7 +20,7 @@
 		"webpack-cli": "^4.7.2"
 	},
 	"scripts": {
-		"build": "webpack --config webpack.config.sg-model.js --mode=production & webpack --config webpack.config.sg-model.js --mode=production --env MINIMIZE=true & webpack --config webpack.config.sg-model-view.js --mode=production & webpack --config webpack.config.sg-model-view.js --mode=production --env MINIMIZE=true"
+		"build": "webpack --config webpack.config.sg-model.js --mode=production --env MINIMIZE=true & webpack --config webpack.config.sg-model-view.js --mode=production --env MINIMIZE=true"
 	},
 	"dependencies": {}
 }

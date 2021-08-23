@@ -4,9 +4,9 @@ SGModel - Быстрая легковесная библиотека-класс 
 
 SGModelView - надстройка над SGModel позволяющая связать данные в JavaScript с визуальными элементами HTML-документа, используя MVVM-паттерн. Это очень упрощенный аналог KnockoutJS или VueJS.
 
-## Оглавление
+Пример использования: [Перейти на страницу примера](/example/)
 
-[Простой пример использования](#%D0%BF%D1%80%D0%BE%D1%81%D1%82%D0%BE%D0%B9-%D0%BF%D1%80%D0%B8%D0%BC%D0%B5%D1%80-%D0%B8%D1%81%D0%BF%D0%BE%D0%BB%D1%8C%D0%B7%D0%BE%D0%B2%D0%B0%D0%BD%D0%B8%D1%8F)
+## Оглавление
 
 [Основные статические свойства SGModel](#%D0%BE%D1%81%D0%BD%D0%BE%D0%B2%D0%BD%D1%8B%D0%B5-%D1%81%D1%82%D0%B0%D1%82%D0%B8%D1%87%D0%B5%D1%81%D0%BA%D0%B8%D0%B5-%D1%81%D0%B2%D0%BE%D0%B9%D1%81%D1%82%D0%B2%D0%B0-sgmodel)
 
@@ -19,72 +19,6 @@ SGModelView - надстройка над SGModel позволяющая свя�
 [Утилиты, используемые в SGModel](#%D1%83%D1%82%D0%B8%D0%BB%D0%B8%D1%82%D1%8B-%D0%B8%D1%81%D0%BF%D0%BE%D0%BB%D1%8C%D0%B7%D1%83%D0%B5%D0%BC%D1%8B%D0%B5-%D0%B2-sgmodel)
 
 [SGModelView](#sgmodelview)
-
-## Простой пример использования
-
-### Файл ./index.js
-
-```js
-"use strict";
-
-import Tile from './tile.js';
-
-let tile1 = new Tile({ position: {x: 10, y: 20}, angle: 180 });
-
-tile1.on("position", (position)=>{
-	if (position.x < 0) position.x = 0;
-	if (position.y < 0) position.y = 0;
-	if (position.x > 100) position.x = 100;
-	if (position.y > 100) position.y = 100;
-});
-
-tile1.set("angle", 365);
-
-console.log("angle=" + tile1.properties.angle); // "angle=5"
-
-tile1.set("position", {x: 10, y: 110});
-
-console.log("position=(" + tile1.properties.position.x + "," + tile1.properties.position.y + ")"); // "position=(10,100)"
-
-```
-
-### Файл ./tile.js
-
-```js
-"use strict";
-
-import SGModel from './libs/sg-model.js';
-
-export default class Tile extends SGModel {
-
-	// Описываем типы данных свойств (не обязательно)
-	static typeProperties = { // overriden with Object.assign(...)
-		position: SGModel.TYPE_OBJECT_NUMBERS,
-		angle: SGModel.TYPE_NUMBER
-	};
-	
-	defaults() {
-		return {
-			position: {x: 0, y: 0},
-			angle: 0
-		};
-	}
-	
-	initialize(properties, thisProps, options) {
-	
-		this.on("angle", (angle, angle_prev)=>{
-			if (angle < 0) angle = angle + 360;
-			if (angle > 360) angle = angle - 360;
-			return angle;
-		});
-	}
-	
-	destroy() {
-		//...
-		super.destroy();
-	}
-}
-```
 
 ## Основные статические свойства SGModel
 

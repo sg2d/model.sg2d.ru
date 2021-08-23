@@ -1,0 +1,217 @@
+<!doctype html>
+<html lang="en">
+  <head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta name="description" content="Рассчитайте стоимость услуг, указав параметры">
+	<title>Конструктор зарплаты</title>
+	<link href="res/bootstrap/bootstrap.min.css" rel="stylesheet">
+	<meta name="theme-color" content="#7952b3">
+
+<style>
+	.bd-placeholder-img {
+		font-size: 1.125rem;
+		text-anchor: middle;
+		-webkit-user-select: none;
+		-moz-user-select: none;
+		user-select: none;
+	}
+	@media (min-width: 768px) {
+		.bd-placeholder-img-lg {
+			font-size: 3.5rem;
+		}
+	}
+</style>
+
+	<link href="salary.css" rel="stylesheet">
+	<script type="module" src="salary.js"></script>
+  </head>
+
+  <body class="bg-light">
+    
+	<div class="container">
+		<main>
+			<div class="py-4 text-center">
+				<p class="lead fs-6">Форма расчёта стоимости услуг в зависимости от условий сотрудничества и технологий используемых в проектах!</p>
+			</div>
+
+			<div class="row">
+				<div class="col"></div>
+				<div class="col-sm-6">
+					
+					<form class="d-grid gap-2">
+						<div class="btn-group">
+							<button sg-property="contract" sg-type="dropdown" class="btn btn-primary dropdown-toggle btn-warning bg-gradient" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+								Трудовой договор, в т.ч. по совм.</button>
+							<ul class="dropdown-menu dropdown-menu-pointer" aria-labelledby="contract">
+								<li class="dropdown-item" sg-value="1" sg-dropdown="contract">Трудовой договор, в т.ч. по совм.</li>
+								<li class="dropdown-item" sg-value="2" sg-dropdown="contract">Самозанятый <span class="text-danger">(+36%)</span></li>
+								<li class="dropdown-item" sg-value="3" sg-dropdown="contract">Фриланс + Безопасная сделка <span class="text-danger">(+50%)</span></li>
+								<li class="dropdown-item" sg-value="4" sg-dropdown="contract">Договор услуг <span class="text-danger">(+75%)</span></li>
+								<li class="dropdown-item" sg-value="5" sg-dropdown="contract">Договор подряда <span class="text-danger">(+100%)</span></li>
+								<li class="dropdown-item" sg-value="6" sg-dropdown="contract">ИП <span class="text-danger">(+125%)</span></li>
+							</ul>
+						</div>
+						
+						<div class="btn-group">
+							<button sg-property="level" sg-type="dropdown" class="btn btn-secondary dropdown-toggle btn-success bg-gradient" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+								Уровень навыков: Middle <span class="text-success">(-10%)</span></button>
+							<ul class="dropdown-menu dropdown-menu-pointer" aria-labelledby="level">
+								<li class="dropdown-item" sg-value="1" sg-dropdown="level">Уровень навыков: Trainee <span class="text-success">(-50%)</span></li>
+								<li class="dropdown-item" sg-value="2" sg-dropdown="level">Уровень навыков: Junior <span class="text-success">(-25%)</span></li>
+								<li class="dropdown-item" sg-value="3" sg-dropdown="level">Уровень навыков: Middle <span class="text-success">(-10%)</span></li>
+								<li class="dropdown-item" sg-value="4" sg-dropdown="level">Уровень навыков: Senior</li>
+								<li class="dropdown-item" sg-value="5" sg-dropdown="level">Уровень навыков: Team Lead <span class="text-danger">(+25%)</span></li>
+								<li class="dropdown-item" sg-value="6" sg-dropdown="level">Уровень навыков: Architect <span class="text-danger">(+50%)</span></li>
+							</ul>
+						</div>
+					
+						<div class="btn-group">
+							<button sg-property="days_in_week" sg-type="dropdown" class="btn btn-primary dropdown-toggle btn-info bg-gradient" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+								Занятость: 5 дней в неделю</button>
+							<ul class="dropdown-menu dropdown-menu-pointer" aria-labelledby="days_in_week">
+								<li class="dropdown-item" sg-value="1" sg-dropdown="days_in_week">Занятость: 1 день в неделю <span class="text-success">(-50%)</span></li>
+								<li class="dropdown-item" sg-value="2" sg-dropdown="days_in_week">Занятость: 2 дня в неделю <span class="text-success">(-40%)</span></li>
+								<li class="dropdown-item" sg-value="3" sg-dropdown="days_in_week">Занятость: 3 дня в неделю <span class="text-success">(-30%)</span></li>
+								<li class="dropdown-item" sg-value="4" sg-dropdown="days_in_week">Занятость: 4 дня в неделю <span class="text-success">(-20%)</span></li>
+								<li class="dropdown-item" sg-value="5" sg-dropdown="days_in_week">Занятость: 5 дней в неделю</li>
+							</ul>
+						</div>
+					
+						<div class="container p-0">
+							<div class="row m-0">
+								<div class="col-md-8 p-0 pt-3 pe-1 position-relative" style="font-size: 10pt">
+									<input sg-property="hours_in_day" type="range" class="form-range" min="1" max="8" aria-describedby="hours_in_day_desc" value="4">
+									<div class="position-absolute top-0 translate-middle-y label-hour lhour-1">1h</div>
+									<div class="position-absolute top-0 translate-middle-y label-hour lhour-2">2h</div>
+									<div class="position-absolute top-0 translate-middle-y label-hour lhour-3">3h</div>
+									<div class="position-absolute top-0 translate-middle-y label-hour lhour-4">4h</div>
+									<div class="position-absolute top-0 translate-middle-y label-hour lhour-5">5h</div>
+									<div class="position-absolute top-0 translate-middle-y label-hour lhour-6">6h</div>
+									<div class="position-absolute top-0 translate-middle-y label-hour lhour-7">7h</div>
+									<div class="position-absolute top-0 translate-middle-y label-hour lhour-8">8h</div>
+								</div>
+								<div class="col-md-4 p-0">
+									<div class="input-group-text bg-gradient" id="hours_in_day_desc" style="justify-content: center">4 часа/день</div>
+								</div>
+							</div>
+						</div>
+						
+						<div class="form-check form-switch">
+							<input class="form-check-input" id="relocation" type="checkbox" sg-property="relocation">
+							<label class="form-check-label text-danger" for="relocation" id="relocation_label" title="При релокации в мегаполис минимальная месячная зарплата составляет %relocation_month_min% руб.">Релокация в мегаполис<sup>1</sup></label>
+						</div>
+						
+						<fieldset class="row mb-2 bg-white p-2 ms-1 me-1" style="border-radius: 10px;">
+							<legend class="col-form-label col-sm-1 pt-0">Код:</legend>
+							<div class="col-sm-11 ps-3">
+								<div class="form-check ps-5 c-pointer selected" title="(нет уже написанного кода или его количество ничтожно мало с планируемым)">
+									<input class="form-check-input" type="radio" name="code" sg-property="code_startup" id="cb_code_startup" checked>
+									<label class="form-check-label" for="cb_code_startup">Код пишется с нуля или его очень мало</label>
+								</div>
+
+								<div class="form-check ps-5  c-pointer" title="(нет уже написанного кода или его количество ничтожно мало с планируемым)">
+									<input class="form-check-input" type="radio" name="code" sg-property="code_supported" id="cb_code_supported">
+									<label class="form-check-label" for="cb_code_supported">Требуется понять существующий код, который поддерживается текущим штатом разработчиков <span class="text-danger">(+25%)</span></label>
+								</div>
+
+								<div class="form-check ps-5 c-pointer" title="(нет уже написанного кода или его количество ничтожно мало с планируемым)">
+									<input class="form-check-input" type="radio" name="code" sg-property="code_legacy" id="cb_code_legacy">
+									<label class="form-check-label" for="cb_code_legacy">Требуется разобраться с legacy-кодом, который никто не поддерживает <span class="text-danger">(+100%)</span></label>
+								</div>
+							</div>
+						</fieldset>
+					
+						<div class="form-check form-switch">
+							<input class="form-check-input" id="es5_nodejs" type="checkbox" sg-property="es5_nodejs">
+							<label class="form-check-label" for="es5_nodejs">Разработка на ES5+ и/или NodeJS <span class="text-success">(-5%)</span></label>
+						</div>
+						
+						<div class="form-check form-switch">
+							<input class="form-check-input" id="php" type="checkbox" sg-property="php">
+							<label class="form-check-label" for="php">Разработка на PHP <span class="text-danger">(+10%)</span></label>
+						</div>
+						
+						<div class="form-check form-switch">
+							<input class="form-check-input" id="vue" type="checkbox" sg-property="vue">
+							<label class="form-check-label" for="vue">Используем Vue 3 (vue-next) <span class="text-success">(-5%)</span></label>
+						</div>
+						
+						<div class="form-check form-switch">
+							<input class="form-check-input" id="react" type="checkbox" sg-property="react">
+							<label class="form-check-label" for="react">Используем React <span class="text-danger">(+5%)</span></label>
+						</div>
+						
+						<div class="form-check form-switch">
+							<input class="form-check-input" id="pixijs" type="checkbox" sg-property="pixijs">
+							<label class="form-check-label" for="pixijs">Разработка приложений на PixiJS <span class="text-success">(-10%)</span></label>
+						</div>
+						
+						<div class="form-check form-switch">
+							<input class="form-check-input" id="super_interesting" type="checkbox" sg-property="super_interesting">
+							<label class="form-check-label" for="super_interesting">Супер интересный проект, в т.ч. на <a href="https://sg2d.ru" target="_blank" class="link-success">SG2D</a> <span class="text-success">(-25%)</span></label>
+						</div>
+						
+					</form>
+
+					<hr class="my-3"/>
+					
+					<p class="text-center fw-bold lh-1">Итого: <span sg-property="salary_month" sg-format="getNumThinsp">56&thinsp;300</span>&thinsp;руб.<sup>2</sup> <span class="text-nowrap">(<span sg-property="salary_hour" sg-format="getNumThinsp">700</span>&thinsp;руб./час)<sup>3</sup></span></p>
+					<p class="text-center fw-bold lh-1">
+						<span sg-property="hours">80</span>&thinsp;<span sg-property="hours_meas">часов</span>/месяц,
+						<span sg-property="salary_year" sg-format="getNumThinsp">1&thinsp;000&thinsp;000</span>&thinsp;руб./год
+					</p>
+					
+					<hr class="my-3"/>
+					
+					<button id="save_link" class="w-100 btn btn-primary btn-lg bg-gradient" data-bs-toggle="modal" data-bs-target="#modalLink">Поделиться</button>
+					
+					<hr class="my-3"/>
+					
+					<p class="text-danger" style="font-size: 0.8rem;"><sup>1</sup> &mdash; При релокации в мегаполис минимальная месячная зарплата составляет <span sg-property="relocation_month_min" sg-format="getNumThinsp">500&thinsp;000</span>&thinsp;руб.</p>
+					<p class="text-dark" style="font-size: 0.8rem;"><sup>2</sup> &mdash; Уровень зарплаты рассчитывается чистыми (на руки)!</p>
+					<p class="text-secondary" style="font-size: 0.8rem;"><sup>3</sup> &mdash; минимальная почасовая ставка <span sg-property="rate_hour_min" sg-format="getNumThinsp">500</span>&thinsp;руб.</p>
+				</div>
+				<div class="col"></div>
+			</div>
+		</main>
+
+		<footer class="my-1 pt-1 text-muted text-center text-small">
+			<p class="mb-1">&copy; 2021 Kalashnikov Ilya</p>
+		</footer>
+	</div>
+	  
+	<!-- Modal -->
+	<div class="modal fade" id="modalLink" tabindex="-1" aria-labelledby="modalLinkLabel" aria-hidden="true">
+		<div class="modal-dialog modal-dialog-centered">
+			<div class="modal-content">
+				<div class="modal-header">
+					<h5 class="modal-title" id="modalLinkLabel">Поделиться результатом расчёта</h5>
+					<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+				</div>
+				<div class="modal-body">
+					<div class="container">
+						<div class="row">
+							<div class="col pb-1">Ссылка с выбранными параметрами:</div>
+						</div>
+						<div class="row">
+							<div class="col-11 pe-0"><input class="form-control selectable" type="text" id="link_link" style="width: 100%; font-size: 0.9rem;"/></div>
+							<div class="col-1 ps-0">
+								<a id="link_copy" class="input-group-text" href="#" title="Copy to clipboard" style="padding: 0.58rem; width: 2.0rem;">
+									<img src="res/imgs/clippy.svg" style="width: 13px" alt="Copy to clipboard"/>
+								</a>
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class="modal-footer">
+					<button type="button" class="btn btn-primary" data-bs-dismiss="modal">Закрыть</button>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<script src="res/bootstrap/bootstrap.bundle.min.js"></script>
+
+  </body>
+</html>
