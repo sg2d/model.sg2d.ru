@@ -20,7 +20,7 @@
 
 [Утилиты, используемые в SGModel](#%D1%83%D1%82%D0%B8%D0%BB%D0%B8%D1%82%D1%8B-%D0%B8%D1%81%D0%BF%D0%BE%D0%BB%D1%8C%D0%B7%D1%83%D0%B5%D0%BC%D1%8B%D0%B5-%D0%B2-sgmodel)
 
-[SGModelView](#sgmodelview)
+[MVVM-паттерн в SGModelView](#mvvm-%D0%BF%D0%B0%D1%82%D1%82%D0%B5%D1%80%D0%BD-%D0%B2-sgmodelview)
 
 ## Основные статические свойства SGModel
 
@@ -206,8 +206,8 @@ this.on(
 ### save()
 
 Сохраняет данные в локальное хранилище localStorage.
-Если localStorageProperties не задан, то свойства, начинающиеся с символа "_" не записывается в хранилище.
-Если localStorageProperties задан, то в хранилище записываются только те свойства, которые указаны в массиве localStorageProperties.
+Если `localStorageProperties` не задан, то свойства, начинающиеся с символа "_" не записывается в хранилище.
+Если `localStorageProperties` задан, то в хранилище записываются только те свойства, которые указаны в массиве `localStorageProperties`.
 
 ### destroy()
 
@@ -215,7 +215,7 @@ this.on(
 
 ## Собственные сеттеры
 
-Предпочтительнее .on() по скорости работы при большом количестве экземпляров класса.
+Предпочтительнее `.on()` по скорости работы при большом количестве экземпляров класса.
 Также используются, если есть базовый класс и класс потомок, где нужно специфическое поведение при изменении свойств.
 
 ### static ownSetters = {...}
@@ -305,7 +305,7 @@ new Application();
 
 ### static getInstance(bIgnoreEmpty=false)
 
-Получить указатель на одиночный экземляр класса. Если bIgnoreEmpty = true, то при пустом экземпляре Singleton ошибка игнорируется и возвращается null.
+Получить указатель на одиночный экземляр класса. Если `bIgnoreEmpty` равен true, то при пустом экземпляре Singleton ошибка игнорируется и возвращается null.
 
 ### static get(...)
 
@@ -354,13 +354,13 @@ new Application();
 
 Округление числа до заданной точности
 
-# SGModelView
+# MVVM-паттерн в SGModelView
 
-SGModelView - надстройка над SGModel позволяющая связать данные в JavaScript с визуальными элементами HTML-документа, используя MVVM-паттерн. Это очень упрощенный аналог KnockoutJS или VueJS.
+`SGModelView` - надстройка над `SGModel` позволяющая связать данные в JavaScript с визуальными элементами HTML-документа, используя MVVM-паттерн. Это очень упрощенный аналог KnockoutJS или VueJS.
 
 ## bindHTML(root=void 0)
 
-Связать модель данных (экземпляр класса SGModel->SGModelView) с HTML-документом (его частью, например, с формой). При изменении значений в HTML-элементах автоматически обновляются данные в экземпляре модели и наоборот.
+Связать модель данных (экземпляр класса `SGModel->SGModelView`) с HTML-документом (его частью, например, с формой). При изменении значений в HTML-элементах автоматически обновляются данные в экземпляре модели и наоборот.
 
 ```js
 initialize()
@@ -376,15 +376,15 @@ initialize()
 
 Поддерживаются следующие HTML-элементы ввода данных (и типы):
 
-- INPUT (text, range, checkbox, radio)
-- SELECT и OPTION (select-one, select-multiple)
-- BUTTON (button)
+- `INPUT` (text, range, checkbox, radio)
+- `SELECT` и `OPTION` (select-one, select-multiple)
+- `BUTTON` (button)
 
-Также sg-property можно указать на любом другом теге. В этом случае значение будет выводится через innerHTML.
+Также `sg-property` можно указать на любом другом теге. В этом случае значение будет выводится через innerHTML.
 
-### Атрибуты sg-type, sg-value и sg-dropdown
+### sg-type, sg-value и sg-dropdown
 
-Для реализации кастомных выпадающих списков выбора значения, реализованных, например, в Bootstrap, нужно задать атрибут sg-type="dropdown". Пример, html-кода:
+Для реализации кастомных выпадающих списков выбора значения, реализованных, например, в Bootstrap, нужно задать атрибут `sg-type="dropdown"`. Пример, html-кода:
 
 ```html
 	<label>Формат сотрудничества:</label>
@@ -417,9 +417,21 @@ class MyForm extends SGModelView {
 }
 ```
 
+### sg-css
+
+Для динамического формирования списка css-классов элемента можно прописать inline-условие прямо в атрибуте `sg-css` тега. Пример HTML-кода:
+
+```
+<div>
+	<span sg-property="hours" sg-css="hours > 4 ? 'text-danger' : 'text-success'" class="some-base-class1 some-base-class2">4</span>ч.
+</div>
+```
+
+При этом *some-base-class1* и *some-base-class2* не будут затронуты при вычислении списка css-классов!
+
 ### sg-format
 
-Для форматирования значения можно использовать атрибут sg-format в значении которого имя функции обработчика. Пример HTML-кода:
+Для форматирования значения можно использовать атрибут `sg-format` в значении которого имя функции обработчика. Пример HTML-кода:
 
 ```html
 <span sg-property="salary" sg-format="getNumThinsp">1&thinsp;000&thinsp;000</span>&thinsp;руб./год

@@ -1,6 +1,6 @@
 "use strict";
 
-import SGModelView from "./res/sg-model/sg-model-view.js";
+import SGModelView from "./../src/sg-model-view.js";
 
 class Salary extends SGModelView {
 	
@@ -27,7 +27,7 @@ class Salary extends SGModelView {
 		hours: 0,
 		hours_meas: "",
 		hours_in_day_desc: "",
-		hours_extra_charge: "",
+		hours_extra_charge: 0,
 		salary_hour: 0,
 		salary_year: 0
 	};
@@ -46,7 +46,9 @@ class Salary extends SGModelView {
 		react: SGModel.TYPE_BOOLEAN,
 		php: SGModel.TYPE_BOOLEAN,
 		pixijs: SGModel.TYPE_BOOLEAN,
-		super_interesting: SGModel.TYPE_BOOLEAN
+		super_interesting: SGModel.TYPE_BOOLEAN,
+		
+		hours_extra_charge: SGModel.TYPE_NUMBER
 	};
 	
 	static hashProperties = ["contract", "level", "days_in_week", "hours_in_day", "relocation", "code_startup", "code_supported", "code_legacy", "es5_nodejs", "vue", "react", "php", "pixijs", "super_interesting"];
@@ -94,21 +96,7 @@ class Salary extends SGModelView {
 		
 		this.on("hours_in_day", (hours)=>{
 			this.set("hours_in_day_desc", (hours == 8 ? "Фуллтайм" : hours + " " + this.getHoursMeas(hours)+"/день"));
-			let extra_charge = Salary.HOURS_EXTRA_CHARGE[hours - 1];
-			let classList = document.querySelector("[sg-property=hours_extra_charge]").classList;
-			if (extra_charge < 0) {
-				classList.add("text-success");
-				classList.remove("text-danger");
-				this.set("hours_extra_charge", "(" + extra_charge + "%)");
-			} else if (extra_charge > 0) {
-				classList.remove("text-success");
-				classList.add("text-danger");
-				this.set("hours_extra_charge", "(+" + extra_charge + "%)");
-			} else {
-				classList.remove("text-danger");
-				classList.remove("text-success");
-				this.set("hours_extra_charge", "");
-			}
+			this.set("hours_extra_charge", Salary.HOURS_EXTRA_CHARGE[hours - 1]);
 		}, void 0, void 0, SGModel.FLAG_IMMEDIATELY);
 		
 		this.on("hours", (hours)=>{
@@ -184,6 +172,16 @@ class Salary extends SGModelView {
 	
 	getNumThinsp(value) {
 		return (''+value.toLocaleString()).replace(/\s/, "&thinsp;");
+	}
+	
+	formatHoursExtraCharge(hours_extra_charge) {
+		if (hours_extra_charge < 0) {
+			return "(" + hours_extra_charge + "%)";
+		} else if (hours_extra_charge > 0) {
+			return "(+" + hours_extra_charge + "%)";
+		} else {
+			return "";
+		}
 	}
 	
 	/*sendOffer() {

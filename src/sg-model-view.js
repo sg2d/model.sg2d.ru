@@ -1,5 +1,5 @@
 /**
- * SGModelView 1.0.0
+ * SGModelView 1.0.3
  * Add-on over SGModel that allows you to bind data in JavaScript with visual elements of HTML document using MVVM pattern.
  * https://github.com/VediX/SGModel
  * (c) 2021 Kalashnikov Ilya
@@ -54,13 +54,22 @@ export default class SGModelView extends SGModel {
 			var sgProperty = element.getAttribute("sg-property");
 			var sgType = element.getAttribute("sg-type");
 			var sgFormat = element.getAttribute("sg-format");
-			var sgAttributes = element.getAttribute("sg-attributes"); // TODO
+			//var sgAttributes = element.getAttribute("sg-attributes"); // TODO
+			var sgCSS = element.getAttribute("sg-css");
 			
 			if (this.has(sgProperty)) {
 				this._elementsHTML[sgProperty] = element;
 				element._sg_property = sgProperty;
 				element._sg_type = sgType;
-				element._sg_format = this[sgFormat] || (v=>v);
+				if (sgCSS) {
+					for (var p in this.properties) {
+						var re = new RegExp("^"+p+"$|^"+p+"\\W|\\W"+p+"$|\\W"+p+"\\W", "g");
+						sgCSS = sgCSS.replace(re, "this.properties."+p);
+					}
+					element._sg_css = (new Function("return " + sgCSS)).bind(this);
+					element._sg_css_static_classes = [...element.classList];
+				}
+				element._sg_format = this[sgFormat];
 				switch (sgType) {
 					case "dropdown":
 						var eItems = document.querySelectorAll("[sg-dropdown=" + sgProperty + "]");
@@ -131,6 +140,21 @@ export default class SGModelView extends SGModel {
 				} else {
 					element.innerHTML = (element._sg_format ? element._sg_format(value) : value);
 				}
+			}
+		}
+		
+		if (element._sg_css) {
+			let result = element._sg_css();
+			for (var i = 0; i < element.classList.length; i++) {
+				if (element._sg_css_static_classes.indexOf(element.classList[i]) === -1) {
+					element.classList.remove(element.classList[i]);
+				}
+			}
+			if (! Array.isArray(result)) {
+				result = result.split(" ");
+			}
+			for (var i = 0; i < result.length; i++) {
+				element.classList.add(result[i]);
 			}
 		}
 	}
