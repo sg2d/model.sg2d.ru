@@ -60,3 +60,18 @@ sup {
 .c-pointer *, .form-check-input {
 	cursor: pointer;
 }
+
+input[type=range] {
+	pointer-events: none;
+}
+input[type=range]::-webkit-slider-thumb {
+  pointer-events: auto;
+}
+
+input[type=range]::-moz-range-thumb {
+  pointer-events: auto;
+}
+
+input[type=range]::-ms-thumb {
+  pointer-events: auto;
+}

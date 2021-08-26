@@ -1,7 +1,5 @@
-------
 # SGModel & SGModelView
 
-------
 *Ссылка на GitHub-страницу: [https://github.com/VediX/model.sg2d.github.io](https://github.com/VediX/model.sg2d.github.io)*
 
 **SGModel** - Быстрая легковесная библиотека-класс для структурирования веб-приложений с помощью биндинг-моделей. Это более быстрый и упрощенный аналог Backbone.js! Библиотека хорошо адаптирована для наследования классов (ES6).
@@ -10,27 +8,61 @@
 
 *Пример использования: [Перейти на страницу примера](/example/)*
 
-#### Исходники:
+#### Исходники (версия 1.0.3):
 
-*  [sg-model.js (25KB)](https://raw.githubusercontent.com/VediX/model.sg2d.github.io/main/src/sg-model.js) и [sg-model-view.js (7KB)](https://raw.githubusercontent.com/VediX/model.sg2d.github.io/main/src/sg-model-view.js) - подключать можно через es6 import
+* [sg-model.js (25KB)](https://raw.githubusercontent.com/VediX/model.sg2d.github.io/main/src/sg-model.js) и [sg-model-view.js (7KB)](https://raw.githubusercontent.com/VediX/model.sg2d.github.io/main/src/sg-model-view.js) - подключать можно через es6 import
 
-* [sg-model.min.js (13KB)](https://raw.githubusercontent.com/VediX/model.sg2d.github.io/main/build/sg-model.min.js) - подключается как обычный Javsacript
+* [sg-model.min.js (13KB)](https://raw.githubusercontent.com/VediX/model.sg2d.github.io/main/build/sg-model.min.js) - подключается как обычный Javascript
 
 * [sg-model-view.min.js (17KB)](https://raw.githubusercontent.com/VediX/model.sg2d.github.io/main/build/sg-model-view.min.js) (включает в себя sg-model.js)
 
-## Оглавление
+## Описание API
 
-[Основные статические свойства SGModel](#основные-статические-свойства-sgmodel)
+* [Основные статические свойства SGModel](#основные-статические-свойства-sgmodel)
+	* [static typeProperties = {…}](#static-typeproperties--)
+	* [static defaultsProperties = {…}](#static-defaultsproperties--)
+	* [static localStorageKey = ""](#static-localstoragekey--)
+	* [static localStorageProperties = []](#static-localstorageproperties--)
+* [Свойства и методы экземпляра SGModel](#свойства-и-методы-экземпляра-sgmodel)
+	* [id](#id)
+	* [changed = false](#changed--false)
+	* [destroyed = false](#destroyed--false)
+	* [constructor(props, thisProps, options)](#constructorprops-thisprops-options)
+	* [defaults()](#defaults)
+	* [initialize(properties, thisProps, options)](#initializeproperties-thisprops-options---override)
+	* [set(name, value, flags = 0, options = void 0)](#setname-value-flags--0-options--void-0)
+	* [get(name)](#getname)
+	* [on(name, func, context, data, flags = 0)](#onname-func-context-data-flags--0)
+	* [off(name, func)](#offname-func)
+	* [trigger(name, flags = 0)](#triggername-flags--0)
+	* [save()](#save)
+	* [destroy()](#destroy)
+* [Собственные сеттеры в наследуемых классах](#собственные-сеттеры-в-наследуемых-классах)
+	* [static ownSetters = {…}](#static-ownsetters--)
+* [Поддержка Singleton паттерна в наследуемых классах](#поддержка-singleton-паттерна-в-наследуемых-классах)
+	* [static singleInstance = false](#static-singleinstance--false)
+	* [static getInstance(bIgnoreEmpty=false)](#static-getinstancebignoreemptyfalse)
+	* [Статические методы get, set, on, off, save](#статические-методы-get-set-on-off-save)
+	* [static getProperties()](#static-getproperties)
+* [Утилиты используемые в SGModel](#утилиты-используемые-в-sgmodel)
+	* [static defaults(dest, …sources)](#static-defaultsdest-sources)
+	* [static clone(source)](#static-clonesource)
+	* [static initObjectByObject(dest, source)](#static-initobjectbyobjectdest-source)
+	* [static upperFirstLetter(s)](#static-upperfirstletters)
+	* [static roundTo(value, precision = 0)](#static-roundtovalue-precision--0)
+* [MVVM-паттерн в SGModelView](#mvvm-паттерн-в-sgmodelview)
+	* [Методы экземпляра SGModelView](#методы-экземпляра-sgmodelview)
+		* [bindHTML(root=void 0)](#bindhtmlrootvoid-0)
+	* [Атрибуты в HTML-документе](#атрибуты-в-html-документе)
+		* [sg-property](#sg-property)
+		* [sg-type, sg-value и sg-dropdown](#sg-type-sg-value-и-sg-dropdown)
+		* [sg-css](#sg-css)
+		* [sg-format](#sg-format)
+* [Лицензия](#лицензия)
 
-[Свойства и методы экземпляра](#свойства-и-методы-экземпляра)
+# SGModel
 
-[Собственные сеттеры](#собственные-сеттеры)
-
-[Поддержка Singleton паттерна](#поддержка-singleton-паттерна)
-
-[Утилиты используемые в SGModel](#утилиты-используемые-в-sgmodel)
-
-[MVVM-паттерн в SGModelView](#mvvm-паттерн-в-sgmodelview)
+SGModel - Быстрая легковесная библиотека-класс для структурирования веб-приложений с помощью биндинг-моделей. Это более быстрый и упрощенный аналог Backbone.js! Библиотека хорошо адаптирована для наследования классов (ES6).
 
 ## Основные статические свойства SGModel
 
@@ -62,7 +94,7 @@ class Tank extends PlayerBase {
 }
 ```
 
-#### Поддерживаемые типы свойств
+#### Поддерживаемые типы свойств:
 
 - `SGModel.TYPE_ANY` - тип свойства по умолчанию
 - `SGModel.TYPE_NUMBER`
@@ -70,8 +102,8 @@ class Tank extends PlayerBase {
 - `SGModel.TYPE_BOOLEAN`
 - `SGModel.TYPE_OBJECT` - при изменении хотя бы одного свойства объекта выполняются колбэки заданные методом .on()
 - `SGModel.TYPE_ARRAY` - при изменении хотя бы одного элемента массива выполняются колбэки заданные методом .on()
-- `SGModel.TYPE_ARRAY_NUMBERS` - то же что и SGModel.TYPE_ARRAY, но значения приводятся к числовому типу
-- `SGModel.TYPE_OBJECT_NUMBERS` - то же что и SGModel.TYPE_OBJECT, но значения приводятся к числовому типу
+- `SGModel.TYPE_ARRAY_NUMBERS` - то же что и `SGModel.TYPE_ARRAY`, но значения приводятся к числовому типу
+- `SGModel.TYPE_OBJECT_NUMBERS` - то же что и `SGModel.TYPE_OBJECT`, но значения приводятся к числовому типу
 - `SGModel.TYPE_NUMBER_OR_XY` - либо число, например, 1234.5, либо объект, например: {x: 1234.5, y: 1234.5}. Этот тип удобен для работы с графическими движками
 
 (!) При проверке изменения значения везде применяется строгая проверка (===).
@@ -121,7 +153,7 @@ class Tank extends PlayerBase {
 
 Если задан перечень названий свойст, то при выполнении save() записываются только эти свойства!
 
-## Свойства и методы экземпляра
+## Свойства и методы экземпляра SGModel
 
 ### id
 
@@ -139,9 +171,9 @@ class Tank extends PlayerBase {
 
 ### constructor(props, thisProps, options)
 
-* props - свойства
-* thisProps - свойства и методы передающиеся в контекст this созданного экземпляра
-* options - пользовательские настройки
+* `props` - свойства
+* `thisProps` - свойства и методы передающиеся в контекст this созданного экземпляра
+* `options` - пользовательские настройки
 
 ### defaults()
 
@@ -155,19 +187,19 @@ class Tank extends PlayerBase {
 
 ### set(name, value, flags = 0, options = void 0)
 
-Задать значение свойства
+Задать значение свойства.
 
-* name
-* val
-* flags	- допустимые флаги:
+* `name`
+* `val`
+* `flags`	- допустимые флаги:
 	* `SGModel.FLAG_OFF_MAY_BE` - если при .set() могут быть .off() то нужно передать этот флаг
 	* `SGModel.FLAG_PREV_VALUE_CLONE` - передавать предыдущее значение (делается тяжёлый clone)
 	* `SGModel.FLAG_NO_CALLBACKS` - если задано, то колбэки не выполняются
 	* `SGModel.FLAG_FORCE_CALLBACKS` - выполнить колбеки даже если нет изменений
 	* `SGModel.FLAG_IGNORE_OWN_SETTER` - игнорировать собственные сеттеры (выполняется стандартный)
-* options
-	* precision - Точность округления чисел
-	* previous_value - Если задано, то используется в качестве предыдущего значения
+* `options`
+	* `precision` - Точность округления чисел
+	* `previous_value` - Если задано, то используется в качестве предыдущего значения
 
 Возвращает true если свойство было изменено.
 
@@ -179,11 +211,11 @@ class Tank extends PlayerBase {
 
 Задать колбэк на изменение свойства
 
-* name - имя свойства или массив имён свойств
-* func - колбэк
-* context - если не задано, то передаётся "this" текущего объекта. Для массива имён можно передать массив контекстов
-* data	- если задано, то в колбэке в первом arguments[] передаётся это значение (data). Для массива имён можно передать массив данных
-* flags - допустимые флаги:
+* `name` - имя свойства или массив имён свойств
+* `func` - колбэк
+* `context` - если не задано, то передаётся "this" текущего объекта. Для массива имён можно передать массив контекстов
+* `data` - если задано, то в колбэке в первом arguments[] передаётся это значение (data). Для массива имён можно передать массив данных
+* `flags` - допустимые флаги:
 	* `SGModel.FLAG_IMMEDIATELY` - func выполнится сразу
 
 Пример выполнении колбэка и список параметров:
@@ -202,15 +234,15 @@ this.on(
 
 Удалить колбэки из списка подписчиков на изменение свойства. Если задан func, то из списка удаляется конкретный колбэк
 
-* name - имя свойства или массив имён свойств
-* func - колбэк
+* `name` - имя свойства или массив имён свойств
+* `func` - колбэк
 
 ### trigger(name, flags = 0)
 
 Выполнить колбэки, которые выполняются при изменении значения свойства
 
-* name - имя свойства
-* flags - допустимые флаги:
+* `name` - имя свойства
+* `flags` - допустимые флаги:
 	* `SGModel.FLAG_OFF_MAY_BE` - если при .set() могут быть .off() то нужно передать этот флаг
 
 ### save()
@@ -223,7 +255,7 @@ this.on(
 
 Очищает список колбэков и присваивает `destroyed = true`
 
-## Собственные сеттеры
+## Собственные сеттеры в наследуемых классах
 
 Предпочтительнее `.on()` по скорости работы при большом количестве экземпляров класса.
 Также используются, если есть базовый класс и класс потомок, где нужно специфическое поведение при изменении свойств.
@@ -274,7 +306,7 @@ class Tank extends PlayerBase {
 }
 ```
 
-## Поддержка Singleton паттерна
+## Поддержка Singleton паттерна в наследуемых классах
 
 ### static singleInstance = false
 
@@ -317,29 +349,13 @@ new Application();
 
 Получить указатель на одиночный экземляр класса. Если `bIgnoreEmpty` равен true, то при пустом экземпляре Singleton ошибка игнорируется и возвращается null.
 
-### static get(...)
+### Статические методы get, set, on, off, save
 
-Проекция на метод get экземпляра
-
-### static set(...)
-
-Проекция на метод set экземпляра
-
-### static on(...)
-
-Проекция на метод on экземпляра
-
-### static off(...)
-
-Проекция на метод off экземпляра
-
-### static save(...)
-
-Проекция на метод save экземпляра
+Проекции на соответствующие методы singleton-экземпляра
 
 ### static getProperties()
 
-Возвращает объект со свойствами действующего экземпляра класса
+Возвращает объект со свойствами singleton-экземпляра
 
 
 ## Утилиты используемые в SGModel
@@ -364,10 +380,8 @@ new Application();
 
 Округление числа до заданной точности
 
-------
 # MVVM-паттерн в SGModelView
 
-------
 **SGModelView** - надстройка над **SGModel** позволяющая связать данные в JavaScript с визуальными элементами HTML-документа, используя MVVM-паттерн. Это очень упрощенный аналог KnockoutJS или VueJS.
 
 ## Методы экземпляра SGModelView
@@ -401,16 +415,16 @@ initialize()
 Для реализации кастомных выпадающих списков выбора значения, реализованных, например, в Bootstrap, нужно задать атрибут `sg-type="dropdown"`. Пример, html-кода:
 
 ```html
-	<label>Формат сотрудничества:</label>
-	<button sg-property="contract" sg-type="dropdown" type="button">Трудовой договор</button>
-	<ul class="dropdown-menu dropdown-menu-pointer" aria-labelledby="contract">
-		<li sg-value="1" sg-dropdown="contract">Трудовой договор</li>
-		<li sg-value="2" sg-dropdown="contract">Самозанятый</li>
-		<li sg-value="3" sg-dropdown="contract">Фриланс + Безопасная сделка</li>
-		<li sg-value="4" sg-dropdown="contract">Договор услуг</li>
-		<li sg-value="5" sg-dropdown="contract">Договор подряда</li>
-		<li sg-value="6" sg-dropdown="contract">ИП</li>
-	</ul>
+<label>Формат сотрудничества:</label>
+<button sg-property="contract" sg-type="dropdown" type="button">Трудовой договор</button>
+<ul class="dropdown-menu dropdown-menu-pointer" aria-labelledby="contract">
+	<li sg-value="1" sg-dropdown="contract">Трудовой договор</li>
+	<li sg-value="2" sg-dropdown="contract">Самозанятый</li>
+	<li sg-value="3" sg-dropdown="contract">Фриланс + Безопасная сделка</li>
+	<li sg-value="4" sg-dropdown="contract">Договор услуг</li>
+	<li sg-value="5" sg-dropdown="contract">Договор подряда</li>
+	<li sg-value="6" sg-dropdown="contract">ИП</li>
+</ul>
 ```
 
 ```js
@@ -435,7 +449,7 @@ class MyForm extends SGModelView {
 
 Для динамического формирования списка css-классов элемента можно прописать inline-условие прямо в атрибуте `sg-css` тега. Пример HTML-кода:
 
-```
+```html
 <div>
 	<span sg-property="hours" sg-css="hours > 4 ? 'text-danger' : 'text-success'" class="some-base-class1 some-base-class2">4</span>ч.
 </div>
@@ -459,3 +473,9 @@ class MyForm extends SGModelView {
 	}
 }
 ```
+
+# Лицензия
+
+**SGModel и SGModelView распространяются под [MIT License](http://opensource.org/licenses/MIT)**
+
+&copy; Kalashnikov Ilya (https://model.sg2d.ru)

@@ -175,7 +175,9 @@ export default class SGModelView extends SGModel {
 				}
 				this.set(elem._sg_property, elem.checked);
 				break;
-			case "range": case "text": case "button": case "select-one": this.set(elem._sg_property, elem.value); break;
+			case "text": case "button": case "select-one": this.set(elem._sg_property, elem.value); break;
+			case "range":
+				this.set(elem._sg_property, elem.value); break;
 			case "select-multiple":
 				let result = [];
 				for (var i = 0; i < elem.selectedOptions.length; i++) {
