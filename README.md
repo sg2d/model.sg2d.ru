@@ -58,6 +58,7 @@
 		* [sg-type, sg-value и sg-dropdown](#sg-type-sg-value-и-sg-dropdown)
 		* [sg-css](#sg-css)
 		* [sg-format](#sg-format)
+		* [sg-click](#sg-click)
 * [Лицензия](#лицензия)
 
 # SGModel
@@ -447,12 +448,39 @@ class MyForm extends SGModelView {
 
 ### sg-css
 
-Для динамического формирования списка css-классов элемента можно прописать inline-условие прямо в атрибуте `sg-css` тега. Пример HTML-кода:
+Для динамического формирования списка css-классов элемента можно прописать inline-условие прямо в атрибуте `sg-css` тега. Свойства и методы распознаются автоматически. Пример HTML-кода:
 
 ```html
 <div>
 	<span sg-property="hours" sg-css="hours > 4 ? 'text-danger' : 'text-success'" class="some-base-class1 some-base-class2">4</span>ч.
 </div>
+```
+
+```js
+class MyForm extends SGModelView {
+	static defaultProperties = {
+		hours: 8
+	}
+	...
+}
+
+```
+или
+```html
+<div>
+	<span sg-property="hours" sg-css="cssDangerOrSuccess" class="some-base-class1 some-base-class2">4</span>ч.
+</div>
+```
+
+```js
+class MyForm extends SGModelView {
+	...
+	cssDangerOrSuccess(property) {
+		let value = this.get(propertyOrValue);
+		if (value == 0) return ""; else return value < 0 ? "text-success" : "text-danger";
+	}
+}
+
 ```
 
 При этом *some-base-class1* и *some-base-class2* не будут затронуты при вычислении списка css-классов!
@@ -470,6 +498,23 @@ class MyForm extends SGModelView {
 	...
 	getNumThinsp(value) {
 		return (''+value.toLocaleString()).replace(/\s/, "&thinsp;");
+	}
+}
+```
+
+### sg-click
+
+Для назначения обработчика onclick можно использовать атрибут `sg-click` в значении которого имя функции обработчика. Пример HTML и Javascript-кода:
+
+```html
+<button type="button" sg-click="sendEmail">Отправить ссылку по e-mail...</button>
+```
+
+```js
+class MyForm extends SGModelView {
+	...
+	sendEmail(event) {
+		...
 	}
 }
 ```
