@@ -461,7 +461,16 @@ class MyForm extends SGModelView {
 	static defaultProperties = {
 		hours: 8
 	}
+	/* or
+	defaults() {
+		return {
+			hours: 8
+		};
+	}*/
 	...
+	someMethod() {
+		this.set("hours", 4);
+	}
 }
 
 ```
@@ -476,7 +485,7 @@ class MyForm extends SGModelView {
 class MyForm extends SGModelView {
 	...
 	cssDangerOrSuccess(property) {
-		let value = this.get(propertyOrValue);
+		let value = this.get(property);
 		if (value == 0) return ""; else return value < 0 ? "text-success" : "text-danger";
 	}
 }
@@ -497,7 +506,7 @@ class MyForm extends SGModelView {
 class MyForm extends SGModelView {
 	...
 	getNumThinsp(value) {
-		return (''+value.toLocaleString()).replace(/\s/, "&thinsp;");
+		return (''+value.toLocaleString()).replace(/\s/g, "&thinsp;");
 	}
 }
 ```
