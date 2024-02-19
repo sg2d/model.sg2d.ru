@@ -1,17 +1,60 @@
 .container {
   max-width: 960px;
 }
+.loading-hide {
+  display: none;
+}
+.calc-show {
+  display: flex!important;
+}
 sup {
   font-weight: bold;
 }
-.btn-success span.text-success {
-  color: #7f7 !important;
+label,
+.cursor-pointer {
+  cursor: pointer;
 }
-.btn-info span.text-success {
-  color: #070 !important;
+.btn-contract {
+  color: black;
+  background-color: #eee;
+  border-color: #eee;
 }
-.btn-success .text-danger {
-  color: #faa !important;
+.btn-days_in_week {
+  color: black;
+  background-color: #388bfd;
+  border-color: #388bfd;
+}
+.btn-days_in_week sup.text-success {
+  color: #7e7 !important;
+}
+.btn-days_in_week sup.text-danger {
+  color: #ffa !important;
+}
+.btn-schedule {
+  color: black;
+  background-color: #faa;
+  border-color: #faa;
+}
+.btn-level {
+  color: black;
+  background-color: #57ab5a;
+  border-color: #57ab5a;
+}
+.btn-level sup.text-success {
+  color: #afa !important;
+}
+.btn-level sup.text-danger {
+  color: #ffa !important;
+}
+.btn-sharelink {
+  color: black;
+  background-color: gold;
+  border-color: goldenrod;
+}
+.btn-england {
+  color: black;
+  background-color: orange;
+  border-color: orange;
 }
 .dropdown-menu-pointer li {
   cursor: pointer;
@@ -20,6 +63,9 @@ sup {
   width: 0.5rem;
   height: 0.5rem;
   color: gray;
+}
+.hourly-payment-or-deadline .label-hour {
+  color: gray !important;
 }
 .lhour-1 {
   left: 0% !important;
@@ -40,28 +86,115 @@ sup {
   left: 66.3% !important;
 }
 .lhour-7 {
-  left: 80% !important;
+  left: 79% !important;
 }
 .lhour-8 {
-  left: 93% !important;
+  left: 91% !important;
+}
+@media screen and (min-width: 300px) and (max-width: 768px) {
+  .lhour-1 {
+    left: 0% !important;
+  }
+  .lhour-2 {
+    left: 14% !important;
+  }
+  .lhour-3 {
+    left: 27.6% !important;
+  }
+  .lhour-4 {
+    left: 41.5% !important;
+  }
+  .lhour-5 {
+    left: 54.6% !important;
+  }
+  .lhour-6 {
+    left: 68% !important;
+  }
+  .lhour-7 {
+    left: 81.7% !important;
+  }
+  .lhour-8 {
+    left: 95% !important;
+  }
+}
+.label-code {
+  width: 0.5rem;
+  height: 0.5rem;
+  color: gray;
+}
+.lcode-1 {
+  left: 0% !important;
+}
+.lcode-2 {
+  left: 17% !important;
+}
+.lcode-3 {
+  left: 37% !important;
+}
+.lcode-4 {
+  left: 56.5% !important;
+}
+.lcode-5 {
+  left: 75.2% !important;
+}
+.lcode-6 {
+  left: 96% !important;
+}
+@media screen and (min-width: 300px) and (max-width: 768px) {
+  .lcode-1 {
+    left: 0% !important;
+  }
+  .lcode-2 {
+    left: 18.5% !important;
+  }
+  .lcode-3 {
+    left: 38.5% !important;
+  }
+  .lcode-4 {
+    left: 57.5% !important;
+  }
+  .lcode-5 {
+    left: 77% !important;
+  }
+  .lcode-6 {
+    left: 97% !important;
+  }
 }
 .form-check.selected {
   background-color: #eee;
   border-radius: 10px;
 }
+.visible-inline {
+  display: inline !important;
+}
+.visible-block {
+  display: block !important;
+}
+.no-visible {
+  display: none;
+}
+.for-labor-contract p {
+  line-height: 1.2rem;
+  margin-bottom: 0.7rem !important;
+  text-align: center;
+}
+a.link-contract-self {
+  text-decoration: none !important;
+  color: red;
+}
+a.link-contract-self:hover {
+  text-decoration: underline !important;
+}
 .c-pointer *,
 .form-check-input {
   cursor: pointer;
 }
-input[type=range] {
-  pointer-events: none;
+footer.my-fixed {
+  position: fixed;
+  bottom: 0px;
+  left: 0px;
+  right: 0px;
 }
-input[type=range]::-webkit-slider-thumb {
-  pointer-events: auto;
-}
-input[type=range]::-moz-range-thumb {
-  pointer-events: auto;
-}
-input[type=range]::-ms-thumb {
-  pointer-events: auto;
+footer.my-static {
+  position: static;
 }
