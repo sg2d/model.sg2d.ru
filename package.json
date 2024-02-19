@@ -1,6 +1,6 @@
 {
 	"name": "SGModel",
-	"version": "1.0.3",
+	"version": "1.0.4",
 	"description": "A fast lightweight library for structuring web applications using binding models and custom events",
 	"main": "sg-model.js",
 	"repository": {
