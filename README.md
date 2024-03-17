@@ -10,8 +10,8 @@
 
 #### Исходники (версия 1.0.4):
 
-* [sg-model.js (25KB)](https://raw.githubusercontent.com/VediX/model.sg2d.github.io/main/src/sg-model.js)
-* [sg-model-view.js (7KB)](https://raw.githubusercontent.com/VediX/model.sg2d.github.io/main/src/sg-model-view.js)
+* [sg-model.js (25KB)](https://raw.githubusercontent.com/VediX/model.sg2d.github.io/master/src/sg-model.js)
+* [sg-model-view.js (7KB)](https://raw.githubusercontent.com/VediX/model.sg2d.github.io/master/src/sg-model-view.js)
 
 ## Описание API
 
@@ -66,7 +66,7 @@
 
 # SGModel
 
-SGModel - Быстрая легковесная библиотека-класс для структурирования веб-приложений с помощью биндинг-моделей. Это более быстрый и упрощенный аналог Backbone.js! Библиотека хорошо адаптирована для наследования классов (ES6).
+SGModel - Быстрая легковесная библиотека-класс для структурирования веб-приложений с помощью биндинг-моделей. Это более быстрый и упрощенный аналог Backbone.js! Библиотека хорошо адаптирована для наследования классов (ES6+).
 
 ## Основные статические свойства SGModel
 
