@@ -250,9 +250,9 @@ class Salary extends SGModelView {
 	async initialize() {
 		
 		try {
-			await this.checkDollarInRubles();
-			await this.checkCNYInRubles();
-			await this.checkTONCoinInRubles();
+			this.checkDollarInRubles();
+			this.checkCNYInRubles();
+			this.checkTONCoinInRubles();
 		} catch (err) {}
 		
 		Salary.CONTRACTS._inverse = {};
@@ -613,22 +613,30 @@ class Salary extends SGModelView {
 	getCourceInRubles(currencyURL, currencyCode, pathProps = 'rub', precision = 2) {
 		return new Promise((resolve, reject) => {
 			const xhr = new XMLHttpRequest();
+			//xhr.timeout = 2000; // ms
 			xhr.onload = (evt)=>{
 				try {
 					const props = pathProps.split('.');
 					let value = xhr.response;
-					for (let i = 0; i < props.length; i++) {
-						value = value[props[i]];
-						if (!value) break;
+					if (value) {
+						for (let i = 0; i < props.length; i++) {
+							value = value[props[i]];
+							if (!value) break;
+						}
+						this.set(currencyCode, SGModel.roundTo(value, precision));
+						resolve();
+					} else {
+						reject(new Error('For url ' + currencyURL + ' a bad response has been received! xhr.response=' + String(value) + '!'));
 					}
-					this.set(currencyCode, SGModel.roundTo(value, precision));
-					resolve();
 				} catch(err) {
 					reject(err);
 				}
 			};
 			xhr.onerror = (err)=>{
 				reject(err);
+			};
+			xhr.ontimeout = (err)=>{
+				// no code
 			};
 			xhr.open('GET', currencyURL.replace('$DATE$', new Date().toISOString().substring(0, 10)));
 			xhr.responseType = 'json';
