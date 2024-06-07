@@ -6,7 +6,7 @@ import SGModel from "./sg-model.js";
  * SGModelView 1.0.4
  * Add-on over SGModel that allows you to bind data in JavaScript with visual elements of HTML document using MVVM pattern.
  * @see https://github.com/VediX/SGModel or https://model.sg2d.ru
- * @copyright 2019-2024 Kalashnikov Ilya
+ * @copyright 2019-2025 Kalashnikov Ilya
  * @license SGModel may be freely distributed under the MIT license
  * @extends SGModel
  */
@@ -506,7 +506,7 @@ SGModelView._LINKTYPE_CSS = 2;
 
 if (typeof globalThis === 'object') globalThis.SGModelView = SGModelView;
 else if (typeof exports === 'object' && typeof module === 'object') module.exports = SGModelView;
-else if (typeof define === 'function' && define.amd) define('SGModelView', [], ()=>SGModelView);
+else if (typeof define === 'function' && define.amd) define('SGModelView', [], () => SGModelView);
 else if (typeof exports === 'object') exports["SGModelView"] = SGModelView;
 else if (typeof window === 'object' && window.document) window["SGModelView"] = SGModelView;
 else this['SGModelView'] = SGModelView;

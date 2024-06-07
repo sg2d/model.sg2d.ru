@@ -4,7 +4,7 @@
  * SGModel v1.0.4
  * Fast lightweight library (ES6) for structuring web applications using binding models and custom events. This is a faster and more simplified analogue of Backbone.js!
  * @see https://github.com/VediX/SGModel or https://model.sg2d.ru
- * @copyright 2019-2024 Kalashnikov Ilya
+ * @copyright 2019-2025 Kalashnikov Ilya
  * @license SGModel may be freely distributed under the MIT license
  */
 class SGModel {
@@ -21,7 +21,7 @@ class SGModel {
 	 * SGModel constructor
 	 * @param {object} [props={}] Properties
 	 * @param {object} [options=void 0] Custom settings
-	 * @param {object}	 [options.this=void 0] Properties and methods passed to the **this** context of the created instance
+	 * @param {object}		[options.this=void 0] Properties and methods passed to the **this** context of the created instance
 	 */
 	constructor(properties = {}, options = void 0) {
 		if (this.constructor.singleInstance) {
@@ -619,7 +619,7 @@ class SGModel {
 	 * @public
 	 * @return {object}
 	 */
-	getData(bDeleteEmpties = false) {
+	getData(bDeleteEmpties = true) { // SGModel.DELETE_EMPTIES=true
 		let dest = {};
 		if (this.constructor.storageProperties) {
 			for (var i = 0; i < this.constructor.storageProperties.length; i++) {
@@ -686,6 +686,8 @@ SGModel.OPTIONS_PRECISION_2 = Object.preventExtensions({ precision: 2 });
 SGModel.OPTIONS_PRECISION_3 = Object.preventExtensions({ precision: 3 });
 SGModel.OPTIONS_PRECISION_4 = Object.preventExtensions({ precision: 4 });
 SGModel.OPTIONS_PRECISION_5 = Object.preventExtensions({ precision: 5 });
+
+SGModel.DELETE_EMPTIES = true;
 
 /**
  * List of properties for which to use their own setters first
@@ -806,7 +808,10 @@ SGModel.toNumberOrNull = function(value, precision = void 0) {
 
 SGModel.toNumber = function(value, precision = void 0) {
 	if (typeof value === 'string') {
-		value = value.replace(',', '.').replace(/\s/g, '').replace('−', '-');
+		if (/[\d]+\.[\d]+$/.test(value)) {
+			value = value.replace(',', '');
+		}
+		value = value.replace(',', '.').replace(/\s/g, '').replace('−', '-'); // 6,724.33 -> 6724.33
 	}
 	return precision ? SGModel.roundTo(value, precision) : Number(value);
 };
@@ -950,7 +955,7 @@ SGModel.version = typeof __SGMODEL_VERSION__ !== 'undefined' ? __SGMODEL_VERSION
 
 if (typeof globalThis === 'object') globalThis.SGModel = SGModel;
 else if (typeof exports === 'object' && typeof module === 'object') module.exports = SGModel;
-else if (typeof define === 'function' && define.amd) define('SGModel', [], ()=>SGModel);
+else if (typeof define === 'function' && define.amd) define('SGModel', [], () => SGModel);
 else if (typeof exports === 'object') exports['SGModel'] = SGModel;
 else if (typeof window === 'object' && window.document) window['SGModel'] = SGModel;
 else this['SGModel'] = SGModel;
