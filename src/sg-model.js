@@ -1,7 +1,7 @@
 "use strict";
 
 /**
- * SGModel v1.0.4
+ * SGModel v1.0.5
  * Fast lightweight library (ES6) for structuring web applications using binding models and custom events. This is a faster and more simplified analogue of Backbone.js!
  * @see https://github.com/VediX/SGModel or https://model.sg2d.ru
  * @copyright 2019-2025 Kalashnikov Ilya
@@ -20,47 +20,54 @@ class SGModel {
 	/**
 	 * SGModel constructor
 	 * @param {object} [props={}] Properties
-	 * @param {object} [options=void 0] Custom settings
-	 * @param {object}		[options.this=void 0] Properties and methods passed to the **this** context of the created instance
+	 * @param {object} [clonedOptions=void 0] Custom settings
+	 * @param {object} [thisProperties=void 0] Properties and methods passed to the **this** context of the created instance
 	 */
-	constructor(properties = {}, options = void 0) {
+	constructor(properties = {}, clonedOptions = void 0, thisProperties = void 0) {
 		if (this.constructor.singleInstance) {
 			if (this.constructor._instance) throw 'Error! this.constructor._instance not is empty!';
 			this.constructor._instance = this;
 		}
+		if (typeof properties !== 'object' || properties === null) {
+			throw 'Error! properties must be object!';
+		}
 		
+		// Check static options
 		if (typeof this.constructor.options === 'object' && this.constructor.options !== null) {
 			this.options = SGModel.clone(this.constructor.options);
 		} else {
 			this.options = {};
 		}
 		
-		if (typeof options === 'object' && options !== null) {
-			if (typeof options._this === 'object' && options._this !== null) {
-				Object.assign(this, options._this); // add internal properties to the object, accessible through this.*
-				delete options._this;
+		if (typeof clonedOptions === 'object' && clonedOptions !== null) {
+			if (typeof clonedOptions._this === 'object' && clonedOptions._this !== null) { // TODO: DEL DEPRECATED
+				console.warn('"options._this" will be deprecated soon! The third parameter in the constructor is used - see "thisProperties".');
+				Object.assign(this, clonedOptions._this); // add internal properties to the object, accessible through this.*
+				delete clonedOptions._this;
 			}
-			Object.assign(this.options, SGModel.clone(options));
+			Object.assign(this.options, SGModel.clone(clonedOptions));
+		}
+
+		if (typeof thisProperties === 'object' && thisProperties !== null) {
+			Object.assign(this, thisProperties); // add internal properties to the object, accessible through this.*
 		}
 		
-		let defaults = this.defaults();
+		const defaults = this.defaults();
 		
 		// override defaults by localStorage data
 		if (this.constructor.localStorageKey) {
-			let lsData = void 0;
-			let data = localStorage.getItem(this.constructor.localStorageKey + (! this.constructor.singleInstance ? ':' + properties.uuid : ''));
+			const lsData = void 0;
+			const data = localStorage.getItem(this.constructor.localStorageKey + (! this.constructor.singleInstance ? ':' + properties.uuid : ''));
 			if (data) lsData = JSON.parse(data);
 			if (lsData) SGModel.initObjectByObject(defaults, lsData);
 		}
 		
-		if (typeof properties === 'object') {
+		if (Object.keys(properties).length) {
 			properties = SGModel.clone(properties);
-		} else {
-			properties = {};
 		}
 		
-		for (var p in properties) {
-			var value = properties[p];
+		for (const p in properties) {
+			const value = properties[p];
 			switch (this.constructor.typeProperties[p]) {
 				case SGModel.TYPE_ANY: case SGModel.TYPE_ARRAY:
 					if (value === void 0) {
@@ -86,25 +93,25 @@ class SGModel {
 					break;
 				}
 				case SGModel.TYPE_ARRAY_NUMBERS: {
-					for (var i = 0; i < value.length; i++) {
+					for (let i = 0; i < value.length; i++) {
 						value[i] = SGModel.toNumber(value[i]);
 					}
 					break;
 				}
 				case SGModel.TYPE_OBJECT_NUMBERS: {
 					if (Array.isArray(value)) {
-						var valueDefault = defaults[p];
+						const valueDefault = defaults[p];
 						if (typeof valueDefault !== 'object' || valueDefault === null) {
 							debugger; throw 'No default value was set for an object named "' + p + '" (' + this.constructor.name + ')! An object structure is required to fill in the data!';
 						}
-						var index = 0;
-						for (var i in valueDefault) {
+						let index = 0;
+						for (let i in valueDefault) {
 							valueDefault[i] = SGModel.toNumber(value[index]);
 							index++;
 						}
 						properties[p] = valueDefault;
 					} else if (typeof value === 'object') {
-						for (var i in value) {
+						for (let i in value) {
 							value[i] = SGModel.toNumber(value[i]);
 						}
 					} else {
@@ -128,12 +135,12 @@ class SGModel {
 					break;
 				case SGModel.TYPE_OBJECT:
 					if (Array.isArray(value)) {
-						var valueDefault = defaults[p];
+						const valueDefault = defaults[p];
 						if (typeof valueDefault !== 'object' || valueDefault === null) {
 							debugger; throw 'No default value was set for an object named "' + p + '" (' + this.constructor.name + ')! An object structure is required to fill in the data!';
 						}
-						var index = 0;
-						for (var i in valueDefault) {
+						let index = 0;
+						for (let i in valueDefault) {
 							valueDefault[i] = value[index];
 							index++;
 						}
@@ -152,7 +159,8 @@ class SGModel {
 		this.properties = SGModel.defaults({}, defaults, properties);
 
 		if (! this.properties.uuid) {
-			this.properties.uuid = crypto.randomUUID();
+			this.properties.uuid = crypto.randomUUID && crypto.randomUUID() // must be https protocol to support the function crypto.randomUUID()
+				|| '10000000-1000-4000-8000-100000000000'.replace(/[018]/g, c => (+c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> +c / 4).toString(16));
 		}
 		this.uuid = this.properties.uuid;
 		this._uid = SGModel.uid();
@@ -164,7 +172,7 @@ class SGModel {
 		// Crutch, since in JS there is no way to execute the code in the child class at the time of extends of the parent class
 		if (! this.constructor.hasOwnProperty('_ownSettersInitialized')) {
 			this.constructor._ownSettersInitialized = true;
-			for (var p in this.constructor.ownSetters) {
+			for (const p in this.constructor.ownSetters) {
 				if (this.constructor.ownSetters[p] === true) {
 					this.constructor.ownSetters[p] = this['set' + SGModel.upperFirstLetter(p)];
 				}
@@ -186,12 +194,12 @@ class SGModel {
 	/**
 	* Set property value
 	* @param {string}	name
-	* @param {mixed}	 val
+	* @param {mixed}	val
 	* @param {object}	[options=void 0]
-	* @param {number}		[options.precision] - Rounding precision
-	* @param {mixed}		[options.previous_value] - Use this value as the previous value
+	* @param {number}	[options.precision] - Rounding precision
+	* @param {mixed}	[options.previous_value] - Use this value as the previous value
 	* @param {number}	[flags=0] - Valid flags: **FLAG_OFF_MAY_BE** | **FLAG_PREV_VALUE_CLONE** | **FLAG_NO_CALLBACKS** | **FLAG_FORCE_CALLBACKS** | **FLAG_IGNORE_OWN_SETTER**
-	* @param {Event} [event=void 0] - event when using SGModelView
+	* @param {Event}	[event=void 0] - event when using SGModelView
 	* @param {DOMElement} [elem=void 0] - event source element when using SGModelView
 	* @return {boolean|Promise} If the value was changed will return **true** or Promise for option autoSave=true
 	*/
@@ -210,8 +218,8 @@ class SGModel {
 			return this.constructor.ownSetters[name].call(this, value, options, flags);
 		}
 		
-		var val = this.properties[name];
-		var type = this.constructor.typeProperties[name];
+		const val = this.properties[name];
+		const type = this.constructor.typeProperties[name];
 		if (type) {
 			switch (type) {
 				case SGModel.TYPE_ANY:
@@ -260,12 +268,12 @@ class SGModel {
 		
 		if (! (flags & SGModel.FLAG_NO_CALLBACKS)) {
 			const prevValue = (options.previous_value !== void 0 ? options.previous_value : val);
-			var callbacks = this.onChangeCallbacks[name];
+			const callbacks = this.onChangeCallbacks[name];
 			if (callbacks) {
 				if (flags & SGModel.FLAG_OFF_MAY_BE) callbacks = SGModel.clone(callbacks);
-				var _val = void 0;
-				for (var i in callbacks) {
-					var c = callbacks[i];
+				let _val = void 0;
+				for (let i in callbacks) {
+					const c = callbacks[i];
 					_val = c.f.call(c.c ? c.c : this, c.d ? c.d : value, prevValue, name, event, elem);
 					if (_val !== void 0) val = _val;
 				}
@@ -289,13 +297,13 @@ class SGModel {
 			return this.constructor.ownSetters[name].call(this, aValues, options, flags);
 		}
 
-		var type = this.constructor.typeProperties[name];
-		var values = this.properties[name];
-		var prevValues = options.previous_value === null ? null : (options.previous_value || void 0);
+		const type = this.constructor.typeProperties[name];
+		const values = this.properties[name];
+		const prevValues = options.previous_value === null ? null : (options.previous_value || void 0);
 		SGModel._bChanged = false;
 		if (Array.isArray(aValues)) {
-			for (var i = 0; i < aValues.length; i++) {
-				var v = aValues[i];
+			for (let i = 0; i < aValues.length; i++) {
+				let v = aValues[i];
 				if (type === SGModel.TYPE_ARRAY_NUMBERS) {
 					v = (options.precision ? SGModel.roundTo(v, options.precision) : Number(v));
 				}
@@ -308,8 +316,8 @@ class SGModel {
 		} else if (aValues) {
 			debugger; throw 'aValues should be must Array or empty! (' + this.constructor.name + ')';
 		} else { // ! aValues
-			var v = (type === SGModel.TYPE_OBJECT_NUMBERS ? 0 : void 0);
-			for (var i = 0; i < values.length; i++) {
+			const v = (type === SGModel.TYPE_OBJECT_NUMBERS ? 0 : void 0);
+			for (let i = 0; i < values.length; i++) {
 				if (values[i] !== v) {
 					SGModel._bChanged = true;
 					if ((flags & SGModel.FLAG_PREV_VALUE_CLONE) && !prevValues) prevValues = SGModel.clone(values);
@@ -337,14 +345,14 @@ class SGModel {
 			return this.constructor.ownSetters[name].call(this, oValues, options, flags);
 		}
 
-		var type = this.constructor.typeProperties[name];
-		var values = this.properties[name];
-		var prevValues = options.previous_value === null ? null : (options.previous_value || void 0);
+		const type = this.constructor.typeProperties[name];
+		const values = this.properties[name];
+		const prevValues = options.previous_value === null ? null : (options.previous_value || void 0);
 		SGModel._bChanged = false;
 		if (Array.isArray(oValues)) {
 			SGModel._index = 0;
-			for (var p in values) {
-				var v = oValues[SGModel._index];
+			for (const p in values) {
+				let v = oValues[SGModel._index];
 				if (type === SGModel.TYPE_OBJECT_NUMBERS) {
 					v = (options.precision ? SGModel.roundTo(v, options.precision) : Number(v));
 				}
@@ -356,8 +364,8 @@ class SGModel {
 				SGModel._index++;
 			}
 		} else if (oValues) {
-			for (var p in oValues) {
-				var v = oValues[p];
+			for (const p in oValues) {
+				let v = oValues[p];
 				if (type === SGModel.TYPE_OBJECT_NUMBERS) {
 					v = (options.precision ? SGModel.roundTo(v, options.precision) : Number(v));
 				}
@@ -368,8 +376,8 @@ class SGModel {
 				}
 			}
 		} else { // ! oValues
-			var v = (type === SGModel.TYPE_OBJECT_NUMBERS ? 0 : void 0);
-			for (var p in values) {
+			const v = (type === SGModel.TYPE_OBJECT_NUMBERS ? 0 : void 0);
+			for (const p in values) {
 				if (values[p] !== v) {
 					SGModel._bChanged = true;
 					if ((flags & SGModel.FLAG_PREV_VALUE_CLONE) && !prevValues) prevValues = SGModel.clone(values);
@@ -396,8 +404,8 @@ class SGModel {
 			return this.constructor.ownSetters[name].call(this, value, options, flags);
 		}
 		
-		var val = this.properties[name];
-		var prevValue = (options.previous_value === null ? null : (options.previous_value || void 0));
+		const val = this.properties[name];
+		let prevValue = (options.previous_value === null ? null : (options.previous_value || void 0));
 		SGModel._bChanged = false;
 		
 		if (value !== void 0 && value !== null) {
@@ -458,12 +466,12 @@ class SGModel {
 	/** @private */
 	_runCallbacks(name, values, prevValue, flags = 0) {
 		if (! (flags & SGModel.FLAG_NO_CALLBACKS)) {
-			var callbacks = this.onChangeCallbacks[name];
+			const callbacks = this.onChangeCallbacks[name];
 			if (callbacks) {
 				if (flags & SGModel.FLAG_OFF_MAY_BE) callbacks = SGModel.clone(callbacks);
-				var _val = void 0;
-				for (var i in callbacks) {
-					var c = callbacks[i];
+				let _val = void 0;
+				for (const i in callbacks) {
+					const c = callbacks[i];
 					_val = c.f.call(c.c ? c.c : this, c.d ? c.d : values, prevValue, name);
 					if (_val !== void 0) values = _val;
 				}
@@ -487,7 +495,7 @@ class SGModel {
 	 */
 	on(name, func, context = void 0, data = void 0, flags = 0) {
 		if (Array.isArray(name)) {
-			for (var i = 0; i < name.length; i++) {
+			for (let i = 0; i < name.length; i++) {
 				this._on.call(this,
 					name[i],
 					func,
@@ -503,7 +511,7 @@ class SGModel {
 	
 	/** @private */
 	_on(name, func, context = void 0, data = void 0, flags = 0) {
-		var callbacks = this.onChangeCallbacks[name];
+		let callbacks = this.onChangeCallbacks[name];
 		if (! callbacks) callbacks = this.onChangeCallbacks[name] = [];
 		callbacks.push({f: func, c: context, d: data});
 		if (flags === SGModel.FLAG_IMMEDIATELY) {
@@ -537,20 +545,22 @@ class SGModel {
 	off(name, func) {
 		if (name) {
 			if (Array.isArray(name)) {
-				for (var i = 0; i < name.length; i++) {
+				for (let i = 0; i < name.length; i++) {
 					this._off.call(this, name[i], func);
 				}
 			} else {
 				this._on.apply(this, arguments);
 			}
 		} else {
-			for (var f in this.onChangeCallbacks) this.onChangeCallbacks[f].length = 0;
+			for (const f in this.onChangeCallbacks) {
+				this.onChangeCallbacks[f].length = 0;
+			}
 		}
 	}
 	
 	/** @private */
 	_off(name, func) {
-		var callbacks = this.onChangeCallbacks[name];
+		const callbacks = this.onChangeCallbacks[name];
 		if (callbacks) {
 			if (func) {
 				for (var i = 0; i < callbacks.length; i++) {
@@ -573,12 +583,13 @@ class SGModel {
 	 *		**SGModel.FLAG_OFF_MAY_BE** - if set can be **.off()**, then you need to pass this flag
 	 */
 	trigger(name, value = void 0, flags = 0) {
-		
-		var callbacks = this.onChangeCallbacks[name];
+		const callbacks = this.onChangeCallbacks[name];
 		if (callbacks) {
-			if (flags & SGModel.FLAG_OFF_MAY_BE) callbacks = SGModel.clone(callbacks);
-			for (var i in callbacks) {
-				var cb = callbacks[i];
+			if (flags & SGModel.FLAG_OFF_MAY_BE) {
+				callbacks = SGModel.clone(callbacks);
+			}
+			for (const i in callbacks) {
+				const cb = callbacks[i];
 				if (cb.d !== void 0 || value !== void 0) {
 					cb.f.call( cb.c ? cb.c : this, cb.d !== void 0 ? cb.d : value, this.properties[name], this.properties[name], name );
 				} else {
@@ -620,9 +631,9 @@ class SGModel {
 	 * @return {object}
 	 */
 	getData(bDeleteEmpties = true) { // SGModel.DELETE_EMPTIES=true
-		let dest = {};
+		const dest = {};
 		if (this.constructor.storageProperties) {
-			for (var i = 0; i < this.constructor.storageProperties.length; i++) {
+			for (let i = 0; i < this.constructor.storageProperties.length; i++) {
 				const name = this.constructor.storageProperties[i];
 				const value = this.properties[name];
 				if (value || value === 0 || value === '' || !bDeleteEmpties) {
@@ -631,7 +642,7 @@ class SGModel {
 			}
 		} else {
 			// Discard properties starting with '_'
-			for (var name in this.properties) {
+			for (const name in this.properties) {
 				if (name[0] === '_') continue;
 				const value = this.properties[name];
 				if (value || value === 0 || value === '' || !bDeleteEmpties) {
@@ -722,9 +733,9 @@ SGModel.fStub = (v) => v;
  * @param {object} sources 
  */
 SGModel.defaults = function(dest, ...sources) {
-	for (var i = sources.length; i--; ) {
-		var source = sources[i];
-		for (var p in source) {
+	for (let i = sources.length; i--; ) {
+		const source = sources[i];
+		for (const p in source) {
 			if (dest[p] === void 0) {
 				dest[p] = (typeof source[p] === 'object' ? SGModel.clone(source[p]) : source[p]);
 			}
@@ -740,10 +751,13 @@ SGModel.defaults = function(dest, ...sources) {
  * @return {object|primitive}
  */
 SGModel.clone = function(source) {
+	if (structuredClone) {
+		return structuredClone(source);
+	}
 	let dest;
 	if (Array.isArray(source)) {
 		dest = [];
-		for (var i = 0; i < source.length; i++) {
+		for (let i = 0; i < source.length; i++) {
 			dest[i] = (typeof source[i] === 'object' ? SGModel.clone(source[i]) : source[i]);
 		}
 	} else if (typeof source === 'object') {
@@ -751,7 +765,7 @@ SGModel.clone = function(source) {
 			dest = null;
 		} else {
 			dest = {};
-			for (var p in source) {
+			for (const p in source) {
 				dest[p] = (typeof source[p] === 'object' ? SGModel.clone(source[p]) : source[p]);
 			}
 		}
@@ -769,7 +783,7 @@ SGModel.clone = function(source) {
  */
 SGModel.initObjectByObject = function(dest, source) {
 	if (Array.isArray(dest)) {
-		for (var i = 0; i < dest.length; i++) {
+		for (let i = 0; i < dest.length; i++) {
 			if (source.hasOwnProperty(i)) {
 				if (typeof dest[i] === 'object') {
 					this.initObjectByObject(dest[i], source[i]);
@@ -779,7 +793,7 @@ SGModel.initObjectByObject = function(dest, source) {
 			}
 		}
 	} else if (typeof dest === 'object') {
-		for (var p in dest) {
+		for (const p in dest) {
 			if (source.hasOwnProperty(p)) {
 				if (typeof dest[p] === 'object') {
 					this.initObjectByObject(dest[p], source[p]);
@@ -823,7 +837,7 @@ SGModel.toNumber = function(value, precision = void 0) {
  * @returns {Number}
  */
 SGModel.roundTo = function(value, precision = 0) {
-	let m = 10 ** precision;
+	const m = 10 ** precision;
 	return Math.round(Number(value) * m) / m;
 };
 

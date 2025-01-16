@@ -8,21 +8,21 @@
 
 *Пример использования: [Перейти на страницу примера](/example/)*
 
-#### Исходники (версия 1.0.5):
+#### Исходники (версия 1.0.4):
 
-* [sg-model.js (29KB)](https://raw.githubusercontent.com/VediX/model.sg2d.github.io/master/src/sg-model.js)
-* [sg-model-view.js (18KB)](https://raw.githubusercontent.com/VediX/model.sg2d.github.io/master/src/sg-model-view.js)
+* [sg-model.js (25KB)](https://raw.githubusercontent.com/VediX/model.sg2d.github.io/master/src/sg-model.js)
+* [sg-model-view.js (7KB)](https://raw.githubusercontent.com/VediX/model.sg2d.github.io/master/src/sg-model-view.js)
 
 ## Описание API
 
 * [Основные статические свойства SGModel](#основные-статические-свойства-sgmodel)
 	* [static typeProperties = {…}](#static-typeproperties--)
 	* [static defaultsProperties = {…}](#static-defaultsproperties--)
-  * [static options = {...}](#static-options--)
+	* [static options = {...}](#static-options--)
 	* [static localStorageKey = ""](#static-localstoragekey--)
 	* [static storageProperties = []](#static-storageproperties--)
 * [Свойства и методы экземпляра SGModel](#свойства-и-методы-экземпляра-sgmodel)
-	* [constructor(properties, options, thisProperties)](#constructorproperties---options--void-0-thisProperties--void-0)
+	* [constructor(props, options)](#constructorprops-options)
 	* [uid](#uid)
 	* [initialized](#initialized)
 	* [changed = false](#changed--false)
@@ -164,11 +164,11 @@ class Tank extends PlayerBase {
 
 ## Свойства и методы экземпляра SGModel
 
-### constructor(properties = {}, options = void 0, thisProperties = void 0)
+### constructor(props, options)
 
-* `properties` - свойства
+* `props` - свойства
 * `options` - пользовательские настройки
-* `thisProperties` - свойства и методы передающиеся в контекст this созданного экземпляра
+* `options._this` - свойства и методы передающиеся в контекст this созданного экземпляра
 
 ### uid
 

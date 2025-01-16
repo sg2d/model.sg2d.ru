@@ -3,7 +3,7 @@
 import SGModel from "./sg-model.js";
 
 /**
- * SGModelView 1.0.4
+ * SGModelView 1.0.5
  * Add-on over SGModel that allows you to bind data in JavaScript with visual elements of HTML document using MVVM pattern.
  * @see https://github.com/VediX/SGModel or https://model.sg2d.ru
  * @copyright 2019-2025 Kalashnikov Ilya
@@ -12,8 +12,14 @@ import SGModel from "./sg-model.js";
  */
 class SGModelView extends SGModel {
 	
-	constructor(properties = {}, options = void 0) {
-		super(properties, options);
+	/**
+	 * Constructor
+	 * @param {object} [properties=void 0]
+	 * @param {object} [options=void 0]
+	 * @param {object} [thisProperties=void 0] - Properties and methods passed to the this context of the created instance
+	 */
+	constructor(properties = {}, options = void 0, thisProperties = void 0) {
+		super(properties, options, thisProperties);
 		if (options) {
 			this.htmlContainer = options.htmlContainer;
 		}
@@ -48,9 +54,7 @@ class SGModelView extends SGModel {
 	
 	/** @private */
 	_insertHTMLAndBind() {
-		if (!this.htmlContainer) {
-			this.htmlContainer = this.constructor.htmlContainer;
-		}
+		this.htmlContainer = this.htmlContainer || this.constructor.htmlContainer;
 		if (this.htmlContainer) {
 			this.eHtmlContainer = document.querySelector(this.htmlContainer);
 			if (this.eHtmlContainer) {
@@ -87,12 +91,12 @@ class SGModelView extends SGModel {
 	}
 	
 	/**
-	 * Perform Data and View Binding (MVVM)
+	 * Data and view binding (MVVM)
 	 * @param {string|HTMLElement} [root=void 0] Example "#my_div_id" or HTMLElement object
 	 */
 	bindHTML(root = void 0) {
 		if (! this._binderInitialized) {
-			if (typeof document === "undefined") throw "Error! document is undefined!";
+			if (typeof document === "undefined") throw "Error! window.document is undefined!";
 			this._onChangeDOMElementValue = this._onChangeDOMElementValue.bind(this);
 			this._propertyElementLinks = {};
 			this._eventsCounter = -1;
@@ -103,8 +107,8 @@ class SGModelView extends SGModel {
 		this.eHtmlContainer = (typeof root === 'string' ? document.querySelector(root) : (root ? root : document.body));
 		if (!this.eHtmlContainer) throw `${this.constructor.name}->bindHTML() error! Container "${root}" does not exist!`;
 		
-		for (var name in this._propertyElementLinks) {
-			var propertyElementLink = this._propertyElementLinks[name];
+		for (let name in this._propertyElementLinks) {
+			const propertyElementLink = this._propertyElementLinks[name];
 			if (propertyElementLink.type === SGModelView._LINKTYPE_VALUE) {
 				propertyElementLink.element.removeEventListener("change", this._onChangeDOMElementValue);
 				propertyElementLink.element.removeEventListener("input", this._onChangeDOMElementValue);
@@ -118,7 +122,7 @@ class SGModelView extends SGModel {
 		
 		this._reProps = {};
 		this._rePropsChecked = {};
-		for (var name in this.properties) {
+		for (let name in this.properties) {
 			this._reProps[name] = {
 				re: [
 					new RegExp('([^\\w\\.\\-])'+name+'([^\\w\\.\\-])', 'g'),
@@ -138,8 +142,8 @@ class SGModelView extends SGModel {
 		this._sysThis = ["constructor", "initialize", "defaults"];
 		this._reThis = {};
 		let thisNames = Object.getOwnPropertyNames(this.__proto__);
-		for (var i = 0; i < thisNames.length; i++) {
-			var name = thisNames[i];
+		for (let i = 0; i < thisNames.length; i++) {
+			const name = thisNames[i];
 			if (this._sysThis.indexOf(name) === -1 && ! /^_/.test(name)) {
 				this._reThis[name] = {
 					re: [
@@ -161,21 +165,21 @@ class SGModelView extends SGModel {
 	
 	/** @private */
 	_bindElements(elements) {
-		for (var e = 0; e < elements.length; e++) {
-			var elementDOM = elements[e];
+		for (let e = 0; e < elements.length; e++) {
+			const elementDOM = elements[e];
 			
 			if (elementDOM.nodeType !== 1) continue;
 			
-			var sgProperty = elementDOM.getAttribute("sg-property");
-			var sgValue = elementDOM.getAttribute("sg-value"); // TODO: value in innerHTML is formed by inline javascript code
-			var sgType = elementDOM.getAttribute("sg-type");
-			var sgFormat = elementDOM.getAttribute("sg-format");
-			var sgAttributes = elementDOM.getAttribute("sg-attributes");
-			var sgCSS = elementDOM.getAttribute("sg-css");
-			//var sgStyle = element.getAttribute("sg-style"); // TODO
-			var sgClick = elementDOM.getAttribute("sg-click");
-			//var sgEvents = element.getAttribute("sg-events"); // TODO
-			var sgOptions = elementDOM.getAttribute("sg-options"); // For SELECT element
+			const sgProperty = elementDOM.getAttribute("sg-property");
+			const sgValue = elementDOM.getAttribute("sg-value"); // TODO: value in innerHTML is formed by inline javascript code
+			const sgType = elementDOM.getAttribute("sg-type");
+			const sgFormat = elementDOM.getAttribute("sg-format");
+			let sgAttributes = elementDOM.getAttribute("sg-attributes");
+			let sgCSS = elementDOM.getAttribute("sg-css");
+			//const sgStyle = element.getAttribute("sg-style"); // TODO
+			const sgClick = elementDOM.getAttribute("sg-click");
+			//const sgEvents = element.getAttribute("sg-events"); // TODO
+			const sgOptions = elementDOM.getAttribute("sg-options"); // For SELECT element
 			
 			if (sgProperty && this.has(sgProperty)) {
 				this._regPropertyElementLink(sgProperty, elementDOM, SGModelView._LINKTYPE_VALUE);
@@ -184,15 +188,15 @@ class SGModelView extends SGModel {
 				elementDOM._sg_format = this[sgFormat];
 				switch (sgType) {
 					case "dropdown":
-						var eItems = document.querySelectorAll("[sg-dropdown=" + sgProperty + "]");
-						for (var i = 0; i < eItems.length; i++) {
+						const eItems = document.querySelectorAll("[sg-dropdown=" + sgProperty + "]");
+						for (let i = 0; i < eItems.length; i++) {
 							eItems[i].onclick = this._dropdownItemClick;
 						}
 						elementDOM.addEventListener("change", this._onChangeDOMElementValue);
 						break;
 					default: {
 						if (elementDOM.type) {
-							var sEvent = "";
+							let sEvent = "";
 							switch (elementDOM.type) {
 								case "range": sEvent = "input"; break;
 								case "radio":
@@ -219,7 +223,7 @@ class SGModelView extends SGModel {
 				try {
 					sgAttributes = sgAttributes.replace(/(\w+):\s([\w]+)(\([^)]*\)){0,1}([,\s]{0,1})/g, '"$1": "$2$3"$4');;
 					const attributes = JSON.parse(sgAttributes);
-					for (var a in attributes) {
+					for (let a in attributes) {
 						const value = attributes[a];
 						const method = value.replace(/(\w+)(.*)/, '$1');
 						const args = Array.from(value.matchAll(/'(.*?)'/g));
@@ -254,10 +258,10 @@ class SGModelView extends SGModel {
 			}
 			
 			if (sgCSS) {
-				for (var name in this._reProps) {
-					var re = this._reProps[name].re;
-					var l = sgCSS.length;
-					for (var p = 0; p < re.length; p++) {
+				for (let name in this._reProps) {
+					const re = this._reProps[name].re;
+					const l = sgCSS.length;
+					for (let p = 0; p < re.length; p++) {
 						sgCSS = sgCSS.replace(re[p], this._reProps[name].to);
 					}
 					if (l !== sgCSS.length) {
@@ -265,10 +269,10 @@ class SGModelView extends SGModel {
 					}
 				}
 				
-				var bProperties = false;
-				for (var name in this._rePropsChecked) {
-					var re = this._rePropsChecked[name];
-					for (var p = 0; p < re.length; p++) {
+				let bProperties = false;
+				for (let name in this._rePropsChecked) {
+					const re = this._rePropsChecked[name];
+					for (let p = 0; p < re.length; p++) {
 						if (re[p].test(sgCSS)) {
 							bProperties = true;
 							break;
@@ -277,12 +281,12 @@ class SGModelView extends SGModel {
 					if (bProperties) break;
 				}
 				
-				var bFunctions = false;
+				let bFunctions = false;
 				
-				for (var name in this._reThis) {
-					var l = sgCSS.length;
-					var re = this._reThis[name].re;
-					for (var p = 0; p < re.length; p++) {
+				for (let name in this._reThis) {
+					const re = this._reThis[name].re;
+					const l = sgCSS.length;
+					for (let p = 0; p < re.length; p++) {
 						sgCSS = sgCSS.replace(re[p], this._reThis[name].to);
 					}
 					if (l !== sgCSS.length) {
@@ -309,7 +313,7 @@ class SGModelView extends SGModel {
 				if (typeof callback === "function") {
 					callback = callback.bind(this);
 					elementDOM.addEventListener("click", callback);
-					let index = this._eventsCounter++;
+					const index = this._eventsCounter++;
 					this._elementsEvents[index] = {
 						callback: callback,
 						element: elementDOM,
@@ -339,14 +343,14 @@ class SGModelView extends SGModel {
 	}
 	
 	_refreshAll() {
-		for (var property in this._propertyElementLinks) {
+		for (let property in this._propertyElementLinks) {
 			this._refreshElement(property);
 		}
 	}
 	
 	/** @private */
 	_regPropertyElementLink(property, element, type) {
-		var item = this._propertyElementLinks[property];
+		let item = this._propertyElementLinks[property];
 		if (! item) {
 			item = this._propertyElementLinks[property] = [];
 		}
@@ -358,25 +362,27 @@ class SGModelView extends SGModel {
 	/** @private */
 	_refreshElement(property) {
 		
-		if (! this._propertyElementLinks[property]) return false;
+		if (! this._propertyElementLinks[property]) {
+			return false;
+		}
 		
-		for (var j = 0; j < this._propertyElementLinks[property].length; j++) {
+		for (let j = 0; j < this._propertyElementLinks[property].length; j++) {
 			
-			var propertyElementLink = this._propertyElementLinks[property][j];
+			const propertyElementLink = this._propertyElementLinks[property][j];
 			
-			var elementDOM = propertyElementLink.element;
+			const elementDOM = propertyElementLink.element;
 			if (! elementDOM) return false;
 			
 			switch (propertyElementLink.type) {
 				case SGModelView._LINKTYPE_VALUE: {
 				
-					var value = this.properties[property];
+					const value = this.properties[property];
 
 					switch (elementDOM._sg_type) {
 						case "dropdown":
-							var eItems = document.querySelectorAll("[sg-dropdown=" + property + "]");
-							for (var i = 0; i < eItems.length; i++) {
-								var sgValue = eItems[i].getAttribute("sg-option");
+							const eItems = document.querySelectorAll("[sg-dropdown=" + property + "]");
+							for (let i = 0; i < eItems.length; i++) {
+								const sgValue = eItems[i].getAttribute("sg-option");
 								if (sgValue == value) {
 									elementDOM.value = value;
 									elementDOM.innerHTML = eItems[i].innerHTML;
@@ -400,9 +406,9 @@ class SGModelView extends SGModel {
 										break;
 									case "select-multiple": {
 										if (! Array.isArray(value)) { debugger; break; }
-										for (var i = 0; i < elementDOM.options.length; i++) {
+										for (let i = 0; i < elementDOM.options.length; i++) {
 											let selected = false;
-											for (var j = 0; j < value.length; j++) {
+											for (let j = 0; j < value.length; j++) {
 												if (elementDOM.options[i].value == value[j]) {
 													selected = true;
 													break;
@@ -422,7 +428,7 @@ class SGModelView extends SGModel {
 				}
 				case SGModelView._LINKTYPE_CSS: {
 					if (elementDOM._sg_css) {
-						for (var i = elementDOM.classList.length - 1; i >= 0; i--) {
+						for (let i = elementDOM.classList.length - 1; i >= 0; i--) {
 							if (elementDOM._sg_css_static_classes.indexOf(elementDOM.classList[i]) === -1) {
 								elementDOM.classList.remove(elementDOM.classList[i]);
 							}
@@ -438,7 +444,7 @@ class SGModelView extends SGModel {
 								result = result.split(" ");
 							}
 						}
-						for (var i = 0; i < result.length; i++) {
+						for (let i = 0; i < result.length; i++) {
 							elementDOM.classList.add(result[i]);
 						}
 					}
@@ -451,26 +457,30 @@ class SGModelView extends SGModel {
 	
 	/** @private */
 	_onChangeDOMElementValue(event) {
-		let elem = event.currentTarget;
+		const elem = event.currentTarget;
 		switch (elem.type) {
-			case "checkbox": this.set(elem._sg_property, elem.checked, void 0, void 0, event, elem); break;
+			case "checkbox":
+				this.set(elem._sg_property, elem.checked, void 0, void 0, event, elem);
+				break;
 			case "radio":
-				let form = this._findParentForm(elem);
-				let radioButtons = form.querySelectorAll("input[name=" + elem.name+"]");
-				for (var i = 0; i < radioButtons.length; i++) {
-					var _elem = radioButtons[i];
+				const form = this._findParentForm(elem);
+				const radioButtons = form.querySelectorAll("input[name=" + elem.name+"]");
+				for (let i = 0; i < radioButtons.length; i++) {
+					const _elem = radioButtons[i];
 					if (_elem.getAttribute("sg-property") !== elem.getAttribute("sg-property") && _elem._sg_property) {
 						this.set(_elem._sg_property, _elem.checked, void 0, void 0, event, _elem);
 					}
 				}
 				this.set(elem._sg_property, elem.checked, void 0, void 0, event, elem);
 				break;
-			case "text": case "textarea": case "date": case "datetime-local": case "button": case "select-one": this.set(elem._sg_property, elem.value, void 0, void 0, event, elem); break;
+			case "text": case "textarea": case "date": case "datetime-local": case "button": case "select-one":
+				this.set(elem._sg_property, elem.value, void 0, void 0, event, elem);
+				break;
 			case "range":
 				this.set(elem._sg_property, elem.value, void 0, void 0, event, elem); break;
 			case "select-multiple":
-				let result = [];
-				for (var i = 0; i < elem.selectedOptions.length; i++) {
+				const result = [];
+				for (let i = 0; i < elem.selectedOptions.length; i++) {
 					result.push( elem.selectedOptions[i].value );
 				}
 				this.set(elem._sg_property, result, void 0, void 0, event, elem);
@@ -480,7 +490,7 @@ class SGModelView extends SGModel {
 	
 	/** @private */
 	_dropdownItemClick() {
-		let button = this.parentNode.parentNode.querySelector("button");
+		const button = this.parentNode.parentNode.querySelector("button");
 		button.value = this.getAttribute("sg-option");
 		button.innerHTML = this.innerHTML;
 		button.dispatchEvent(new Event('change'));
@@ -488,7 +498,7 @@ class SGModelView extends SGModel {
 	
 	/** @private */
 	_findParentForm(elem) {
-		let parent = elem.parentNode;
+		const parent = elem.parentNode;
 		if (parent) {
 			if (parent.tagName === "FORM") {
 				return parent;
