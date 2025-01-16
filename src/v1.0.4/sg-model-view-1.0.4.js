@@ -1,6 +1,6 @@
 "use strict";
 
-import SGModel from "./sg-model.js";
+import SGModel from "./sg-model-1.0.4.js";
 
 /**
  * SGModelView 1.0.4
