@@ -3,11 +3,11 @@
 import SGModel from "./sg-model.js";
 
 /**
- * SGModelView 1.0.5
+ * SGModelView 1.0.6
  * Add-on over SGModel that allows you to bind data in JavaScript with visual elements of HTML document using MVVM pattern.
  * @see https://github.com/VediX/SGModel or https://model.sg2d.ru
  * @copyright 2019-2025 Kalashnikov Ilya
- * @license SGModel may be freely distributed under the MIT license
+ * @license SGModelView may be freely distributed under the MIT license
  * @extends SGModel
  */
 class SGModelView extends SGModel {
@@ -20,68 +20,143 @@ class SGModelView extends SGModel {
 	 */
 	constructor(properties = {}, options = void 0, thisProperties = void 0) {
 		super(properties, options, thisProperties);
-		if (options) {
-			this.htmlContainer = options.htmlContainer;
-		}
 	}
 	
 	/** Called when an instance is created
+	 * @see {mixed} [static autoLoadBind.srcHTML] - can be a path to an html file (string), html content (string), a HTMLElement/HTMLTemplateElement (object)
+	 * @see {string} [static autoLoadBind.templateId]
+	 * @see {string} [static autoLoadBind.viewId] or [static autoLoadBind.containerId]
+	 * @see {object} [static templates]
 	 * @return {Promise}
 	 */
 	async initialize() {
-		if (this.constructor.htmlFile) {
-			if (!this.constructor.htmlFileContent) {
-				await fetch(this.constructor.htmlFile)
-					.catch((err) => Promise.reject(err))
-					.then((result) => {
-						if (result.ok === false) {
-							return Promise.reject(new Error((result.statusText || 'Error') + (result.status ? ' (' + result.status + ')' : '') + (result.url ? ': ' + result.url : '')));
-						}
-						return result.text();
-					})
-					.then((html) => {
-						this.constructor.htmlFileContent = html;
-						return this._insertHTMLAndBind();
-					});
-			} else {
-				await this._insertHTMLAndBind();
-			}
-		} else if (this.constructor.htmlViewId) {
-			await this.bindHTML(this.constructor.htmlViewId);
-		}
-		return super.initialize.apply(this, arguments);
-	}
-	
-	/** @private */
-	_insertHTMLAndBind() {
-		this.htmlContainer = this.htmlContainer || this.constructor.htmlContainer;
-		if (this.htmlContainer) {
-			this.eHtmlContainer = document.querySelector(this.htmlContainer);
-			if (this.eHtmlContainer) {
-				this.eHtmlContainer.insertAdjacentHTML('beforeend', this.constructor.htmlFileContent);
-				if (this.constructor.htmlViewId) {
-					return this.bindHTML(this.constructor.htmlViewId);
+		
+		// static initialization, including some static fields for dynamic use (see below: dynamic initialization)
+		if (!this.constructor._staticInitialized) {
+			this.constructor._staticInitialized = 'in_processing';
+			this.constructor._promiseStaticInit = this.constructor._promiseStaticInit || Promise.resolve();
+			this.constructor.templates = this.constructor.templates || {};
+			this.constructor.autoLoadBind = (
+				typeof this.constructor.autoLoadBind === 'object' && this.constructor.autoLoadBind !== null
+				? this.constructor.autoLoadBind
+				: {}
+			);
+			const autoLoadBind = this.constructor.autoLoadBind;
+			let eHtml;
+			if (autoLoadBind.srcHTML) {
+				const _uuid = String(this.uuid).replaceAll('-', '_');
+				if (typeof autoLoadBind.srcHTML === 'object') {
+					if (!(autoLoadBind.srcHTML instanceof HTMLElement)) {
+						return Promise.reject(new Error('Error! autoLoadBind.srcHTML is not a HTMLElement instance!'));
+					}
+					eHtml = autoLoadBind.srcHTML;
 				} else {
-					return this.bindHTML(this.eHtmlContainer);
+					let html;
+					if (/^[\s]*</.test(autoLoadBind.srcHTML)) { // content provided immediately
+						html = autoLoadBind.srcHTML;
+					} else { // must be loaded from URL
+						html = await (this.constructor._promiseStaticInit = new Promise((resolve, reject) => {
+							fetch(autoLoadBind.srcHTML)
+								.then((result) => {
+									if (result.ok !== true) {
+										return reject(new Error(
+											this.constructor.name + ': ' + (result.statusText || 'Error')
+												+ (result.status ? ' (' + result.status + ')' : '') + (result.url ? ': ' + result.url : '')
+										));
+									}
+									return result.text();
+								}).then(resolve);
+						}));
+					}
+					eHtml = document.createDocumentFragment(); // instanceof DocumentFragment
+					const cntDiv = document.createElement('DIV');
+					cntDiv.innerHTML = html;
+					cntDiv.id = _uuid;
+					eHtml.appendChild(cntDiv);
 				}
-			} else {
-				return Promise.reject(new Error(`document.querySelector for ${this.constructor.name}->htmlContainer="${this.htmlContainer}" is null!`));
+				let defaultTemplateId = null;
+				const tmps = eHtml.querySelectorAll('TEMPLATE'); // instanceof HTMLTemplateElement (.content instanceof DocumentFragment)
+				for (let i = 0; i < tmps.length; i++) {
+					const template = tmps[i];
+					const id = template.id || i;
+					defaultTemplateId = defaultTemplateId || id;
+					this.constructor.templates[id] = template;
+					template.parentElement.removeChild(template);
+				}
+				// content outside TEMPLATE tags is placed in the default template with templateId = uuid
+				if (eHtml.firstChild && eHtml.firstChild.id === _uuid) {
+					eHtml = eHtml.firstChild;
+				}
+				if (eHtml.childElementCount) { // wrap the remaining elements in a default template with an id equal to the uuid of the model
+					const template = document.createElement('TEMPLATE');
+					for (const child of eHtml.children) {
+						template.content.append(child);
+					}
+					this.constructor.templates[this.uuid] = template;
+					defaultTemplateId = defaultTemplateId || this.uuid;
+				}
+				autoLoadBind.templateId = autoLoadBind.templateId
+					&& String(autoLoadBind.templateId).replace(/^#/, '') || defaultTemplateId;
 			}
-		} else if (this.constructor.htmlViewId) {
-			return Promise.reject(new Error(`${this.constructor.name}->htmlContainer is empty!`));
+			this.constructor._staticInitialized = true;
 		}
-		return Promise.resolve();
+
+		// checkers
+		if (this.constructor.singleInstance) {
+			if (this.options.viewId) {
+				return Promise.reject(new Error(`Error! options.viewId is not allowed for singleton-instance!`));
+			}
+			if (this.constructor.autoLoadBind.containerId) {
+				return Promise.reject(new Error(`Error! autoLoadBind.containerId is not allowed for singleton-instance!`));
+			}
+		} else {
+			if (this.constructor.autoLoadBind.viewId) {
+				return Promise.reject(new Error(`Error! autoLoadBind.viewId is not allowed for multiple instances!`));
+			}
+		}
+
+		// clone content
+		this.constructor._promiseStaticInit.then(async () => {
+			const autoLoadBind = this.constructor.autoLoadBind;
+			const targetId = autoLoadBind.containerId || autoLoadBind.viewId || this.options.viewId;
+			const template = this.constructor.templates[autoLoadBind.templateId]; // return Promise.reject(new Error(`Error! The template with id="${autoLoadBind.templateId}" does not exists!`));
+			if (autoLoadBind.templateId && targetId && template) {
+				const eTarget = document.querySelector(targetId);
+				if (eTarget) {
+					const eContent = template.content.cloneNode(true);
+					if (this.constructor.singleInstance) {
+						this.eView = eTarget;
+						if (this.eView.__SGModelUUID) {
+							return Promise.reject(new Error(`Error! The container with id="${viewId}" already binding with other SGModel instance with uuid: "${this.eView.__SGModelUUID}" (class: "${SGModel.__instances[this.eView.__SGModelUUID].constructor.name}")!`));
+						}
+						this.eView.append(eContent);
+					} else { // Preserve existing content to support multiple instances of printing
+						this.eView = document.createElement('SECTION');
+						this.eView.append(eContent);
+						eTarget.append(this.eView);
+					}
+					const result = await this.bindHTML(this.eView);
+					if (result !== true) {
+						return Promise.reject(result);
+					}
+				} else {
+					return Promise.reject(new Error(`Error! The container with id="${eTarget}" does not exists!`));
+				}
+			}
+		});
+		
+		return this.constructor._promiseStaticInit.then(() => true, (err) => false);
 	}
 	
 	/**
 	 * Set property value. Overriding the **SGModel#set** method
-	 * @param {string}	name
-	 * @param {mixed}	 val
-	 * @param {object}	[options=void 0]
+	 * @param {string}		name
+	 * @param {mixed}			val
+	 * @param {object}		[options=void 0]
 	 * @param {number}		[options.precision] - Rounding precision
-	 * @param {mixed}		[options.previous_value] - Use this value as the previous value
-	 * @param {number}	[flags=0] - Valid flags: **FLAG_OFF_MAY_BE** | **FLAG_PREV_VALUE_CLONE** | **FLAG_NO_CALLBACKS** | **FLAG_FORCE_CALLBACKS** | **FLAG_IGNORE_OWN_SETTER**
-	 * @return {boolean} If the value was changed will return **true**
+	 * @param {mixed}			[options.previous_value] - Use this value as the previous value
+	 * @param {number}		[flags=0] - Valid flags: **FLAG_OFF_MAY_BE** | **FLAG_PREV_VALUE_CLONE** | **FLAG_NO_CALLBACKS** | **FLAG_FORCE_CALLBACKS** | **FLAG_IGNORE_OWN_SETTER**
+	 * @return {boolean}	If the value was changed will return **true**
 	 * @override
 	 */
 	set(name, ...args) {
@@ -89,14 +164,32 @@ class SGModelView extends SGModel {
 			this._refreshElement(name);
 		}
 	}
-	
+
 	/**
 	 * Data and view binding (MVVM)
 	 * @param {string|HTMLElement} [root=void 0] Example "#my_div_id" or HTMLElement object
 	 */
 	bindHTML(root = void 0) {
-		if (! this._binderInitialized) {
-			if (typeof document === "undefined") throw "Error! window.document is undefined!";
+		return new Promise((resolve, reject) => {
+			if (document.readyState === 'loading') {
+				document.addEventListener('DOMContentLoaded', () => {
+					this._bindHTML(root, resolve, reject);
+				});
+			} else {
+				this._bindHTML(root, resolve, reject);
+			}
+		});
+	}
+	
+	/**
+	 * @private
+	 * @returns {Promise}
+	 */
+	_bindHTML(root = void 0, resolve, reject) {
+		if (!this._binderInitialized) {
+			if (typeof document === 'undefined') {
+				return reject(new Error('Error! window.document is undefined!'));
+			}
 			this._onChangeDOMElementValue = this._onChangeDOMElementValue.bind(this);
 			this._propertyElementLinks = {};
 			this._eventsCounter = -1;
@@ -104,8 +197,11 @@ class SGModelView extends SGModel {
 			this._binderInitialized = true;
 		}
 		
-		this.eHtmlContainer = (typeof root === 'string' ? document.querySelector(root) : (root ? root : document.body));
-		if (!this.eHtmlContainer) throw `${this.constructor.name}->bindHTML() error! Container "${root}" does not exist!`;
+		this.eView = (typeof root === 'string' ? document.querySelector(root) : (root ? root : document.body));
+		if (!this.eView) {
+			return reject(new Error(`Error in ${this.constructor.name}->bindHTML()! Container "${root}" does not exist!`));
+		}
+		this.eView.__SGModelUUID = this.uuid;
 		
 		for (let name in this._propertyElementLinks) {
 			const propertyElementLink = this._propertyElementLinks[name];
@@ -144,7 +240,7 @@ class SGModelView extends SGModel {
 		let thisNames = Object.getOwnPropertyNames(this.__proto__);
 		for (let i = 0; i < thisNames.length; i++) {
 			const name = thisNames[i];
-			if (this._sysThis.indexOf(name) === -1 && ! /^_/.test(name)) {
+			if (this._sysThis.indexOf(name) === -1 && !/^_/.test(name)) {
 				this._reThis[name] = {
 					re: [
 						new RegExp('([^\\w\\.\\-])'+name+'([^\\w\\.\\-])', 'g'),
@@ -157,10 +253,10 @@ class SGModelView extends SGModel {
 			}
 		}
 		
-		this._bindElements([this.eHtmlContainer]);
+		this._bindElements([this.eView]);
 		this._refreshAll();
 		
-		return Promise.resolve();
+		return resolve(true);
 	}
 	
 	/** @private */
@@ -179,7 +275,9 @@ class SGModelView extends SGModel {
 			//const sgStyle = element.getAttribute("sg-style"); // TODO
 			const sgClick = elementDOM.getAttribute("sg-click");
 			//const sgEvents = element.getAttribute("sg-events"); // TODO
-			const sgOptions = elementDOM.getAttribute("sg-options"); // For SELECT element
+			const sgOptions = elementDOM.getAttribute("sg-options"); // for SELECT element
+			//const sgForeach = elementDOM.getAttribute("sg-foreach"); // TODO
+			//const sgTemplate = elementDOM.getAttribute("sg-template"); // TODO
 			
 			if (sgProperty && this.has(sgProperty)) {
 				this._regPropertyElementLink(sgProperty, elementDOM, SGModelView._LINKTYPE_VALUE);
@@ -232,7 +330,6 @@ class SGModelView extends SGModel {
 						}
 					}
 				} catch(err) {
-					debugger;
 					throw err;
 				}
 			}
@@ -252,7 +349,6 @@ class SGModelView extends SGModel {
 						}
 					}
 				} catch(err) {
-					debugger;
 					throw err;
 				}
 			}
@@ -297,13 +393,12 @@ class SGModelView extends SGModel {
 				try {
 					elementDOM._sg_css = (new Function("return " + sgCSS)).bind(this);
 				} catch(err) {
-					debugger;
 					throw err;
 				}
 				
 				elementDOM._sg_css_static_classes = [...elementDOM.classList];
 				
-				if (! bProperties && bFunctions) {
+				if (!bProperties && bFunctions) {
 					this._regPropertyElementLink(sgProperty, elementDOM, SGModelView._LINKTYPE_CSS);
 				}
 			}
@@ -351,7 +446,7 @@ class SGModelView extends SGModel {
 	/** @private */
 	_regPropertyElementLink(property, element, type) {
 		let item = this._propertyElementLinks[property];
-		if (! item) {
+		if (!item) {
 			item = this._propertyElementLinks[property] = [];
 		}
 		if (item.indexOf(element) === -1) {
@@ -362,7 +457,7 @@ class SGModelView extends SGModel {
 	/** @private */
 	_refreshElement(property) {
 		
-		if (! this._propertyElementLinks[property]) {
+		if (!this._propertyElementLinks[property]) {
 			return false;
 		}
 		
@@ -371,7 +466,7 @@ class SGModelView extends SGModel {
 			const propertyElementLink = this._propertyElementLinks[property][j];
 			
 			const elementDOM = propertyElementLink.element;
-			if (! elementDOM) return false;
+			if (!elementDOM) return false;
 			
 			switch (propertyElementLink.type) {
 				case SGModelView._LINKTYPE_VALUE: {
@@ -405,7 +500,7 @@ class SGModelView extends SGModel {
 										}
 										break;
 									case "select-multiple": {
-										if (! Array.isArray(value)) { debugger; break; }
+										if (!Array.isArray(value)) { debugger; break; }
 										for (let i = 0; i < elementDOM.options.length; i++) {
 											let selected = false;
 											for (let j = 0; j < value.length; j++) {
@@ -437,7 +532,7 @@ class SGModelView extends SGModel {
 						if (typeof result === "function") {
 							result = result.call(this, property);
 						}
-						if (! Array.isArray(result)) {
+						if (!Array.isArray(result)) {
 							if (result === "") {
 								result = [];
 							} else {

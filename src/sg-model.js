@@ -1,13 +1,37 @@
 "use strict";
 
 /**
- * SGModel v1.0.5
+ * SGModel v1.0.6
  * Fast lightweight library (ES6) for structuring web applications using binding models and custom events. This is a faster and more simplified analogue of Backbone.js!
  * @see https://github.com/VediX/SGModel or https://model.sg2d.ru
  * @copyright 2019-2025 Kalashnikov Ilya
  * @license SGModel may be freely distributed under the MIT license
  */
 class SGModel {
+
+	/** @private */
+	static __instances = {};
+	/** @private */
+	static __instancesByClass = {};
+
+	/** Properties default values */
+	static defaultProperties = {}; // override
+
+	/** Property data types */
+	static typeProperties = {}; // override
+
+	/**
+	 * Allow implicit property declaration (the type of these properties is determined automatically based on how these properties are applied in the view)
+	 * @announcement v1.1+
+	 */
+	//static allowUndeclaredProperties = false; // override
+
+	/**
+	 * Аutomatically detected properties (to allow implicit declaration of properties, the static property allowUndeclaredProperty must be set to true)
+	 * @announcement v1.1+
+	 * @private
+	 */
+	//static _autoDetectedProperties = {};
 	
 	/**
 	 * Sets the default property values. Overriden
@@ -24,13 +48,39 @@ class SGModel {
 	 * @param {object} [thisProperties=void 0] Properties and methods passed to the **this** context of the created instance
 	 */
 	constructor(properties = {}, clonedOptions = void 0, thisProperties = void 0) {
+		if (typeof thisProperties === 'object' && thisProperties !== null) {
+			Object.assign(this, thisProperties); // add internal properties to the object, accessible through this.*
+		}
 		if (this.constructor.singleInstance) {
-			if (this.constructor._instance) throw 'Error! this.constructor._instance not is empty!';
+			if (this.constructor._instance) {
+				throw 'Error! this.constructor._instance not is empty!';
+			}
 			this.constructor._instance = this;
+		} else {
+			this.constructor.multipleInstances = true;
 		}
 		if (typeof properties !== 'object' || properties === null) {
 			throw 'Error! properties must be object!';
 		}
+		if (!this.constructor.hasOwnProperty('defaultProperties')) {
+			this.constructor.defaultProperties = {};
+		}
+		if (!this.constructor.hasOwnProperty('typeProperties')) {
+			this.constructor.typeProperties = {};
+		}
+		if (!this.constructor.hasOwnProperty('ownSetters')) {
+			this.constructor.ownSetters = {};
+		}
+
+		const defaults = this.defaults();
+
+		this.uuid = this.uuid || defaults.uuid || properties.uuid || crypto.randomUUID && crypto.randomUUID() // must be https protocol to support the function crypto.randomUUID()
+			|| '10000000-1000-4000-8000-100000000000'.replace(/[018]/g, c => (+c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> +c / 4).toString(16));
+		delete defaults.uuid;
+		delete properties.uuid;
+		this._uid = SGModel.uid();
+		SGModel.__instances[this.uuid] = this;
+		(SGModel.__instancesByClass[this.constructor.name] = SGModel.__instancesByClass[this.constructor.name] || {})[this.uuid] = this;
 		
 		// Check static options
 		if (typeof this.constructor.options === 'object' && this.constructor.options !== null) {
@@ -41,25 +91,19 @@ class SGModel {
 		
 		if (typeof clonedOptions === 'object' && clonedOptions !== null) {
 			if (typeof clonedOptions._this === 'object' && clonedOptions._this !== null) { // TODO: DEL DEPRECATED
-				console.warn('"options._this" will be deprecated soon! The third parameter in the constructor is used - see "thisProperties".');
+				console.warn('"options._this" will be deprecated soon! The third parameter in the constructor is used, see "thisProperties".');
 				Object.assign(this, clonedOptions._this); // add internal properties to the object, accessible through this.*
 				delete clonedOptions._this;
 			}
 			Object.assign(this.options, SGModel.clone(clonedOptions));
 		}
-
-		if (typeof thisProperties === 'object' && thisProperties !== null) {
-			Object.assign(this, thisProperties); // add internal properties to the object, accessible through this.*
-		}
-		
-		const defaults = this.defaults();
 		
 		// override defaults by localStorage data
 		if (this.constructor.localStorageKey) {
-			const lsData = void 0;
-			const data = localStorage.getItem(this.constructor.localStorageKey + (! this.constructor.singleInstance ? ':' + properties.uuid : ''));
-			if (data) lsData = JSON.parse(data);
-			if (lsData) SGModel.initObjectByObject(defaults, lsData);
+			const data = JSON.parse(localStorage.getItem(this.constructor.localStorageKey + (!this.constructor.singleInstance ? ':' + this.uuid : '')));
+			if (typeof data === 'object' && data !== null) {
+				SGModel.initObjectByObject(defaults, data);
+			}
 		}
 		
 		if (Object.keys(properties).length) {
@@ -102,7 +146,7 @@ class SGModel {
 					if (Array.isArray(value)) {
 						const valueDefault = defaults[p];
 						if (typeof valueDefault !== 'object' || valueDefault === null) {
-							debugger; throw 'No default value was set for an object named "' + p + '" (' + this.constructor.name + ')! An object structure is required to fill in the data!';
+							throw 'No default value was set for an object named "' + p + '" (' + this.constructor.name + ')! An object structure is required to fill in the data!';
 						}
 						let index = 0;
 						for (let i in valueDefault) {
@@ -115,7 +159,7 @@ class SGModel {
 							value[i] = SGModel.toNumber(value[i]);
 						}
 					} else {
-						debugger; throw 'Error! Property "' + p + '" (' + this.constructor.name + ') must be an object or an array!';
+						throw 'Error! Property "' + p + '" (' + this.constructor.name + ') must be an object or an array!';
 					}
 					break;
 				}
@@ -137,7 +181,7 @@ class SGModel {
 					if (Array.isArray(value)) {
 						const valueDefault = defaults[p];
 						if (typeof valueDefault !== 'object' || valueDefault === null) {
-							debugger; throw 'No default value was set for an object named "' + p + '" (' + this.constructor.name + ')! An object structure is required to fill in the data!';
+							throw 'No default value was set for an object named "' + p + '" (' + this.constructor.name + ')! An object structure is required to fill in the data!';
 						}
 						let index = 0;
 						for (let i in valueDefault) {
@@ -148,40 +192,31 @@ class SGModel {
 					} else if (typeof value === 'object') {
 						// no code
 					} else {
-						debugger; throw 'Error! Property "' + p + '" (' + this.constructor.name + ') must be an object or an array!';
+						throw 'Error! Property "' + p + '" (' + this.constructor.name + ') must be an object or an array!';
 					}
 					break;
 				default:
-					debugger; throw 'Error! Unknown type specified for property "' + p + '" (' + this.constructor.name + ')!';
+					throw 'Error! Unknown type specified for property "' + p + '" (' + this.constructor.name + ')!';
 			}
 		}
 
 		this.properties = SGModel.defaults({}, defaults, properties);
-
-		if (! this.properties.uuid) {
-			this.properties.uuid = crypto.randomUUID && crypto.randomUUID() // must be https protocol to support the function crypto.randomUUID()
-				|| '10000000-1000-4000-8000-100000000000'.replace(/[018]/g, c => (+c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> +c / 4).toString(16));
-		}
-		this.uuid = this.properties.uuid;
-		this._uid = SGModel.uid();
-		
 		this.destroyed = false;
-
 		this.onChangeCallbacks = {};
 		
 		// Crutch, since in JS there is no way to execute the code in the child class at the time of extends of the parent class
-		if (! this.constructor.hasOwnProperty('_ownSettersInitialized')) {
-			this.constructor._ownSettersInitialized = true;
+		if (!this.constructor.hasOwnProperty('_ownSettersInitialized')) {
 			for (const p in this.constructor.ownSetters) {
 				if (this.constructor.ownSetters[p] === true) {
 					this.constructor.ownSetters[p] = this['set' + SGModel.upperFirstLetter(p)];
 				}
 			}
+			this.constructor._ownSettersInitialized = true;
 		}
 		
 		this.changed = false; // reset manually!
 		
-		this.initialized = this.initialize.call(this, properties, this.options);
+		this.initialized = this.initialize.apply(this, arguments);
 	}
 	
 	/** Called when an instance is created. Override in your classes
@@ -206,15 +241,15 @@ class SGModel {
 	set(name, value, options = void 0, flags = 0, event = void 0, elem = void 0) {
 		
 		if (typeof options !== 'object' && options !== void 0) {
-			debugger; throw 'Error 7610932! "options" type is not a object or undefined! Property: ' + name + ', constructor: ' + this.constructor.name;
+			throw 'Error 7610932! "options" type is not a object or undefined! Property: ' + name + ', constructor: ' + this.constructor.name;
 		}
 		if (typeof flags !== 'number') {
-			debugger; throw 'Error 7892354! "flags" type is not a number!';
+			throw 'Error 7892354! "flags" type is not a number!';
 		}
 		
 		options = options || SGModel.OBJECT_EMPTY;
 		
-		if (! (flags & SGModel.FLAG_IGNORE_OWN_SETTER) && this.constructor.ownSetters[name]) {
+		if (!(flags & SGModel.FLAG_IGNORE_OWN_SETTER) && this.constructor.ownSetters[name]) {
 			return this.constructor.ownSetters[name].call(this, value, options, flags);
 		}
 		
@@ -256,17 +291,17 @@ class SGModel {
 		}
 		
 		if (typeof val === 'object' && val !== null) {
-			debugger; throw 'Error 9834571! type of "val" should be simple (not an object), because prevValue will not be cloned!';
+			throw 'Error 9834571! type of "val" should be simple (not an object), because prevValue will not be cloned!';
 		}
 		
 		if (val === value) {
-			if (! (flags & SGModel.FLAG_FORCE_CALLBACKS)) return false;
+			if (!(flags & SGModel.FLAG_FORCE_CALLBACKS)) return false;
 		} else {
 			this.properties[name] = value;
 			this.changed = true;
 		}
 		
-		if (! (flags & SGModel.FLAG_NO_CALLBACKS)) {
+		if (!(flags & SGModel.FLAG_NO_CALLBACKS)) {
 			const prevValue = (options.previous_value !== void 0 ? options.previous_value : val);
 			const callbacks = this.onChangeCallbacks[name];
 			if (callbacks) {
@@ -314,7 +349,7 @@ class SGModel {
 				}
 			}
 		} else if (aValues) {
-			debugger; throw 'aValues should be must Array or empty! (' + this.constructor.name + ')';
+			throw 'aValues should be must Array or empty! (' + this.constructor.name + ')';
 		} else { // ! aValues
 			const v = (type === SGModel.TYPE_OBJECT_NUMBERS ? 0 : void 0);
 			for (let i = 0; i < values.length; i++) {
@@ -341,7 +376,7 @@ class SGModel {
 		
 		options = options || SGModel.OBJECT_EMPTY;
 		
-		if (! (flags & SGModel.FLAG_IGNORE_OWN_SETTER) && this.constructor.ownSetters[name]) {
+		if (!(flags & SGModel.FLAG_IGNORE_OWN_SETTER) && this.constructor.ownSetters[name]) {
 			return this.constructor.ownSetters[name].call(this, oValues, options, flags);
 		}
 
@@ -400,7 +435,7 @@ class SGModel {
 		
 		options = options || SGModel.OBJECT_EMPTY;
 		
-		if (! (flags & SGModel.FLAG_IGNORE_OWN_SETTER) && this.constructor.ownSetters[name]) {
+		if (!(flags & SGModel.FLAG_IGNORE_OWN_SETTER) && this.constructor.ownSetters[name]) {
 			return this.constructor.ownSetters[name].call(this, value, options, flags);
 		}
 		
@@ -465,7 +500,7 @@ class SGModel {
 	
 	/** @private */
 	_runCallbacks(name, values, prevValue, flags = 0) {
-		if (! (flags & SGModel.FLAG_NO_CALLBACKS)) {
+		if (!(flags & SGModel.FLAG_NO_CALLBACKS)) {
 			const callbacks = this.onChangeCallbacks[name];
 			if (callbacks) {
 				if (flags & SGModel.FLAG_OFF_MAY_BE) callbacks = SGModel.clone(callbacks);
@@ -512,7 +547,7 @@ class SGModel {
 	/** @private */
 	_on(name, func, context = void 0, data = void 0, flags = 0) {
 		let callbacks = this.onChangeCallbacks[name];
-		if (! callbacks) callbacks = this.onChangeCallbacks[name] = [];
+		if (!callbacks) callbacks = this.onChangeCallbacks[name] = [];
 		callbacks.push({f: func, c: context, d: data});
 		if (flags === SGModel.FLAG_IMMEDIATELY) {
 			func.call(context ? context : this, data ? data : this.properties[name], this.properties[name], name);
@@ -549,7 +584,7 @@ class SGModel {
 					this._off.call(this, name[i], func);
 				}
 			} else {
-				this._on.apply(this, arguments);
+				this._off.apply(this, arguments);
 			}
 		} else {
 			for (const f in this.onChangeCallbacks) {
@@ -605,23 +640,11 @@ class SGModel {
 	 * @return Promise
 	 */
 	save() {
-		if (! this.constructor.localStorageKey) {
-			debugger; throw 'Error 37722990!';
+		if (!this.constructor.localStorageKey) {
+			throw 'Error 37722990! The static property "localStorageKey" is not set!';
 		}
-		
-		let uuid;
-		if (this.constructor.singleInstance) {
-			uuid = this.properties.uuid;
-			delete this.properties.uuid;
-		}
-		
 		const dest = this.getData();
-		localStorage.setItem(this.constructor.localStorageKey + (! this.constructor.singleInstance ? ':' + uuid : ''), JSON.stringify(dest));
-		
-		if (this.constructor.singleInstance) {
-			this.properties.uuid = uuid;
-		}
-		
+		localStorage.setItem(this.constructor.localStorageKey + (!this.constructor.singleInstance ? ':' + this.uuid : ''), JSON.stringify(dest));
 		return Promise.resolve(true);
 	}
 	
@@ -655,17 +678,13 @@ class SGModel {
 	
 	/** Destroy the instance */
 	destroy() {
+		this.off();
+		delete SGModel.__instancesByClass[this.constructor.name][this.uuid];
+		delete SGModel.__instances[this.uuid];
 		this.destroyed = true;
 		this.constructor._instance = null;
-		this.off();
 	}
 }
-
-/** Property data types */
-SGModel.typeProperties = {}; // override
-
-/** Properties default values */
-SGModel.defaultProperties = {}; // override
 
 SGModel.TYPE_ANY = void 0;
 SGModel.TYPE_NUMBER = 1;
@@ -716,7 +735,7 @@ SGModel.DELETE_EMPTIES = true;
  *	}
  *}
  */
-SGModel.ownSetters = {};
+SGModel.ownSetters = {}; // override
 
 /** @private */
 SGModel._uid = 0;
@@ -877,6 +896,11 @@ SGModel._instance = null;
 SGModel.singleInstance = false;
 
 /**
+ * Enable multiple instances
+ */
+SGModel.multipleInstances = true;
+
+/**
  * Automatic saving to storage when any property is changed
  */
 SGModel.autoSave = false;
@@ -885,8 +909,8 @@ SGModel.autoSave = false;
 SGModel.getInstance = function(bIgnoreEmpty = false) {
 	if (this._instance) {
 		return this._instance;
-	} else if (! bIgnoreEmpty) {
-		debugger; throw 'Error! this._instance is empty!';
+	} else if (!bIgnoreEmpty) {
+		throw 'Error! this._instance is empty!';
 	}
 	return null;
 };
@@ -899,10 +923,10 @@ SGModel.save = function() {
 		if (this.singleInstance) {
 			return this._instance.save();
 		} else {
-			debugger; throw 'Error! The class must be with singleInstance=true!';
+			throw 'Error! The class must be with singleInstance=true!';
 		}
 	} else {
-		debugger; throw 'Error! this._instance is empty!';
+		throw 'Error! this._instance is empty!';
 	}
 	return null;
 };
@@ -956,7 +980,7 @@ SGModel._bChanged = false;
 SGModel._index = 0
 
 /** @private */
-//static _ownSettersInitialized = false; // override
+SGModel._ownSettersInitialized = false; // override
 
 /** @private */
 SGModel._xy = {x: 0, y: 0};

@@ -18,9 +18,10 @@
 * [Основные статические свойства SGModel](#основные-статические-свойства-sgmodel)
 	* [static typeProperties = {…}](#static-typeproperties--)
 	* [static defaultsProperties = {…}](#static-defaultsproperties--)
-  * [static options = {...}](#static-options--)
+	* [static options = {...}](#static-options--)
 	* [static localStorageKey = ""](#static-localstoragekey--)
 	* [static storageProperties = []](#static-storageproperties--)
+	* [static autoSave = false](#static-autosave--false)
 * [Свойства и методы экземпляра SGModel](#свойства-и-методы-экземпляра-sgmodel)
 	* [constructor(properties = {}, options = void 0, thisProperties = void 0)](#constructorproperties---options--void-0-thisproperties--void-0)
 	* [uid](#uid)
@@ -51,6 +52,11 @@
 	* [static upperFirstLetter(s)](#static-upperfirstletters)
 	* [static roundTo(value, precision = 0)](#static-roundtovalue-precision--0)
 * [MVVM-паттерн в SGModelView](#mvvm-паттерн-в-sgmodelview)
+	* [Статические свойства экземпляра SGModelView](#статические-свойства-экземпляра-sgmodelview)
+		* [static templates = {...}](#static-templates--)
+		* [static autoLoadBind = {...}](#static-autoloadbind--)
+	* [Свойства экземпляра SGModelView](#свойства-экземпляра-sgmodelview)
+		* [eView](#eview)
 	* [Методы экземпляра SGModelView](#методы-экземпляра-sgmodelview)
 		* [bindHTML(root=void 0)](#bindhtmlrootvoid-0)
 	* [Атрибуты в HTML-документе](#атрибуты-в-html-документе)
@@ -62,6 +68,7 @@
 		* [sg-attributes](#sg-attributes)
 		* [sg-value](#sg-value)
 		* [sg-click](#sg-click)
+* [Пример использования](#пример-использования)
 * [Лицензия](#лицензия)
 
 # SGModel
@@ -160,7 +167,11 @@ class Tank extends PlayerBase {
 
 ### static storageProperties = []
 
-Если задан перечень названий свойств, то при выполнении save() записываются только эти свойства! Также эти свойства возвращаются методом getData()
+Если задан перечень названий свойств, то при выполнении save() записываются только эти свойства! Также эти свойства возвращаются методом [getData()](#getdatabdeleteempties--false)
+
+### static autoSave = false
+
+Если true, то изменения при выполнении set(...) сразу сохраняются в постоянном хранилище (обычно в localStorage)
 
 ## Свойства и методы экземпляра SGModel
 
@@ -263,13 +274,13 @@ this.on(
 
 ### save()
 
-Сохраняет данные (в this.properties) в локальное хранилище localStorage.
+Сохраняет данные (из this.properties) в локальное хранилище localStorage.
 Если `storageProperties` не задан, то свойства, начинающиеся с символа "_" не записывается в хранилище.
 Если `storageProperties` задан, то в хранилище записываются только те свойства, которые указаны в массиве `storageProperties`.
 
 ### getData(bDeleteEmpties = false)
 
-Получить объект с properties и значениями. Используется либо данные `storageProperties`, либое берутся свойства без начального символа "_". Флаг `bDeleteEmpties` определяет - будут ли в возвращаемом объекте пустые свойства (пустая строка, `0`, `null`, `undefined`).
+Получить объект с properties и значениями. Используется либо данные `storageProperties`, либо берутся свойства без начального символа "_". Флаг `bDeleteEmpties` определяет - будут ли в возвращаемом объекте свойства со значениями `null` и `undefined`.
 
 ### destroy()
 
@@ -406,58 +417,100 @@ new Application();
 
 ## Статические свойства экземпляра SGModelView
 
-### static htmlFile = void 0
+### static templates = {...}
 
-При наличии значения в this.constructor.htmlFile асинхронно и только один раз для всех экземпляров загружается html-файл. Содержимое файла сохраняется в свойство this.constructor.htmlFileContent, которое может многократно использоваться в дальнейшем.
+Шаблоны для вставки блоков HTML-кода (ассоциативный массив с элементами HTMLTemplateElement и DocumentFragment). Может быть сформирован автоматически в зависимости от параметров в `static autoLoadBind = {...}` (см. ниже).
 
-Пример кода:
+### static autoLoadBind = {...}
+
+Параметры автоматической загрузки шаблона, генерации на его основе контента и биндинга данных.
+
+- `[autoLoadBind.srcHTML = void 0]` {mixed} - может быть строкой (HTML-код, URL) или объектом (HTMLElement/HTMLTemplateElement);
+- `[autoLoadBind.templateId = void 0]` {string} - код основного шаблона (обычно это значение id в теге template), который сразу клонируется в document;
+- `[autoLoadBind.viewId = void 0]` {string} - id контейнера, куда клонируется основной шаблон;
+- `[constructor.templates = {}]` {object} - ассоциативный массив распознанных шаблонов.
+
+Значение `autoLoadBind.srcHTML` может быть следующего типа:
+
+- `string` распознается как HTML-код - код размещается во временный HTMLTemplateElement;
+- `string` распознается как URL - выполняется асинхронная загрузка HTML-кода во временный HTMLTemplateElement;
+- `object` является инстансом на основе `HTMLElement` - сразу переходим на следующий этап.
+
+На следующем этапе все найденные внутри шаблоны (поиск по тегу template) переносятся в ассоциативный массив `constructor.templates = {...}`, где ключом выступает id шаблона (id в теге template), либо текущей индекс (начинается с 0) если id не установлен, либо uuid для HTML-контента вне тегов TEMPLATE (доступ по ключу: `constructor.templates[this.uuid]`). Если `autoLoadBind.templateId` не задан, то при наличии шаблона по умолчанию в `autoLoadBind.templateId` присваивается id шаблона по умолчанию. Далее, для singleton-представления и заданном `autoLoadBind.viewId` или при работе с несколькими экземплярами представления и переданным в конструкторе `options.viewId`, шаблон клонируется в документ и выполняется биндинг данных с контролами. При создании нескольких экземпляров контент каждой записи размещается в теге `SECTION`.
+
+Пример кода для singleton-вьюхи (единственного инстанса представления):
+
+```html
+<template id="tmp_filters">
+	<div>
+		<div>Компания:</div><div><input type="text" sg-property="orgs"/></div>
+		<div>Проект:</div><div><input type="text" sg-property="project"/></div>
+		<div>Задача:</div><div><input type="text" sg-property="task"/></div>
+	</div>
+</template>
+```
 
 ```js
-export default class MyView1 extends SGModelView {
-	static htmlFile = '/cmp/views/my-view1.html';
-	...
-	initialize(properties, options) {
-		...
-		return super.initialize(properties, options); // Внимание! Нужно вызвать родительский метод
+export default class MyViewForm extends SGModelView {
+	static singleInstance = true; // default: false
+	static autoLoadBind = {
+		srcHTML: 'templates/filters.html',
+		templateId: '#tmp_filters', // Символ '#' при наличии отбрасывается
+		viewId: '#filters_cnt', // Можно любой CSS-селектор, возвращающий один элемент, например: 'body > div.my-class1 main'
+	};
+	//...
+	async initialize() {
+		return super.initialize().then(() => { // Внимание! Нужно вызвать родительский метод
+			//...
+		});
 	}
 }
 ```
 
-### static htmlFileContent = void 0
+Пример кода с многократным использованием вьюхи (несколько однотипных инстансов представления):
 
-Сюда сохраняется содержимое загруженного html-файла вьюхи.
-
-### static htmlContainer = void 0
-
-При заданном значении this.constructor.htmlContainer автоматический биндинг экземпляров выполняется в указанный DOM-элемент.
-
-Пример кода:
-
-```js
-	static htmlContainer = 'body > div.my-class1 main';
+```html
+<template id="tmp_record">
+	<div>
+		<div>Код:</div>
+		<div sg-property="code"></div>
+	</div>
+	<div>
+		<div>Описание:</div>
+		<div><textarea sg-property="description"></textarea></div>
+	</div>
+</template>
 ```
 
-Также при создании конкретного экземпляра можно задать свой контейнер (переопределить статический), например:
-
 ```js
-let entity1 = new MyView1(void 0, void 0, { htmlContainer: '#view1' });
+export default class MyRecords extends SGModelView {
+	static multipleInstances = true; // default: true
+	static autoLoadBind = {
+		srcHTML: 'templates/records.html',
+		containerId: '#records_cnt', // Контейнер, в котором будут добавляться однотипные вьюхи каждой записи
+	};
+	//...
+	async initialize() {
+		return super.initialize().then(() => { // Внимание! Нужно вызвать родительский метод
+			//...
+		});
+	}
+}
 ```
 
-### static htmlViewId = void 0
-
-При заданном значении автоматически выполняет биндинг в момент инициализации экзмепляра. Ссылка на корневой DOM-элемент вьюхи сохраняется в свойство экземпляра this.eHtmlContainer.
-При заданном свойстве this.constructor.htmlFile сначала будет загружен html-код из файла.
-Если значение не указано, но при этом указаны htmlFile и htmlContainer, то html-код вьюхи вставляется как последний вложенный DOM-элемент в контейнер.
+```js
+for (let i = 0; i < 10; i++) {
+	const eRecord = new MyRecords();
+}
+```
 
 ## Свойства экземпляра SGModelView
 
-### htmlContainer
+Свойства экземпляра SGModelView помимо свойств экземпляра SGModel:
 
-Селектор контейнера, в который вставляется html-код вьюхи. По умолчанию равен static htmlContainer. Можно переопределить при создании экземпляра в options.
+### eView
 
-### eHtmlContainer
-
-Корневой DOM-элемент вьюхи.
+Корневой DOM-элемент вьюхи инстанса SGModelView.
 
 ## Методы экземпляра SGModelView
 
@@ -677,6 +730,75 @@ class MyForm extends SGModelView {
 		...
 	}
 }
+```
+
+# Пример использования
+
+Javascript-код (filters.js)
+
+```
+import SGModelView from 'https://model.sg2d.ru/src/sg-model-view.js';
+
+export default class FiltersPanel extends SGModelView {
+	static singleInstance = true; // говорим, что у нас будет единственный инстанс, следовательно в localStorage имя ключа не будет записываться с uuid
+	static localStorageKey = 'filters_panel'; // Имя ключа в localStorage
+	static autoSave = true;	// Автоматически сохранять значения свойств модели в хранилище localStorage
+	static autoLoadBind = { // При создании инстанса сразу же выполнить загрузку HTML-кода, клонирование HTML-кода в document и связать контролы с данными
+		srcHTML: 'templates/filters_panel.html',
+		templateId: 'tmp_filters_panel',
+		viewId: '#filters_panel_cnt',
+	};
+	static defaultProperties = {
+		selectedProjects: false,
+		selectedTasks: false,
+		selectedKeywords: false,
+	};
+	static typeProperties = {
+		selectedOrgs: SGModel.TYPE_BOOLEAN,
+		selectedTasks: SGModel.TYPE_BOOLEAN,
+		selectedKeywords: SGModel.TYPE_BOOLEAN,
+	};
+	async initialize() {
+		return super.initialize().then((result) => {
+			//...
+		});
+	}
+}
+```
+
+HTML-код основной страницы (например, index.html):
+
+```
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>Test SGModelView</title>
+		<script type="module" charset="utf-8" src="index.js" defer></script>
+	</head>
+	<body>
+		<div id="filters_panel_cnt"></div>
+	</body>
+</html>
+```
+
+HTML-код панели фильтров и повторяющего блока (templates/filters_panel.html):
+
+```
+<template id="filters_panel">
+	<h1>Фильтрация</h1>
+	<div sg-css="selectedOrgs ? '' : 'filter-off'">
+		<div class="form-check form-switch">
+			<input type="checkbox" id="flt_selected_orgs" sg-property="selectedOrgs">
+			<label for="flt_selected_orgs">Организации:</label>
+		</div>
+		<div id="flt_orgs_selected_cnt" sg-foreach="orgs" sg-template="tmp_filters_item_selected"></div>
+	</div>
+	<hr/>
+</template>
+
+<template id="tmp_filters_item">
+	<span><span>TagName</span><button type="button">X</button></span>
+</template>
 ```
 
 # Лицензия
