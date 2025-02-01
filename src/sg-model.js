@@ -1,8 +1,8 @@
 "use strict";
 
 /**
- * SGModel v1.0.6
- * Fast lightweight library (ES6) for structuring web applications using binding models and custom events. This is a faster and more simplified analogue of Backbone.js!
+ * SGModel v1.0.7
+ * Fast lightweight library (ES2024+/ES15+) for structuring web applications using binding models and custom events. This is a faster and more simplified analogue of Backbone.js!
  * @see https://github.com/VediX/SGModel or https://model.sg2d.ru
  * @copyright 2019-2025 Kalashnikov Ilya
  * @license SGModel may be freely distributed under the MIT license
@@ -78,7 +78,9 @@ class SGModel {
 			|| '10000000-1000-4000-8000-100000000000'.replace(/[018]/g, c => (+c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> +c / 4).toString(16));
 		delete defaults.uuid;
 		delete properties.uuid;
-		this._uid = SGModel.uid();
+
+		this._uid = SGModel.uid(); // @private
+
 		SGModel.__instances[this.uuid] = this;
 		(SGModel.__instancesByClass[this.constructor.name] = SGModel.__instancesByClass[this.constructor.name] || {})[this.uuid] = this;
 		
@@ -223,7 +225,7 @@ class SGModel {
 	 * @return {Promise}
 	 */
 	async initialize() {
-		return Promise.resolve(true);
+		return Promise.resolve(true); // stub (you can override this method)
 	}
 	
 	/**
@@ -686,6 +688,10 @@ class SGModel {
 	}
 }
 
+/**
+ * SGModel types
+ * @constant
+ */
 SGModel.TYPE_ANY = void 0;
 SGModel.TYPE_NUMBER = 1;
 SGModel.TYPE_STRING = 2;

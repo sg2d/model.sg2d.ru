@@ -181,11 +181,10 @@ class Tank extends PlayerBase {
 * `options` - пользовательские настройки
 * `thisProperties` - свойства и методы передающиеся в контекст this созданного экземпляра
 
-### uid
+### UUID и uid
 
-Уникальный числовой идентификатор экземпляра. Генерируется автоматически при создании экземпляра, если не был передан вручную. Также присутствует в свойствах экземпляра: `this.get('uid')`.
-
-Если при создании экземпляра нужно заполнить его данными из локального хранилища localStorage (синхронизировать), то uid необходимо указать заранее при вызове конструктора (в props). Также в этом случае необходимо задать `localStorageKey`.
+* `this.uuid` - уникальный идентификатор экземпляра. Генерируется автоматически при создании экземпляра, если не был передан вручную в `this.defaults()` (или `static defaultProperties`) или в конструкторе в properties. Значение UUID используется в составе имени ключа для получения сохраненных данных инстанса из локального хранилища (задан `static localStorageKey`).
+* `this._uid` - (@private) порядковый сквозной (в разрезе всех классов-потомков унаследованных от SGModel) числовой номер экземпляра. Генерируется автоматически при создании экземпляра.
 
 ### initialized
 
@@ -417,6 +416,10 @@ new Application();
 
 ## Статические свойства экземпляра SGModelView
 
+### static enablePrintingUUIDClass = true
+
+Включить вывод в атрибутах корневого DOM-элемента представления UUID инстанса и имя класса модели.
+
 ### static templates = {...}
 
 Шаблоны для вставки блоков HTML-кода (ассоциативный массив с элементами HTMLTemplateElement и DocumentFragment). Может быть сформирован автоматически в зависимости от параметров в `static autoLoadBind = {...}` (см. ниже).
@@ -436,7 +439,7 @@ new Application();
 - `string` распознается как URL - выполняется асинхронная загрузка HTML-кода во временный HTMLTemplateElement;
 - `object` является инстансом на основе `HTMLElement` - сразу переходим на следующий этап.
 
-На следующем этапе все найденные внутри шаблоны (поиск по тегу template) переносятся в ассоциативный массив `constructor.templates = {...}`, где ключом выступает id шаблона (id в теге template), либо текущей индекс (начинается с 0) если id не установлен, либо uuid для HTML-контента вне тегов TEMPLATE (доступ по ключу: `constructor.templates[this.uuid]`). Если `autoLoadBind.templateId` не задан, то при наличии шаблона по умолчанию в `autoLoadBind.templateId` присваивается id шаблона по умолчанию. Далее, для singleton-представления и заданном `autoLoadBind.viewId` или при работе с несколькими экземплярами представления и переданным в конструкторе `options.viewId`, шаблон клонируется в документ и выполняется биндинг данных с контролами. При создании нескольких экземпляров контент каждой записи размещается в теге `SECTION`.
+На следующем этапе все найденные внутри шаблоны (поиск по тегу template) переносятся в ассоциативный массив `constructor.templates = {...}`, где ключом выступает id шаблона (id в теге template), либо текущей индекс (начинается с 0) если id не установлен, либо UUID для HTML-контента вне тегов TEMPLATE (доступ по ключу: `constructor.templates[this.uuid]`). Если `autoLoadBind.templateId` не задан, то при наличии шаблона по умолчанию в `autoLoadBind.templateId` присваивается id шаблона по умолчанию. Далее, для singleton-представления и заданном `autoLoadBind.viewId` или при работе с несколькими экземплярами представления и переданным в конструкторе `options.viewId`, шаблон клонируется в документ и выполняется биндинг данных с контролами. При создании нескольких экземпляров контент каждой записи размещается в теге `SECTION`.
 
 Пример кода для singleton-вьюхи (единственного инстанса представления):
 
@@ -500,7 +503,7 @@ export default class MyRecords extends SGModelView {
 
 ```js
 for (let i = 0; i < 10; i++) {
-	const eRecord = new MyRecords();
+	const record = new MyRecords();
 }
 ```
 
@@ -734,39 +737,7 @@ class MyForm extends SGModelView {
 
 # Пример использования
 
-Javascript-код (filters.js)
-
-```
-import SGModelView from 'https://model.sg2d.ru/src/sg-model-view.js';
-
-export default class FiltersPanel extends SGModelView {
-	static singleInstance = true; // говорим, что у нас будет единственный инстанс, следовательно в localStorage имя ключа не будет записываться с uuid
-	static localStorageKey = 'filters_panel'; // Имя ключа в localStorage
-	static autoSave = true;	// Автоматически сохранять значения свойств модели в хранилище localStorage
-	static autoLoadBind = { // При создании инстанса сразу же выполнить загрузку HTML-кода, клонирование HTML-кода в document и связать контролы с данными
-		srcHTML: 'templates/filters_panel.html',
-		templateId: 'tmp_filters_panel',
-		viewId: '#filters_panel_cnt',
-	};
-	static defaultProperties = {
-		selectedProjects: false,
-		selectedTasks: false,
-		selectedKeywords: false,
-	};
-	static typeProperties = {
-		selectedOrgs: SGModel.TYPE_BOOLEAN,
-		selectedTasks: SGModel.TYPE_BOOLEAN,
-		selectedKeywords: SGModel.TYPE_BOOLEAN,
-	};
-	async initialize() {
-		return super.initialize().then((result) => {
-			//...
-		});
-	}
-}
-```
-
-HTML-код основной страницы (например, index.html):
+HTML-код основной страницы index.html (пример):
 
 ```
 <!DOCTYPE html>
@@ -781,24 +752,103 @@ HTML-код основной страницы (например, index.html):
 </html>
 ```
 
-HTML-код панели фильтров и повторяющего блока (templates/filters_panel.html):
+HTML-код панели фильтров и повторяющего блока filters_panel.html (пример):
 
 ```
-<template id="filters_panel">
+<template id="tmp_filters_panel">
 	<h1>Фильтрация</h1>
-	<div sg-css="selectedOrgs ? '' : 'filter-off'">
+	<h2>Список проектов</h2>
+	<div sg-css="selectedProjects ? '' : 'filter-off'">
 		<div class="form-check form-switch">
-			<input type="checkbox" id="flt_selected_orgs" sg-property="selectedOrgs">
-			<label for="flt_selected_orgs">Организации:</label>
+			<input type="checkbox" id="flt_selected_projects" sg-property="selectedProjects">
+			<label for="flt_selected_projects">Проекты:</label>
 		</div>
-		<div id="flt_orgs_selected_cnt" sg-foreach="orgs" sg-template="tmp_filters_item_selected"></div>
+		<div sg-for="projects" sg-template="tmp_filters_item_selected" sg-click="onClickProjects"></div>
 	</div>
 	<hr/>
+	<h2>Список задач</h2>
+	<div sg-css="selectedTasks ? '' : 'filter-off'">
+		<div class="form-check form-switch">
+			<input type="checkbox" id="flt_selected_tasks" sg-property="selectedTasks">
+			<label for="flt_selected_tasks">Проекты:</label>
+		</div>
+		<div sg-for="tasks" sg-template="tmp_filters_item_selected" sg-click="onClickTasks"></div>
+	</div>
+	<hr/>
+	<h2>Ключевые слова</h2>
+	<div sg-css="selectedKeywords ? '' : 'filter-off'">
+		<div class="form-check form-switch">
+			<input type="checkbox" id="flt_selected_keywords" sg-property="selectedKeywords">
+			<label for="flt_selected_keywords">Ключевые слова:</label>
+		</div>
+		<div>
+			<input type="text" sg-property="keywords"/>
+		</div>
+	</div>
+	<hr/>
+	<button sg-click="applyFilters">Применить</button>
 </template>
 
-<template id="tmp_filters_item">
-	<span><span>TagName</span><button type="button">X</button></span>
+<template id="tmp_filters_item_selected">
+	<span><span sg-property="title"></span><button type="button">X</button></span>
 </template>
+```
+
+Javascript-код index.js (пример):
+
+```
+import FiltersPanel from './filters.js';
+const fltPanel = new FiltersPanel({
+	projects: ['PROJECT_A', 'PROJECT_B', 'PROJECT_C'],
+	tasks: ['PRA-123', 'PRC-310', 'PRC-311', 'PRC-488'],
+});
+```
+
+Javascript-код filters.js (пример):
+
+```
+import SGModelView from 'https://model.sg2d.ru/src/sg-model-view.js';
+
+export default class FiltersPanel extends SGModelView {
+	static singleInstance = true; // говорим, что у нас будет единственный инстанс, следовательно в localStorage имя ключа не будет записываться с UUID
+	static localStorageKey = 'filters_panel'; // Имя ключа в localStorage
+	static autoSave = true;	// Автоматически сохранять значения свойств модели в хранилище localStorage
+	static autoLoadBind = { // При создании инстанса сразу же выполнить загрузку HTML-кода, клонирование HTML-кода в document и связать контролы с данными
+		srcHTML: 'filters_panel.html',
+		templateId: 'tmp_filters_panel',
+		viewId: '#filters_panel_cnt',
+	};
+	static defaultProperties = {
+		selectedProjects: false,
+		selectedTasks: false,
+		selectedKeywords: false,
+		projects: [],
+		tasks: [],
+		keywords: '',
+	};
+	static typeProperties = {
+		selectedOrgs: SGModel.TYPE_BOOLEAN,
+		selectedTasks: SGModel.TYPE_BOOLEAN,
+		selectedKeywords: SGModel.TYPE_BOOLEAN,
+		projects: SGModel.TYPE_ARRAY,
+		tasks: SGModel.TYPE_ARRAY,
+		keywords: SGModel.TYPE_STRING,
+	};
+	async initialize() {
+		return super.initialize().then((result) => {
+			//...
+		});
+	}
+	onClickProject() {
+		//...
+	}
+	onClickTasks() {
+		//...
+	}
+	applyFilters() {
+		//...
+	}
+}
 ```
 
 # Лицензия
