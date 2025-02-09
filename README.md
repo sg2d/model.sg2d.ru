@@ -2,16 +2,16 @@
 
 *Ссылка на GitHub-страницу: [https://github.com/VediX/model.sg2d.github.io](https://github.com/VediX/model.sg2d.github.io)*
 
-**SGModel** - Быстрая легковесная библиотека-класс для структурирования веб-приложений с помощью биндинг-моделей. Это более быстрый и упрощенный аналог Backbone.js! Библиотека хорошо адаптирована для наследования классов (ES6).
+**SGModel** - Быстрая легковесная библиотека-класс для структурирования веб-приложений с помощью биндинг-моделей. Это более быстрый и упрощенный аналог Backbone.js! Библиотека хорошо адаптирована для наследования классов (ES6+).
 
 **SGModelView** - надстройка над SGModel позволяющая связать данные в JavaScript с визуальными элементами HTML-документа, используя MVVM-паттерн. Это очень упрощенный аналог KnockoutJS или VueJS.
 
 *Пример использования: [Перейти на страницу примера](/example/)*
 
-#### Исходники (версия 1.0.5):
+#### Исходники (версия 1.0.8):
 
-* [sg-model.js (29KB)](https://raw.githubusercontent.com/VediX/model.sg2d.github.io/master/src/sg-model.js)
-* [sg-model-view.js (18KB)](https://raw.githubusercontent.com/VediX/model.sg2d.github.io/master/src/sg-model-view.js)
+* [sg-model.js (39KB)](https://raw.githubusercontent.com/VediX/model.sg2d.github.io/master/src/sg-model.js)
+* [sg-model-view.js (27KB)](https://raw.githubusercontent.com/VediX/model.sg2d.github.io/master/src/sg-model-view.js)
 
 ## Описание API
 
@@ -24,14 +24,16 @@
 	* [static autoSave = false](#static-autosave--false)
 * [Свойства и методы экземпляра SGModel](#свойства-и-методы-экземпляра-sgmodel)
 	* [constructor(properties = {}, options = void 0, thisProperties = void 0)](#constructorproperties---options--void-0-thisproperties--void-0)
-	* [uid](#uid)
+	* [data](#data)
+	* [UUID и uid](#uuid-и-uid)
 	* [initialized](#initialized)
 	* [changed = false](#changed--false)
 	* [destroyed = false](#destroyed--false)
 	* [defaults()](#defaults)
-	* [initialize(properties, options)](#initializeproperties-options---override)
+	* [initialize()](#initialize)
 	* [set(name, value, options = void 0, flags = 0, event = void 0, elem = void 0)](#setname-value-options--void-0-flags--0-event--void-0-elem--void-0)
 	* [get(name)](#getname)
+	* [addTo(), removeFrom(), clear(), size()](#addTo-removeFrom-clear-size)
 	* [on(name, func, context = void 0, data = void 0, flags = 0)](#onname-func-context--void-0-data--void-0-flags--0)
 	* [off(name, func)](#offname-func)
 	* [trigger(name, value = void 0, flags = 0)](#triggername-value--void-0-flags--0)
@@ -68,6 +70,7 @@
 		* [sg-attributes](#sg-attributes)
 		* [sg-value](#sg-value)
 		* [sg-click](#sg-click)
+		* [sg-for и sg-template](#sg-for-и-sg-template)
 * [Пример использования](#пример-использования)
 * [Лицензия](#лицензия)
 
@@ -115,10 +118,12 @@ class Tank extends PlayerBase {
 - `SGModel.TYPE_ARRAY` - при изменении хотя бы одного элемента массива выполняются колбэки заданные методом `.on()`
 - `SGModel.TYPE_ARRAY_NUMBERS` - то же что и `SGModel.TYPE_ARRAY`, но значения приводятся к числовому типу
 - `SGModel.TYPE_OBJECT_NUMBERS` - то же что и `SGModel.TYPE_OBJECT`, но значения приводятся к числовому типу
-- `SGModel.TYPE_VECTOR` - либо число, например, 1234.5, либо объект, например: {x: 1234.5, y: 1234.5}. Этот тип удобен для работы с графическими движками
+- `SGModel.TYPE_NUMBER_OR_XY` - либо число, например, 1234.5, либо объект, например: {x: 1234.5, y: 1234.5}. Этот тип удобен для работы с графическими движками
+- `SGModel.TYPE_SET`
+- `SGModel.TYPE_MAP`
 
 (!) При проверке изменения значения везде применяется строгая проверка (===).
-(!) При получении `undefined` (или то же что и `void 0`) свойство удаляется (`delete this.properties[propName]`)
+(!) При получении `undefined` (или то же что и `void 0`) свойство удаляется (`delete this._data[propName]`)
 
 ### static defaultsProperties = {...}
 
@@ -163,7 +168,7 @@ class Tank extends PlayerBase {
 ### static localStorageKey = ""
 
 Если задано не пустое строковое значение, то данные синхронизируются с локальным хранилищем.
-Поддержка хранения данных как одного экземпляра класса (single instance), так и нескольких экземпляров: `localStorageKey+"_"+uid`
+Поддержка хранения данных как одного экземпляра класса (single instance), так и нескольких экземпляров: `localStorageKey+"_"+uuid`
 
 ### static storageProperties = []
 
@@ -181,10 +186,19 @@ class Tank extends PlayerBase {
 * `options` - пользовательские настройки
 * `thisProperties` - свойства и методы передающиеся в контекст this созданного экземпляра
 
+### data
+
+Объект для доступа к свойствам. При изменении значений свойств выполняются ранее назначенные колбэки. Если свойства не существует, то выбрасывается ошибка.
+
+```js
+const model = new SGModel({ title: '' });
+model.data.title = 'Title 1';
+```
+
 ### UUID и uid
 
 * `this.uuid` - уникальный идентификатор экземпляра. Генерируется автоматически при создании экземпляра, если не был передан вручную в `this.defaults()` (или `static defaultProperties`) или в конструкторе в properties. Значение UUID используется в составе имени ключа для получения сохраненных данных инстанса из локального хранилища (задан `static localStorageKey`).
-* `this._uid` - (@private) порядковый сквозной (в разрезе всех классов-потомков унаследованных от SGModel) числовой номер экземпляра. Генерируется автоматически при создании экземпляра.
+* `this.__uid` - (@protected) порядковый сквозной (в разрезе всех классов-потомков унаследованных от SGModel) числовой номер экземпляра. Генерируется автоматически при создании экземпляра.
 
 ### initialized
 
@@ -204,9 +218,9 @@ Promise возвращаемый методом initialize()
 Этот вариант предпочтителен, когда нужно обратиться к статическим свойствам и методам класса.
 Другой способ - использовать `static defaultsProperties = {...}`, см. выше.
 
-### initialize(properties, options) {} // override
+### initialize()
 
-Вызывается сразу после создании экземпляра. Переопределяется в классах потомках. Объекты properties и options, переданные в конструкторе, полностью склонированы (включая вложенные объекты)!
+Вызывается сразу после создании экземпляра. Переопределяется в классах потомках.
 
 ### set(name, value, options = void 0, flags = 0, event = void 0, elem = void 0)
 
@@ -231,6 +245,15 @@ Promise возвращаемый методом initialize()
 ### get(name)
 
 Получить значение свойства
+
+### addTo(), removeFrom(), clear(), size()
+
+Методы для работы со свойстами типа массив, объект, Set, Map:
+
+* addTo(name, value, key = void 0, options = void 0, flags = 0)
+* removeFrom(name, keyOrValue, options = void 0, flags = 0)
+* clear(name, options = void 0, flags = 0) // Очищает сложные типы, но при этом сохраняя их (указатель на объект тот же!)
+* size(name) // Для объекта подсчитает кол-во его собственных свойств
 
 ### on(name, func, context = void 0, data = void 0, flags = 0)
 
@@ -273,7 +296,7 @@ this.on(
 
 ### save()
 
-Сохраняет данные (из this.properties) в локальное хранилище localStorage.
+Сохраняет данные (из this.data) в локальное хранилище localStorage.
 Если `storageProperties` не задан, то свойства, начинающиеся с символа "_" не записывается в хранилище.
 Если `storageProperties` задан, то в хранилище записываются только те свойства, которые указаны в массиве `storageProperties`.
 
@@ -367,7 +390,7 @@ class Application extends SGModel {
 		};
 	}
 	
-	initialize(properties, options) {
+	initialize() {
 		//...
 	}
 }
@@ -522,7 +545,7 @@ for (let i = 0; i < 10; i++) {
 Связать вручную (если не указываются статические свойства htmlContainerId и htmlViewId) модель данных (экземпляр класса `SGModel->SGModelView`) с HTML-документом (его частью, например, с формой). При изменении значений в HTML-элементах автоматически обновляются данные в экземпляре модели и наоборот.
 
 ```js
-initialize(properties, options)
+initialize()
 	...
 	let promise = this.bindHTML("#my_form");
 	...
@@ -569,7 +592,7 @@ class MyForm extends SGModelView {
 	
 	...
 	
-	initialize(properties, options)
+	initialize()
 		...
 		return this.bindHTML("#my_form");
 	}
@@ -588,7 +611,7 @@ class MyForm extends SGModelView {
 
 ```js
 class MyForm extends SGModelView {
-	initialize(properties, options)
+	initialize()
 		this.set('myitems', [ { value: 1001, title: "One", hint: "Description for one..." }, { value: 2002, title: "Two", hint: "Description for two..."} ]);
 		return this.bindHTML("#my_form");
 	}
@@ -735,6 +758,10 @@ class MyForm extends SGModelView {
 }
 ```
 
+### sg-for и sg-template
+
+На данный момент это простая реализация вывода списков, см. пример ниже.
+
 # Пример использования
 
 HTML-код основной страницы index.html (пример):
@@ -790,7 +817,7 @@ HTML-код панели фильтров и повторяющего блока
 </template>
 
 <template id="tmp_filters_item_selected">
-	<span><span sg-property="title"></span><button type="button">X</button></span>
+	<span><span sg-value="$value"></span><button type="button">X</button></span>
 </template>
 ```
 
