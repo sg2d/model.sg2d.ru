@@ -1,17 +1,17 @@
 # SGModel & SGModelView
 
-*Ссылка на GitHub-страницу: [https://github.com/VediX/model.sg2d.github.io](https://github.com/VediX/model.sg2d.github.io)*
+*Ссылка на GitHub-страницу: [https://github.com/sg2d/model.sg2d.ru](https://github.com/sg2d/model.sg2d.ru)*
 
-**SGModel** - Быстрая легковесная библиотека-класс для структурирования веб-приложений с помощью биндинг-моделей. Это более быстрый и упрощенный аналог Backbone.js! Библиотека хорошо адаптирована для наследования классов (ES6+).
+**SGModel** - Легковесная библиотека-класс для структурирования веб-приложений с помощью биндинг-моделей.
 
-**SGModelView** - надстройка над SGModel позволяющая связать данные в JavaScript с визуальными элементами HTML-документа, используя MVVM-паттерн. Это очень упрощенный аналог KnockoutJS или VueJS.
+**SGModelView** - Надстройка над SGModel которая позволяет связать данные в инстансе с визуальными элементами HTML-документа (MVVM паттерн).
 
 *Пример использования: [Перейти на страницу примера](/example/)*
 
 #### Исходники (версия 1.0.8):
 
-* [sg-model.js (39KB)](https://raw.githubusercontent.com/VediX/model.sg2d.github.io/master/src/sg-model.js)
-* [sg-model-view.js (27KB)](https://raw.githubusercontent.com/VediX/model.sg2d.github.io/master/src/sg-model-view.js)
+* [sg-model.js (40 KB)](https://raw.githubusercontent.com/sg2d/model.sg2d.ru/master/src/sg-model.js)
+* [sg-model-view.js (48 KB)](https://raw.githubusercontent.com/sg2d/model.sg2d.ru/master/src/sg-model-view.js)
 
 ## Описание API
 
@@ -33,20 +33,20 @@
 	* [initialize()](#initialize)
 	* [set(name, value, options = void 0, flags = 0, event = void 0, elem = void 0)](#setname-value-options--void-0-flags--0-event--void-0-elem--void-0)
 	* [get(name)](#getname)
-	* [addTo(), removeFrom(), clear(), size()](#addTo-removeFrom-clear-size)
+	* [addTo(), removeFrom(), clearProperty(), size()](#addto-removefrom-clearproperty-size)
 	* [on(name, func, context = void 0, data = void 0, flags = 0)](#onname-func-context--void-0-data--void-0-flags--0)
 	* [off(name, func)](#offname-func)
 	* [trigger(name, value = void 0, flags = 0)](#triggername-value--void-0-flags--0)
+	* [cleartodefault()](#cleartodefault)
+	* [clear()](#clear)
 	* [save()](#save)
 	* [getData(bDeleteEmpties = false)](#getdatabdeleteempties--false)
 	* [destroy()](#destroy)
-* [Собственные сеттеры в наследуемых классах](#собственные-сеттеры-в-наследуемых-классах)
-	* [static ownSetters = {…}](#static-ownsetters--)
 * [Поддержка Singleton паттерна в наследуемых классах](#поддержка-singleton-паттерна-в-наследуемых-классах)
 	* [static singleInstance = false](#static-singleinstance--false)
 	* [static getInstance(bIgnoreEmpty=false)](#static-getinstancebignoreemptyfalse)
-	* [Статические методы get, set, on, off, save](#статические-методы-get-set-on-off-save)
-	* [static getProperties()](#static-getproperties)
+	* [Статические методы для работы с данными](#статические-методы-для-работы-с-данными)
+	* [static data](#static-data)
 * [Утилиты используемые в SGModel](#утилиты-используемые-в-sgmodel)
 	* [static defaults(dest, …sources)](#static-defaultsdest-sources)
 	* [static clone(source)](#static-clonesource)
@@ -62,21 +62,23 @@
 	* [Методы экземпляра SGModelView](#методы-экземпляра-sgmodelview)
 		* [bindHTML(root=void 0)](#bindhtmlrootvoid-0)
 	* [Атрибуты в HTML-документе](#атрибуты-в-html-документе)
+		* [sg-class](#sg-class)
 		* [sg-property](#sg-property)
+		* [sg-value](#sg-value)
 		* [sg-type, sg-option и sg-dropdown](#sg-type-sg-option-и-sg-dropdown)
 		* [sg-options](#sg-options)
 		* [sg-css](#sg-css)
 		* [sg-format](#sg-format)
 		* [sg-attributes](#sg-attributes)
-		* [sg-value](#sg-value)
 		* [sg-click](#sg-click)
 		* [sg-for и sg-template](#sg-for-и-sg-template)
+			* [getForItem(evtOrElem)](#getforitemevtorelem)
 * [Пример использования](#пример-использования)
 * [Лицензия](#лицензия)
 
 # SGModel
 
-SGModel - Быстрая легковесная библиотека-класс для структурирования веб-приложений с помощью биндинг-моделей. Это более быстрый и упрощенный аналог Backbone.js! Библиотека хорошо адаптирована для наследования классов (ES6+).
+SGModel - Легковесная библиотека-класс для структурирования веб-приложений с помощью биндинг-моделей. Это упрощенный аналог Backbone.js! Библиотека хорошо адаптирована для наследования классов. Может использоваться как в браузере, так и на Node.js.
 
 ## Основные статические свойства SGModel
 
@@ -172,7 +174,7 @@ class Tank extends PlayerBase {
 
 ### static storageProperties = []
 
-Если задан перечень названий свойств, то при выполнении save() записываются только эти свойства! Также эти свойства возвращаются методом [getData()](#getdatabdeleteempties--false)
+Если задан перечень названий свойств, то при выполнении save() записываются только эти свойства! Также эти свойства возвращаются методом [this.getData()](#getdatabdeleteempties--false)
 
 ### static autoSave = false
 
@@ -246,13 +248,13 @@ Promise возвращаемый методом initialize()
 
 Получить значение свойства
 
-### addTo(), removeFrom(), clear(), size()
+### addTo(), removeFrom(), clearProperty(), size()
 
 Методы для работы со свойстами типа массив, объект, Set, Map:
 
 * addTo(name, value, key = void 0, options = void 0, flags = 0)
 * removeFrom(name, keyOrValue, options = void 0, flags = 0)
-* clear(name, options = void 0, flags = 0) // Очищает сложные типы, но при этом сохраняя их (указатель на объект тот же!)
+* clearProperty(name, options = void 0, flags = 0) // Очищает сложные типы, но при этом сохраняя их (указатель на объект тот же!)
 * size(name) // Для объекта подсчитает кол-во его собственных свойств
 
 ### on(name, func, context = void 0, data = void 0, flags = 0)
@@ -294,6 +296,14 @@ this.on(
 * `flags` - допустимые флаги:
 	* `SGModel.FLAG_OFF_MAY_BE` - если при .set() могут быть .off() то нужно передать этот флаг
 
+### clearToDefaults()
+
+Очищает значения всех свойств, задавая им деволтные (первоначальные) значения.
+
+### clear()
+
+Очищает значения всех свойств, задавая им "нулевые" значения согласно типу данных. Сложные объекты очищаются, например, у массива остаётся 0 элементов.
+
 ### save()
 
 Сохраняет данные (из this.data) в локальное хранилище localStorage.
@@ -307,57 +317,6 @@ this.on(
 ### destroy()
 
 Очищает список колбэков и присваивает `destroyed = true`
-
-## Собственные сеттеры в наследуемых классах
-
-Предпочтительнее `.on()` по скорости работы при большом количестве экземпляров класса.
-Также используются, если есть базовый класс и класс потомок, где нужно специфическое поведение при изменении свойств.
-
-### static ownSetters = {...}
-
-Список свойств для которых вначале использовать собственные сеттеры. Пример кода см. ниже.
-
-Пример кода:
-
-```js
-
-class PlayerBase extends SGModel {
-
-	static typeProperties = {
-		state: PlayerBase.TYPE_NUMBER
-	};
-	
-	static defaultsProperties = {
-		state: 0
-	};
-	
-	//...
-}
-
-class Tank extends PlayerBase {
-
-	static typeProperties = Object.assign({
-		state_index: PlayerBase.TYPE_NUMBER
-	}, PlayerBase.typeProperties);
-	
-	defaults() {
-		return SGModel.defaults({
-			state_index: 0
-		}, PlayerBase.defaultProperties);
-	}
- 
-	// В Tank указываем собственный сеттер для работы со свойством state
-	static ownSetters = Object.assign({
-		state: true
-	}, PlayerBase.ownSetters);
-	
-	setState(value, flags = 0, options) {
-		if (this.set("state", value, flags | SGModel.FLAG_IGNORE_OWN_SETTER, options)) {
-			this.set("state_index", 0);
-		}
-	}
-}
-```
 
 ## Поддержка Singleton паттерна в наследуемых классах
 
@@ -402,13 +361,13 @@ new Application();
 
 Получить указатель на одиночный экземляр класса. Если `bIgnoreEmpty` равен true, то при пустом экземпляре Singleton ошибка игнорируется и возвращается null.
 
-### Статические методы get, set, on, off, save
+### Статические методы для работы с данными
 
-Проекции на соответствующие методы singleton-экземпляра
+Проекции на методы singleton-экземпляра get, set, addto, removefrom, clear, size, on, off и save.
 
-### static getProperties()
+### static data
 
-Возвращает объект со свойствами singleton-экземпляра
+Ссылка на объект со свойствами singleton-экземпляра
 
 
 ## Утилиты используемые в SGModel
@@ -435,7 +394,7 @@ new Application();
 
 # MVVM-паттерн в SGModelView
 
-**SGModelView** - надстройка над **SGModel** позволяющая связать данные в JavaScript с визуальными элементами HTML-документа, используя MVVM-паттерн. Это очень упрощенный аналог KnockoutJS или VueJS.
+**SGModelView** - Надстройка над **SGModel** которая позволяет связать данные в инстансе с визуальными элементами HTML-документа (MVVM паттерн). Это упрощенный аналог Vue или Knockout.js.
 
 ## Статические свойства экземпляра SGModelView
 
@@ -530,6 +489,15 @@ for (let i = 0; i < 10; i++) {
 }
 ```
 
+### Способ инициализации вьюхи
+
+Есть следующие способы инициализации вьюхи:
+
+* const myView = new MyModelView(); ...;  myView.bindHTML('#my_view_id'); // Ручная инициализация и связывание с данными (без template-шаблонов)
+* static autoLoadBind = { srcHTML, templateId, containerId|viewId }; // Автоматическая загрузка контента вьюхи и связывание
+* new MyModeView(); <div sg-class="MyModeView">...<span>Content...</span>...</div> // Использование атрибута **sg-class** на корневом элементе вьюхи, контент непосредственно в корневом элементе вьюхи (например, всё одном html-файле)
+* Атрибут **sg-class** на корневом элементе вьюхи, контент в отдельном html-файле в виде template-шаблона: class MyModeView extends SGModeView { autoLoadBind = { srcHTML: './templates/my-template1.html' } }
+
 ## Свойства экземпляра SGModelView
 
 Свойства экземпляра SGModelView помимо свойств экземпляра SGModel:
@@ -555,15 +523,42 @@ initialize()
 
 ## Атрибуты в HTML-документе
 
+### sg-class
+
+Альтернативный вариант для Singleton-представлений вместо использования static autoLoadBind.viewId - прописать sg-class="MyModelView" в корневом элементе представления, причём содержимое представления может находится как сразу в текущем html-файле, так и в отдельном template-шаблоне.
+
 ### sg-property
 
 Поддерживаются следующие HTML-элементы ввода данных (и типы):
 
-- `INPUT` (text, range, checkbox, radio)
+- `INPUT` (text, range, checkbox, radio, date, time, datetime-local)
 - `SELECT` и `OPTION` (select-one, select-multiple)
+- `TEXTAREA`
 - `BUTTON` (button)
 
-Также `sg-property` можно указать на любом другом теге. В этом случае значение будет выводится через innerHTML.
+Также `sg-property` можно указать на любом другом теге. В этом случае значение будет выводится через innerHTML. Ещё есть в чём-то схожий атрибут `sg-value` (см. ниже).
+
+### sg-value
+
+Для задания первоначального innerHTML элемента можно использовать атрибут `sg-value`. В текущей версии фреймворка реализована только инициализация innerHTML. Пример HTML и Javascript-кода:
+
+```html
+<div sg-value="getSomeValue()">loading...</div>
+<div sg-value="getSomeValue('ggg')">loading...</div>
+<div sg-value="getSomeValue('ggg', 'ggg2')">loading...</div>
+<div sg-value="MyForm.STAT_PROP_NAME1">loading...</div>
+```
+
+```js
+class MyForm extends SGModelView {
+	const STAT_PROP_NAME1 = 'value1'; // Можно вывести значение статического свойства
+	getSomeValue(a = 'no_value_for_a', b = 'no_value_for_b') {
+		return 'Some values: a=' + a + ', b=' + b;
+	}
+}
+```
+
+В целях упрощения работы парсера, значения параметров передаются в методы в HTML-шаблоне в одинарных кавычках (в том числе и для чисел) !
 
 ### sg-type, sg-option и sg-dropdown
 
@@ -661,7 +656,6 @@ class MyForm extends SGModelView {
 		if (value == 0) return ""; else return value < 0 ? "text-success" : "text-danger";
 	}
 }
-
 ```
 
 При этом *some-base-class1* и *some-base-class2* не будут затронуты при вычислении списка css-классов!
@@ -719,28 +713,6 @@ class MyForm extends SGModelView {
 
 В целях упрощения работы парсера, значения параметров передаются в методы в HTML-шаблоне в одинарных кавычках (в том числе и для чисел) !
 
-### sg-value
-
-Для задания первоначального innerHTML элемента можно использовать атрибут `sg-value`. В текущей версии реализована только инициализация innerHTML. Пример HTML и Javascript-кода:
-
-```html
-<div sg-value="getSomeValue()">loading...</div>
-<div sg-value="getSomeValue('ggg')">loading...</div>
-<div sg-value="getSomeValue('ggg', 'ggg2')">loading...</div>
-<div sg-value="MyForm.STAT_PROP_NAME1">loading...</div>
-```
-
-```js
-class MyForm extends SGModelView {
-	const STAT_PROP_NAME1 = 'value1'; // Можно вывести значение статического свойства
-	getSomeValue(a, b) {
-		return 'Some value';
-	}
-}
-```
-
-В целях упрощения работы парсера, значения параметров передаются в методы в HTML-шаблоне в одинарных кавычках (в том числе и для чисел) !
-
 ### sg-click
 
 Для назначения обработчика onclick можно использовать атрибут `sg-click` в значении которого имя функции обработчика. Пример HTML и Javascript-кода:
@@ -760,13 +732,58 @@ class MyForm extends SGModelView {
 
 ### sg-for и sg-template
 
-На данный момент это простая реализация вывода списков, см. пример ниже.
+На данный момент это простая реализация вывода коллекций, см. пример ниже.
+Для каждого пункта (записи) коллекции автоматически формируется атрибут **sg-for-item**, значение которого как правило является имя ключа (имя свойства объекта, индекс элемента массива).
+
+#### getForItem(evtOrElem)
+
+Готовый метод для получения данных по кликнутой записи коллекции и других сопутствующих данных.
+
+Возвращает объект со следующими данными:
+
+* **eControl** - элемент, на который нажал пользователь, например, BUTTON
+* **eItem** - корневой элемент записи
+* **key** - ключ (индекс для массива, имя свойства для объекта)
+* **item** - данные записи
+* **collection** - коллекция, для которой выполнялся поиск
+
+Пример:
+
+```html
+<div sg-class="GroupInfo">
+	<div>Имя группы пользователей: <span sg-property="name"></span></div>
+	<div sg-for="users" sg-template="tmp_user" sg-click="onClickUsers">
+		<span><span sg-property="$value"></span> <button>X</button></span>
+	</div>
+</div>
+<script>
+	var groupInfo = new GroupInfo({
+		name: "Группа 1",
+		users: ['Юзер 1', 'Юзер 2', 'Юзер 3']
+	});
+</script>
+```
+
+```js
+export default class GroupInfo extends SGModelView {
+	static defaultProperties = {
+		name: '',
+		users: []
+	};
+	onClickUsers(evt) {
+		const { eControl, eItem, key, item: value, collection } = this.getForItem(evt);
+		if (key && eControl.tagName === 'BUTTON') {
+			this.removeFrom('users', value);
+		}
+	}
+}
+```
 
 # Пример использования
 
 HTML-код основной страницы index.html (пример):
 
-```
+```html
 <!DOCTYPE html>
 <html>
 	<head>
@@ -781,7 +798,7 @@ HTML-код основной страницы index.html (пример):
 
 HTML-код панели фильтров и повторяющего блока filters_panel.html (пример):
 
-```
+```html
 <template id="tmp_filters_panel">
 	<h1>Фильтрация</h1>
 	<h2>Список проектов</h2>
@@ -823,7 +840,7 @@ HTML-код панели фильтров и повторяющего блока
 
 Javascript-код index.js (пример):
 
-```
+```js
 import FiltersPanel from './filters.js';
 const fltPanel = new FiltersPanel({
 	projects: ['PROJECT_A', 'PROJECT_B', 'PROJECT_C'],
@@ -833,7 +850,7 @@ const fltPanel = new FiltersPanel({
 
 Javascript-код filters.js (пример):
 
-```
+```js
 import SGModelView from 'https://model.sg2d.ru/src/sg-model-view.js';
 
 export default class FiltersPanel extends SGModelView {
