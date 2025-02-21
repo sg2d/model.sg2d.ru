@@ -1,19 +1,22 @@
 {
-	"name": "SGModel",
-	"version": "1.0.4",
-	"description": "A fast lightweight library for structuring web applications using binding models and custom events",
+	"name": "sg-model",
+	"version": "1.0.9",
+	"description": "A lightweight library for structuring web applications using binding models and custom events",
 	"main": "sg-model.js",
 	"repository": {
 		"type": "git",
-		"url": "https://github.com/VediX/model.sg2d.github.io.git"
+		"url": "https://github.com/sg2d/model.sg2d.ru.git"
 	},
+	"type": "module",
 	"author": "Kalashnikov Ilya <sg2d@yandex.ru> (http://model.sg2d.ru/)",
 	"license": "MIT",
 	"homepage": "https://model.sg2d.ru",
 	"keywords": [
 		"sg-model",
 		"sg-model-view",
-		"mvvm"
+		"mvvm",
+    "model",
+    "view"
 	],
 	"devDependencies": {
 		"webpack": "latest",
