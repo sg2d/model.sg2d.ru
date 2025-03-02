@@ -264,7 +264,9 @@ class SGModelView extends SGModel {
 				}
 			}
 			for (const name of this.#deferredProperties) {
-				this.#refreshElement(name);	
+				if (this.#propertyElementLinks[name]) {
+					this.#refreshElement(name);
+				}
 			}
 			return true;
 		});
@@ -414,9 +416,9 @@ class SGModelView extends SGModel {
 		
 		this.#bindElements([this.eView], true);
 
-		for (const propName in this.#propertyElementLinks) {
-			if (!this.#deferredProperties.has(propName)) { // отложенные отрисовываются отдельно, поэтому не имеет смысла их отрисовывать ещё раз
-				this.#refreshElement(propName);
+		for (const name in this.#propertyElementLinks) {
+			if (!this.#deferredProperties.has(name) && this.#propertyElementLinks[name]) { // отложенные отрисовываются отдельно, поэтому не имеет смысла их отрисовывать ещё раз
+				this.#refreshElement(name);
 			}
 		}
 	}
@@ -635,11 +637,6 @@ class SGModelView extends SGModel {
 	
 	/** @private */
 	#refreshElement(property) {
-		
-		if (!this.#propertyElementLinks[property]) {
-			return false;
-		}
-		
 		for (let j = 0; j < this.#propertyElementLinks[property].length; j++) {
 			const propertyElementLink = this.#propertyElementLinks[property][j];
 			const elementDOM = propertyElementLink.element;
@@ -1008,7 +1005,9 @@ class SGModelView extends SGModel {
 	#sarc(name, changed) {
 		if (changed) { // TODO: Promise for autoSave=true !!!
 			if (this.#binderInitialized) {
-				this.#refreshElement(name);
+				if (this.#propertyElementLinks[name]) {
+					this.#refreshElement(name);
+				}
 			} else {
 				this.#deferredProperties.add(name);
 			}

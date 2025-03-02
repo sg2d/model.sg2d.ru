@@ -14,25 +14,25 @@ let __uid = 0;
  * @copyright 2019-2025 © Калашников Илья (https://model.sg2d.ru)
  */
 class SGModel {
-  
-  /**
-   * SGModel types
-   * @constant
-   */
-  static TYPES = [
-    'ANY:mixed',
-    'NUMBER:simple',
-    'STRING:simple',
-    'BOOLEAN:simple',
-    'OBJECT:complex',
-    'ARRAY:complex',
-    'ARRAY_NUMBERS:complex',
-    'OBJECT_NUMBERS:complex',
-    'XY:complex', // координата
-    'SET:complex', // коллекции new Set()
-    'MAP:complex' // коллекции new Map()
-  ];
-  static TYPES_COMPLEX = {};
+	
+	/**
+	 * SGModel types
+	 * @constant
+	 */
+	static TYPES = [
+		'ANY:mixed',
+		'NUMBER:simple',
+		'STRING:simple',
+		'BOOLEAN:simple',
+		'OBJECT:complex',
+		'ARRAY:complex',
+		'ARRAY_NUMBERS:complex',
+		'OBJECT_NUMBERS:complex',
+		'XY:complex', // координата
+		'SET:complex', // коллекции new Set()
+		'MAP:complex' // коллекции new Map()
+	];
+	static TYPES_COMPLEX = {};
 
 	/** @protected */
 	static __instances = {};
@@ -890,7 +890,7 @@ class SGModel {
 	 */
 	getData(bDeleteEmpties = true) { // SGModel.DELETE_EMPTIES=true
 		const dest = {};
-		if (this.constructor.storageProperties) {
+		if (Array.isArray(this.constructor.storageProperties)) {
 			for (let i = 0; i < this.constructor.storageProperties.length; i++) {
 				const name = this.constructor.storageProperties[i];
 				const value = this.#data[name];
