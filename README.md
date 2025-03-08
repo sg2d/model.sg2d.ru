@@ -8,10 +8,10 @@
 
 *Пример использования: [Перейти на страницу примера](/example/)*
 
-#### Исходники (версия 1.0.9):
+#### Исходники (версия 1.0.10):
 
-* [sg-model.js (40 KB)](https://raw.githubusercontent.com/sg2d/model.sg2d.ru/master/src/sg-model.js)
-* [sg-model-view.js (48 KB)](https://raw.githubusercontent.com/sg2d/model.sg2d.ru/master/src/sg-model-view.js)
+* [sg-model.js (43 KB)](https://raw.githubusercontent.com/sg2d/model.sg2d.ru/master/src/sg-model.js)
+* [sg-model-view.js (49 KB)](https://raw.githubusercontent.com/sg2d/model.sg2d.ru/master/src/sg-model-view.js)
 
 ## Описание API
 
@@ -71,7 +71,7 @@
 		* [sg-format](#sg-format)
 		* [sg-attributes](#sg-attributes)
 		* [sg-click](#sg-click)
-		* [sg-for и sg-template](#sg-for-и-sg-template)
+		* [sg-for, sg-template и sg-item](#sg-for-sg-template-и-sg-item)
 			* [getForItem(evtOrElem)](#getforitemevtorelem)
 * [Пример использования](#пример-использования)
 * [Лицензия](#лицензия)
@@ -231,8 +231,8 @@ Promise возвращаемый методом initialize()
 * `name`
 * `val`
 * `options`
-	* `precision` - Точность округления чисел
 	* `previous_value` - Если задано, то используется в качестве предыдущего значения
+	* `format` - Форматирование элементов коллекции, например, если элемент - это массив ['url', 'title'] и его нужно преобразовать в объект { url: 'url', title: 'title' } для вывода во вьюхе с циклом sg-for
 * `flags`	- допустимые флаги:
 	* `SGModel.FLAG_OFF_MAY_BE` - если при .set() могут быть .off() то нужно передать этот флаг
 	* `SGModel.FLAG_PREV_VALUE_CLONE` - передавать предыдущее значение (делается тяжёлый clone)
@@ -394,7 +394,7 @@ new Application();
 
 # MVVM-паттерн в SGModelView
 
-**SGModelView** - Надстройка над **SGModel** которая позволяет связать данные в инстансе с визуальными элементами HTML-документа (MVVM паттерн). Это упрощенный аналог Vue или Knockout.js.
+**SGModelView** - Микрофрейморк для создания MVVM-приложений, основанный на **SGModel**. Поддерживает использование TEMPLATE-шаблонов для singleton-инстансов и multi-инстансов в циклах sg-for.
 
 ## Статические свойства экземпляра SGModelView
 
@@ -421,7 +421,7 @@ new Application();
 - `string` распознается как URL - выполняется асинхронная загрузка HTML-кода во временный HTMLTemplateElement;
 - `object` является инстансом на основе `HTMLElement` - сразу переходим на следующий этап.
 
-На следующем этапе все найденные внутри шаблоны (поиск по тегу template) переносятся в ассоциативный массив `constructor.templates = {...}`, где ключом выступает id шаблона (id в теге template), либо текущей индекс (начинается с 0) если id не установлен, либо UUID для HTML-контента вне тегов TEMPLATE (доступ по ключу: `constructor.templates[this.uuid]`). Если `autoLoadBind.templateId` не задан, то при наличии шаблона по умолчанию в `autoLoadBind.templateId` присваивается id шаблона по умолчанию. Далее, для singleton-представления и заданном `autoLoadBind.viewId` или при работе с несколькими экземплярами представления и переданным в конструкторе `options.viewId`, шаблон клонируется в документ и выполняется биндинг данных с контролами. При создании нескольких экземпляров контент каждой записи размещается в теге `SECTION`.
+Все найденные внутри шаблоны (поиск по тегу TEMPLATE) переносятся в ассоциативный массив `constructor.templates = {...}`, где ключом выступает id шаблона (id в теге TEMPLATE), либо текущей индекс (начинается с 0) если id не установлен, либо UUID для HTML-контента вне тегов TEMPLATE (доступ по ключу: `constructor.templates[this.uuid]`). Если `autoLoadBind.templateId` не задан, то при наличии шаблона по умолчанию в `autoLoadBind.templateId` присваивается id шаблона по умолчанию. Далее, для singleton-представления и заданном `autoLoadBind.viewId` или при работе с несколькими экземплярами представления и переданным в конструкторе `options.viewId`, шаблон клонируется в документ и выполняется биндинг данных с контролами.При создании нескольких экземпляров контент каждой записи размещается в теге `SECTION`. Если в html-коде есть стили (STYLE) и скрипты (SCRIPT) на первом уровне вложенности, то они просто добавляются в BODY документа (body.append).
 
 Пример кода для singleton-вьюхи (единственного инстанса представления):
 
@@ -684,6 +684,7 @@ class MyForm extends SGModelView {
 Для задания первоначальных значений атрибутов элемента можно использовать атрибут `sg-attributes`. В текущей версии реализована только инициализация атрибутов. Пример HTML и Javascript-кода:
 
 ```html
+<span sg-property="task_code" sg-attributes="{ title: task_description }">...</span>
 <img sg-attributes="{ src: getSomeSrcA(), title: getSomeTitleA() }"/>
 <div sg-attributes="{ title: getSomeTitleB('ggg') }">Short text...</div>
 <div sg-attributes="{ style: getSomeStyleC('256', 'value2') }">Description...</div>
@@ -730,22 +731,28 @@ class MyForm extends SGModelView {
 }
 ```
 
-### sg-for и sg-template
+### sg-for, sg-template и sg-item
 
 На данный момент это простая реализация вывода коллекций, см. пример ниже.
-Для каждого пункта (записи) коллекции автоматически формируется атрибут **sg-for-item**, значение которого как правило является имя ключа (имя свойства объекта, индекс элемента массива).
+Для каждого пункта (записи) коллекции автоматически формируется атрибут **sg-item**, значение которого состоит из уникального хеша + имя ключа записи (имя свойства объекта/ключа Map-коллекции или индекс элемента массива/множества Set).
+Для простой коллекции, состоящей из примитивных элементов, например, текст или число, в представлении в простых атрибутах (не sg-*) или в текстовом узле используется ключевое слово `$value`, которое заменяется на примитивное значение.
+Для коллекции, элементы которой - объекты, подстановка свойств объекта в sg-атрибуты выполняется как обычно (например: `sg-property="itemprop1"`), а в стандартные элементы - с добавлением префикса "$" (например: `href="$url"`).
 
 #### getForItem(evtOrElem)
 
-Готовый метод для получения данных по кликнутой записи коллекции и других сопутствующих данных.
+Вспомогательный метод для получения данных по кликнутой записи коллекции и других сопутствующих данных.
 
 Возвращает объект со следующими данными:
 
-* **eControl** - элемент, на который нажал пользователь, например, BUTTON
-* **eItem** - корневой элемент записи
-* **key** - ключ (индекс для массива, имя свойства для объекта)
-* **item** - данные записи
-* **collection** - коллекция, для которой выполнялся поиск
+* **key** - либо индекс элемента для массивов/Set-коллекции, либо имя свойства объекта или ключа элемента Map-коллекции
+*	**value** - значение элемента коллекции
+*	**item** - запись коллекции (для массивов или Set-коллекции равно **value**)
+*	**collection** - коллекция, в которое присутствует item
+*	**property** - имя свойства в атрибуте sg-for
+*	**type** - тип данных (SGModel.TYPE_ARRAY|SGModel.TYPE_ARRAY_NUMBERS|SGModel.TYPE_OBJECT|SGModel.TYPE_OBJECT_NUMBERS|SGModel.TYPE_SET|SGModel.TYPE_MAP)	
+*	**$item** - корневой DOM-элемент записи
+*	**$control** - DOM-элемент, на который нажал пользователь, например, BUTTON
+*	**hash** - хэш записи (ключа)
 
 Пример:
 
@@ -753,7 +760,7 @@ class MyForm extends SGModelView {
 <div sg-class="GroupInfo">
 	<div>Имя группы пользователей: <span sg-property="name"></span></div>
 	<div sg-for="users" sg-template="tmp_user" sg-click="onClickUsers">
-		<span><span sg-property="$value"></span> <button>X</button></span>
+		<span><span>$value</span> <button>X</button></span>
 	</div>
 </div>
 <script>
@@ -834,7 +841,7 @@ HTML-код панели фильтров и повторяющего блока
 </template>
 
 <template id="tmp_filters_item_selected">
-	<span><span sg-value="$value"></span><button type="button">X</button></span>
+	<span><span>$value</span><button type="button">X</button></span>
 </template>
 ```
 

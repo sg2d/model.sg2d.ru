@@ -5,7 +5,7 @@ import SGModel from './sg-model.js';
 /**
  * SGModelView - Микрофреймворк для создания MVVM-приложений. Надстройка над SGModel которая позволяет связать данные в инстансе с визуальными элементами HTML-документа (MVVM паттерн).
  * @english Microframework for creating MVVM applications. An add-on for SGModel that allows you to associate data in an instance with visual elements of an HTML document (MVVM pattern).
- * @version 1.0.9
+ * @version 1.0.10
  * @requires ES2024+ (ES15+)
  * @link https://github.com/sg2d/SGModel
  * @license SGModelView may be freely distributed under the MIT license
@@ -14,12 +14,14 @@ import SGModel from './sg-model.js';
  */
 class SGModelView extends SGModel {
 
+	/*static version = SGModel.version; // @see SGModel.version*/
+
 	// @private
 	static #ATTRIBUTES = {};
 
 	/**
 	 * Переопределить префикс атрибутов для SGModelView.
-	 * Можно переопределить в основном модуле вашего приложения (например, в точке входа, таком как main.js или app.js), после этого все остальные модули, которые импортируют SGModelView, будут видеть изменённое значение.
+	 * Можно переопределить в основном модуле вашего приложения (например, в точке входа, таком как main.js или app.js), после этого все остальные модули, которые импортируют SGModelView, будут видеть и использовать ваш префикс
 	 * @param {string} newPrefix 
 	 */
 	static setAttributesPrefix(newPrefix) {
@@ -126,12 +128,16 @@ class SGModelView extends SGModel {
 			if (eHtml.firstChild && eHtml.firstChild.id === _uuid) {
 				eHtml = eHtml.firstChild;
 			}
-			// 2.1. HTML-элементы вне TEMPLATE-тегов разместим в шаблоне по умолчанию с templateId равным UUID первого экземпляра.
-			// @english: HTML elements outside TEMPLATE tags will be placed in the default template with templateId equal to UUID of first instance
+			// 2.1. HTML-элементы (кроме стилей и скриптов) вне TEMPLATE-тегов разместим в шаблоне по умолчанию с templateId равным UUID первого экземпляра.
+			// @english: HTML elements (except styles and scripts) outside TEMPLATE tags will be placed in the default template with templateId equal to UUID of first instance
 			if (eHtml.childElementCount) {
 				const template = document.createElement('TEMPLATE');
 				for (const child of eHtml.children) {
-					template.content.append(child);
+					if (child.tagName === 'STYLE' || child.tagName === 'SCRIPT') {
+						document.body.append(child);
+					} else {
+						template.content.append(child);
+					}
 				}
 				this.templates[instance.uuid] = template;
 				defaultTemplateId = defaultTemplateId || instance.uuid;
@@ -487,11 +493,13 @@ class SGModelView extends SGModel {
 				try {
 					const attributes = JSON.parse(sgAttributes.replace(/(\w+):\s([\w]+)(\([^)]*\)){0,1}([,\s]{0,1})/g, '"$1": "$2$3"$4'));
 					for (let a in attributes) {
-						const value = attributes[a];
-						const method = value.replace(/(\w+)(.*)/, '$1');
-						const args = Array.from(value.matchAll(/'(.*?)'/g));
+						const valueOrProperty = attributes[a];
+						const method = valueOrProperty.replace(/(\w+)(.*)/, '$1');
 						if (typeof this[method] === 'function') {
+							const args = Array.from(valueOrProperty.matchAll(/'(.*?)'/g));
 							elementDOM.setAttribute(a, this[method].apply(this, args.map((o)=>o[1])));
+						} else if (Object.hasOwn(this.data, valueOrProperty)) {
+							elementDOM.setAttribute(a, this.data[valueOrProperty]);
 						}
 					}
 				} catch(err) {
@@ -632,7 +640,7 @@ class SGModelView extends SGModel {
 		}
 		const sgItemValue = this.#getItemHash(property, keyOrIndex, valueOrItem);
 		eItem.setAttribute(SGModelView.#ATTRIBUTES.SG_ITEM, sgItemValue);
-		this.#scanTemplateContentAndSetValues(eItem, (valueOrItem instanceof Object ? valueOrItem : { value: valueOrItem }));
+		this.#scanTemplateContentAndSetValues(eItem, valueOrItem);
 	}
 	
 	/** @private */
@@ -752,48 +760,66 @@ class SGModelView extends SGModel {
 		return true;
 	}
 
+	// @aos
+	static #objWithValue = {
+		value: null
+	};
+
 	/**
 	 * @private
 	 * @param {DOMElement} root
-	 * @param {object} item - для простых типов ранее должно быть сделано преобразование в объект { value: valueOrItem }
+	 * @param {mixed} valueOrItem
 	 */
-	#scanTemplateContentAndSetValues(root, item) {
+	#scanTemplateContentAndSetValues(root, valueOrItem) {
+
+		// @aos
+		if (!(valueOrItem instanceof Object)) {
+			SGModelView.#objWithValue.value = valueOrItem;
+			valueOrItem = SGModelView.#objWithValue;
+		}
+		
 		if (root instanceof HTMLElement) {
+			
+			// Собираем все атрибуты, разделяя их на обычные и sg-атрибуты (в обычных атрибутах для доступа к субсвойству необходимо добавлять префикс "$")
 			const sgAttrs = {};
 			for (let i = 0; i < root.attributes.length; i++) {
 				const attr = root.attributes[i];
-				if (SGModelView.#ATTRIBUTES[attr.name]) {
+				if (SGModelView.#ATTRIBUTES[attr.name]) { // Example: SGModelView.#ATTRIBUTES["sg-value"]="SG_VALUE"
 					sgAttrs[attr.name] = String(attr.value).trim();
 				} else {
-					for (let subProperty in item) {
-						attr.value = attr.value.replaceAll(`$${subProperty}`, item[subProperty]);
+					for (let subProperty in valueOrItem) {
+						attr.value = attr.value.replaceAll(`$${subProperty}`, valueOrItem[subProperty]);
 					}
 				}
 			}
 
 			let attrValue;
 
-			attrValue = String(sgAttrs[SGModelView.#ATTRIBUTES.SG_PROPERTY] || '').slice(1);
+			attrValue = String(sgAttrs[SGModelView.#ATTRIBUTES.SG_PROPERTY] || '');
 			if (attrValue) {
 				switch (root.tagName) {
 					case 'INPUT': case 'SELECT': case 'TEXTAREA': case 'BUTTON':
-						root.value = item[attrValue]; // TODO: sg-format
+						root.value = valueOrItem[attrValue]; // TODO: sg-format
 						break;
 					default:
-						root.innerHTML = item[attrValue]; // TODO: sg-format
+						root.innerHTML = valueOrItem[attrValue]; // TODO: sg-format
 				}
 			}
 
-			attrValue = String(sgAttrs[SGModelView.#ATTRIBUTES.SG_VALUE] || '').slice(1);
+			attrValue = String(sgAttrs[SGModelView.#ATTRIBUTES.SG_VALUE] || '');
 			if (attrValue) {
-				root.innerHTML = item[attrValue]; // TODO: sg-format
+				root.innerHTML = valueOrItem[attrValue]; // TODO: sg-format
 			}
 
 			//TODO: attrValue = String(sgAttrs[SGModelView.#ATTRIBUTES.SG_CSS] || '').slice(1);
 		}
 		for (const element of root.childNodes) {
 			if (element.nodeType === Node.ELEMENT_NODE) {
-				this.#scanTemplateContentAndSetValues(element, item);
+				this.#scanTemplateContentAndSetValues(element, valueOrItem);
+			} else if (element.nodeType === Node.TEXT_NODE) {
+				if (element.nodeValue.includes('$value')) {
+					element.textContent = element.textContent.replaceAll('$value', valueOrItem.value);
+				}
 			}
 		}		
 	}
@@ -908,9 +934,9 @@ class SGModelView extends SGModel {
 	 *	item - запись коллекции (для массивов или Set-коллекции равно **value**)
 	 *	collection - сама коллекция
 	 *	property - имя свойства в атрибуте sg-for
-	 *	type - тип данных (SGModel.TYPE_ARRAY|SGModel.TYPE_ARRAY_NUMBERS|SGModel.TYPE_OBJECT|SGModel.TYPE_OBJECT_NUMBERS|SGModel.TYPE_SET|SGModel.TYPE_MAP)
-	 *	$control - DOM-элемент, на который нажал пользователь, например, BUTTON
+	 *	type - тип данных (SGModel.TYPE_ARRAY|SGModel.TYPE_ARRAY_NUMBERS|SGModel.TYPE_OBJECT|SGModel.TYPE_OBJECT_NUMBERS|SGModel.TYPE_SET|SGModel.TYPE_MAP)	
 	 *	$item - корневой DOM-элемент записи
+	 *	$control - DOM-элемент, на который нажал пользователь, например, BUTTON
 	 *	hash - хэш записи (ключа)
 	 */
 	getForItem(eventOrElement) {

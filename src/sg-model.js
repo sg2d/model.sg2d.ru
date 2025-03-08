@@ -7,13 +7,19 @@ let __uid = 0;
 /**
  * SGModel - Библиотека-класс для структурирования веб-приложений с помощью биндинг-моделей. Это упрощенный аналог Backbone.js! Библиотека хорошо адаптирована для наследования классов. Может использоваться как в браузере, так и на Node.js.
  * @english A library class for structuring web applications using binding models. This is a simplified version of Backbone.js! The library is well adapted for inheritance classes. Can be used both in the browser and on Node.js.
- * @version 1.0.9
+ * @version 1.0.10
  * @requires ES2024+ (ES15+)
  * @link https://github.com/sg2d/SGModel
  * @license SGModel may be freely distributed under the MIT license
  * @copyright 2019-2025 © Калашников Илья (https://model.sg2d.ru)
  */
 class SGModel {
+
+	/**
+	 * Library version (fixed in minified version)
+ 	 * @readonly
+	 */
+	static version = typeof __SGMODEL_VERSION__ !== 'undefined' ? __SGMODEL_VERSION__ : '1.0.10';
 	
 	/**
 	 * SGModel types
@@ -186,48 +192,6 @@ class SGModel {
 		}
 		return false;
 	}
-
-	// TODO DEL:
-	/** @private */
-	#setArray(name, aValues, options, flags) {
-		const type = this.constructor.typeProperties[name];
-		const values = this.#data[name];
-		const valuesPrev = options.previous_value === null ? null : (options.previous_value || void 0);
-		let bChanged = false;
-		if (Array.isArray(aValues)) {
-			for (let i = 0; i < aValues.length; i++) {
-				let v = aValues[i];
-				if (type === SGModel.TYPE_ARRAY_NUMBERS) {
-					v = (options.precision ? SGModel.roundTo(v, options.precision) : Number(v));
-				}
-				if (values[i] !== v) {
-					bChanged = true;
-					if ((flags & SGModel.FLAG_PREV_VALUE_CLONE) && !valuesPrev) valuesPrev = SGModel.clone(values);
-					values[i] = v;
-				}
-			}
-		} else if (aValues) {
-			throw new Error(`aValues should be must Array or empty! (${this.constructor.name})`);
-		} else { // ! aValues
-			const v = (type === SGModel.TYPE_OBJECT_NUMBERS ? 0 : void 0);
-			for (let i = 0; i < values.length; i++) {
-				if (values[i] !== v) {
-					bChanged = true;
-					if ((flags & SGModel.FLAG_PREV_VALUE_CLONE) && !valuesPrev) valuesPrev = SGModel.clone(values);
-					values[i] = v;
-				}
-			}
-		}
-		
-		if (bChanged) this.changed = true;
-		
-		if (bChanged || (flags & SGModel.FLAG_FORCE_CALLBACKS)) {
-			//this.#runCallbacks(name, values, valuesPrev, flags);
-			return true;
-		}
-		
-		return false;
-	}
 	
 	/**
 	 * SGModel constructor
@@ -314,6 +278,7 @@ class SGModel {
 					propName,
 					valueOrCollection,	// nextValue
 					defaults[propName],	// previousValue
+					void 0, // options
 					0, // flags
 				);
 				properties[propName] = value;
@@ -322,18 +287,18 @@ class SGModel {
 
 		this.#data = SGModel.defaults({}, defaults, properties);
 		this.data = new Proxy(this.#data, {
-			get(properties, prop) {
-				if (Object.hasOwn(properties, prop)) {
+			get(properties, prop, receiver) {
+				if (prop in properties) {
 					return properties[prop];
 				}
-				throw new Error(`Error! Properties "${prop}" doen't exists!`);
+				throw new Error(`Error! Properties "${prop}" doen't exists! (may not be registered in defaultProperties)`);
 			},
 			set(properties, prop, value, receiver) {
-				if (Object.hasOwn(properties, prop)) {
+				if (prop in properties) {
 					self.set(prop, value);
 					return true;
 				}
-				throw new Error(`Error! Properties "${prop}" doen't exists!`);
+				throw new Error(`Error! Properties "${prop}" doen't exists! (may not be registered in defaultProperties)`);
 			},
 			deleteProperty(properties, prop) {
 				self.#off(prop);
@@ -373,10 +338,11 @@ class SGModel {
 	 * @param {string} name
 	 * @param {mixed} nextValue
 	 * @param {mixed} [previousValue] Для сложных объектов сами объекты сохраняются (не пересоздаются!), но очищаются! Для изменения элементов коллекции используйте методы addTo(), removeFrom() и др.
+	 * @param {object} [options=SGModel.OBJECT_EMPTY]
 	 * @param {number} [flags=0]
 	 * @returns {object} SGModel.#vcResult = { value, previous, changed, isComplexType } Для сложных объектов - value - это сама коллекция!
 	 */
-	validateProperty(name, nextValue, previous = void 0, flags = 0) {
+	validateProperty(name, nextValue, previous = void 0, options = SGModel.OBJECT_EMPTY, flags = 0) {
 		if (nextValue === void 0) {
 			throw new Error(`Error in this.validateProperty()! The "nextValue" parameter must have a value!`);
 		}
@@ -416,7 +382,7 @@ class SGModel {
 			}
 			case SGModel.TYPE_ARRAY: case SGModel.TYPE_ARRAY_NUMBERS: {
 				if (typeof nextValue === 'string') {
-					nextValue = this.stringToArray(nextValue);
+					nextValue = this.parsePgStrArray(nextValue);
 				}
 				if (!Array.isArray(nextValue)) {
 					nextValue = [nextValue];
@@ -431,6 +397,11 @@ class SGModel {
 					previous.length = 0;
 					previous.push(...nextValue);
 					nextValue = previous;	
+				}
+				if (typeof options.format === 'function') {
+					for (let index = 0; index < nextValue.length; index++) {
+						nextValue[index] = options.format(nextValue[index], index);
+					}
 				}
 				break;
 			}
@@ -451,11 +422,16 @@ class SGModel {
 					Object.assign(previous, nextValue);
 					nextValue = previous;	
 				}
+				if (typeof options.format === 'function') {
+					for (let p in nextValue) {
+						nextValue[p] = options.format(nextValue[p], p);
+					}
+				}
 				break;
 			}
 			case SGModel.TYPE_SET: {
 				if (typeof nextValue === 'string') {
-					nextValue = this.stringToArray(nextValue);
+					nextValue = this.parsePgStrArray(nextValue);
 				}
 				if (!Array.isArray(nextValue) && !(nextValue instanceof Set)) {
 					throw new Error(`Error in validateProperty()! Property "${name}" (${this.constructor.name}) must be a Set class, Array or string in the format "{value1,value2,...}"!`); // TODO: формат строки м.б. сложнее, например, не просто элементы, а записи, т.е. вложенные {}
@@ -464,16 +440,25 @@ class SGModel {
 				SGModel.#vcResult.changed = true;
 				if (previous instanceof Set) {
 					previous.clear();
-					nextValue.forEach(value => previous.add(value));
+					for (const value of previous) {
+						previous.add(value);
+					}
 					nextValue = previous;
 				} else {
 					nextValue = new Set(nextValue);
+				}
+				if (typeof options.format === 'function') {
+					let index = 0;
+					for (const value of nextValue) {
+						nextValue.delete(value);
+						nextValue.add(options.format(value, index++));
+					}
 				}
 				break;
 			}
 			case SGModel.TYPE_MAP: {
 				if (typeof nextValue === 'string') {
-					const arr = this.stringToArray(nextValue);
+					const arr = this.parsePgStrArray(nextValue);
 					nextValue = new Map();
 					for (let index = 0; index < arr.length; index++) {
 						nextValue.set(index, arr[index]);
@@ -491,6 +476,11 @@ class SGModel {
 						previous.set(key, value);
 					}
 					nextValue = previous;	
+				}
+				if (typeof options.format === 'function') {
+					for (const [key, value] of nextValue) {
+						nextValue.set(key, options.format(value, key));
+					}
 				}
 				break;
 			}
@@ -510,8 +500,8 @@ class SGModel {
 	* @param {string}	name
 	* @param {mixed}	valueOrCollection
 	* @param {object}	[options=SGModel.OBJECT_EMPTY]
-	* @param {number}	[options.precision] - Rounding precision
 	* @param {mixed}	[options.previous_value] - Use this value as the previous value
+	* @param {function}	[options.format] - функция для обработки элемента коллекции. Например, можно элемент в виде массива ['http://test.ru', 'Title...'] превратить в объект { url: 'http://test.ru', title: 'Title...' }
 	* @param {number}	[flags=0] - Valid flags: **FLAG_OFF_MAY_BE** | **FLAG_PREV_VALUE_CLONE** | **FLAG_NO_CALLBACKS** | **FLAG_FORCE_CALLBACKS**
 	* @param {Event}	[event] - event when using SGModelView
 	* @param {DOMElement} [elem] - event source element when using SGModelView
@@ -523,7 +513,7 @@ class SGModel {
 		if (valueOrCollection === void 0) {
 			delete this.#data[name];
 		} else {
-			var { value: valueOrCollection, previous, changed } = this.validateProperty(name, valueOrCollection, previous, flags);
+			var { value: valueOrCollection, previous, changed } = this.validateProperty(name, valueOrCollection, previous, options, flags);
 		}
 		if (changed) {
 			this.#data[name] = valueOrCollection;
@@ -919,12 +909,43 @@ class SGModel {
 		this.destroyed = true;
 		this.constructor.__instance = null;
 	}
-
-	stringToArray(line) {
+	
+	/**
+	 * Получить массив строк из текстового представления массива в формате PostgreSQL
+	 * @param {string} line 
+	 * @returns {Array}
+	 */
+	parsePgStrArray(line) {
+		const result = [];
 		if (line.startsWith('{') && line.endsWith('}')) {
-			return line.replace(/^{|}$/g, '').split(',');
+			if (line.at(1) === '"' && line.at(-2) === '"') {
+				line = line.slice(2, -2);
+				const item = line.split('","');
+				item.forEach(line => {
+					if (line.startsWith('(') && line.endsWith(')')) {
+						const arr = [];
+						result.push(arr);
+						line = line.slice(1, -1).replaceAll('\\"', '"').replaceAll('\\\\', '\\').replaceAll('""', '$DOUBLE_QUOTE$');
+						const parts = line.matchAll(/"([^"]+(?:\\[^"]+)*)"|([^,]+)/g);
+						parts.forEach(part => {
+							if (part === '""') {
+								arr.push('');
+							} else {
+								const str = part[1] || part[2];
+								arr.push(str.replace('\\\\', '\\').replaceAll('$DOUBLE_QUOTE$', '"'));
+							}
+						});
+					} else {
+						result.push(line);
+					}
+				});
+			} else {
+				line = line.slice(1, -1);
+				const item = line.split(',');
+				result.push(...item);
+			}
 		}
-		return [line];
+		return result;
 	}
 }
 
@@ -950,12 +971,6 @@ SGModel.FLAG_OFF_MAY_BE = 0b00000001; // if set can be .off(), then you need to 
 SGModel.FLAG_PREV_VALUE_CLONE = 0b00000010; // Pass the previous value (heavy clone for objects / arrays)
 SGModel.FLAG_NO_CALLBACKS = 0b00000100; // if given, no callbacks are executed
 SGModel.FLAG_FORCE_CALLBACKS = 0b00001000; // execute callbacks even if there is no change
-
-SGModel.OPTIONS_PRECISION_1 = Object.preventExtensions({ precision: 1 });
-SGModel.OPTIONS_PRECISION_2 = Object.preventExtensions({ precision: 2 });
-SGModel.OPTIONS_PRECISION_3 = Object.preventExtensions({ precision: 3 });
-SGModel.OPTIONS_PRECISION_4 = Object.preventExtensions({ precision: 4 });
-SGModel.OPTIONS_PRECISION_5 = Object.preventExtensions({ precision: 5 });
 
 SGModel.DELETE_EMPTIES = true;
 
@@ -1229,12 +1244,6 @@ SGModel.save = function() {
 	}
 	throw new Error('Error! this.__instance is empty!');
 };
-
-/**
- * Library version (fixed in minified version)
- * @readonly
- */
-SGModel.version = typeof __SGMODEL_VERSION__ !== 'undefined' ? __SGMODEL_VERSION__ : '*';
 
 if (typeof globalThis === 'object') globalThis.SGModel = SGModel;
 else if (typeof exports === 'object' && typeof module === 'object') module.exports = SGModel;
