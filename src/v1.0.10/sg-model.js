@@ -1,9 +1,5 @@
 "use strict";
 
-//const isNode = ((typeof process === 'object' && process !== null) && (typeof process.versions instanceof Object) && process.versions.node);
-//const isBrowser = (typeof window === 'object' && window !== null && window.document);
-let __uid = 0;
-
 /**
  * SGModel - Библиотека-класс для структурирования веб-приложений с помощью биндинг-моделей. Это упрощенный аналог Backbone.js! Библиотека хорошо адаптирована для наследования классов. Может использоваться как в браузере, так и на Node.js.
  * @english A library class for structuring web applications using binding models. This is a simplified version of Backbone.js! The library is well adapted for inheritance classes. Can be used both in the browser and on Node.js.
@@ -20,6 +16,21 @@ class SGModel {
  	 * @readonly
 	 */
 	static version = typeof __SGMODEL_VERSION__ !== 'undefined' ? __SGMODEL_VERSION__ : '1.0.10';
+
+	/**
+	 * @readonly
+	 */
+	static isNode = ((typeof process === 'object' && process !== null) && (process.versions instanceof Object) && process.versions.node !== undefined);
+
+	/**
+	 * @readonly
+	 */
+	static isBrowser = (typeof window === 'object' && window !== null && window.document !== undefined);
+
+	/**
+	 * Enable singleton pattern for model
+	 */
+	static singleInstance = false;
 	
 	/**
 	 * SGModel types
@@ -84,6 +95,12 @@ class SGModel {
 	 * @protected
 	 */
 	__uid = 0;
+
+	/**
+	 * Инкриминирующее значение счётчика
+	 * @private
+	 */
+	static __uid = 0;
 
 	/**
 	 * Главный объект экземпляров SGModel (свойства экземпляра).
@@ -999,7 +1016,7 @@ SGModel.FLAG_FORCE_CALLBACKS = 0b00001000; // execute callbacks even if there is
 SGModel.DELETE_EMPTIES = true;
 
 function nextUID() {
-	return ++__uid;
+	return ++SGModel.__uid;
 }
 
 SGModel.fStub = (v) => v;
@@ -1188,11 +1205,6 @@ SGModel.isEmpty = function(value) {
 SGModel.__instance = null;
 
 /**
- * Enable singleton pattern for model
- */
-SGModel.singleInstance = false;
-
-/**
  * Enable multiple instances
  */
 SGModel.multipleInstances = true;
@@ -1203,13 +1215,15 @@ SGModel.multipleInstances = true;
 SGModel.autoSave = false;
 
 /** @public */
-SGModel.getInstance = function(bIgnoreEmpty = false) {
+SGModel.getInstance = function() {
+	if (!this.singleInstance) {
+		throw new Error('Error in getInstance()! static singleInstance is false!');
+	}
 	if (this.__instance) {
 		return this.__instance;
-	} else if (!bIgnoreEmpty) {
-		throw new Error('Error! this.__instance is empty!');
 	}
-	return null;
+	this.__instance = new this();
+	return this.__instance;
 };
 
 // TODO: назначение статических методов get, set, addTo и т.д. написать в виде единственного блока кода? Учесть JSDoc!
@@ -1286,10 +1300,11 @@ SGModel.save = function() {
 };
 
 if (typeof globalThis === 'object') globalThis.SGModel = SGModel;
-else if (typeof exports === 'object' && typeof module === 'object') module.exports = SGModel;
-else if (typeof define === 'function' && define.amd) define('SGModel', [], () => SGModel);
-else if (typeof exports === 'object') exports['SGModel'] = SGModel;
-else if (typeof window === 'object' && window.document) window['SGModel'] = SGModel;
-else this['SGModel'] = SGModel;
+
+if (SGModel.isNode) {
+	module.exports = SGModel;
+} else if (SGModel.isBrowser) {
+	window['SGModel'] = SGModel;
+}
 
 export default SGModel;

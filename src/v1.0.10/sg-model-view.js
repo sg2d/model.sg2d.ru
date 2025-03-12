@@ -1166,11 +1166,10 @@ SGModelView.sha256trimL = (line, len = SGModelView._HASHLEN) => {
 
 SGModelView.setAttributesPrefix();
 
-if (typeof globalThis === 'object') globalThis.SGModelView = SGModelView;
-else if (typeof exports === 'object' && typeof module === 'object') module.exports = SGModelView;
-else if (typeof define === 'function' && define.amd) define('SGModelView', [], () => SGModelView);
-else if (typeof exports === 'object') exports['SGModelView'] = SGModelView;
-else if (typeof window === 'object' && window.document) window['SGModelView'] = SGModelView;
-else this['SGModelView'] = SGModelView;
+if (SGModel.isNode) {
+	module.exports = SGModelView;
+} else if (SGModel.isBrowser) {
+	window['SGModel'] = SGModelView;
+}
 
 export default SGModelView;
