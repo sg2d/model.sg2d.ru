@@ -44,7 +44,7 @@
 	* [destroy()](#destroy)
 * [Поддержка Singleton паттерна в наследуемых классах](#поддержка-singleton-паттерна-в-наследуемых-классах)
 	* [static singleInstance = false](#static-singleinstance--false)
-	* [static getInstance(bIgnoreEmpty=false)](#static-getinstancebignoreemptyfalse)
+	* [static getOrCreateInstance()](#static-getorcreateinstance)
 	* [Статические методы для работы с данными](#статические-методы-для-работы-с-данными)
 	* [static data](#static-data)
 * [Утилиты используемые в SGModel](#утилиты-используемые-в-sgmodel)
@@ -357,9 +357,9 @@ class Application extends SGModel {
 new Application();
 ```
 
-### static getInstance(bIgnoreEmpty=false)
+### static getOrCreateInstance()
 
-Получить указатель на одиночный экземляр класса. Если `bIgnoreEmpty` равен true, то при пустом экземпляре Singleton ошибка игнорируется и возвращается null.
+Получить указатель на одиночный экземляр класса. Если экземпляр ещё не существует, то он будет создан.
 
 ### Статические методы для работы с данными
 
@@ -562,12 +562,13 @@ class MyForm extends SGModelView {
 
 ### sg-type, sg-option и sg-dropdown
 
-Для реализации кастомных выпадающих списков выбора значения, реализованных, например, в Bootstrap, нужно задать атрибут `sg-type="dropdown"`. Пример, html-кода:
+Для реализации кастомных выпадающих списков выбора значения, реализованных, например, в Bootstrap, нужно задать атрибут `sg-type="dropdown"`. В контейнере-списке необходимо задать атрибут `aria-labelledby` со значением id основного контрола (кнопки). В каждом пункте списка должны быть заданы атрибуты `sg-option` и `sg-dropdown`. С учётом всего этого SGModelView автоматически будет обновлять текст основого контрола (кнопки) на содержимое выбранного пункта (копируется innerHTML).
+Пример, html-кода:
 
 ```html
 <label>Формат сотрудничества:</label>
-<button sg-property="contract" sg-type="dropdown" type="button">Трудовой договор</button>
-<ul class="dropdown-menu dropdown-menu-pointer">
+<button id="contract" sg-property="contract" sg-type="dropdown" type="button" data-bs-toggle="dropdown">Трудовой договор</button>
+<ul class="dropdown-menu dropdown-menu-pointer" aria-labelledby="contract">
 	<li sg-option="1" sg-dropdown="contract">Трудовой договор</li>
 	<li sg-option="2" sg-dropdown="contract">Самозанятый</li>
 	<li sg-option="3" sg-dropdown="contract">Фриланс + Безопасная сделка</li>
@@ -744,18 +745,18 @@ class MyForm extends SGModelView {
 <h2>Выбранные проекты:</h2>
 <div sg-for="selectedProjects"
 			sg-template="tmp_filters_item_selected"
-			sg-item-variables="{ tagClass: 'text-bg-primary' }"
+			sg-item-variables="{ $tagClass: 'text-bg-primary' }"
 			sg-click="onClickSelectedItems">
 </div>
 <h2>Выбранные задачи:</h2>
 <div sg-for="selectedTasks"
 			sg-template="tmp_filters_item_selected"
-			sg-item-variables="{ tagClass: 'text-bg-secondary' }"
+			sg-item-variables="{ $tagClass: 'text-bg-secondary' }"
 			sg-click="onClickSelectedItems">
 </div>
 ```
 
-В самом шаблоне переменные подставляются простой заменой, например, `$tagClass` в каждом пункте заменится на `text-bg-success`:
+В самом шаблоне переменные подставляются простой заменой, например, `$tagClass` в каждом атрибуте заменится на `text-bg-success`:
 
 ```html
 <template id="tmp_filters_item_selected">
@@ -770,11 +771,12 @@ class MyForm extends SGModelView {
 Возвращает объект со следующими данными:
 
 * **key** - либо индекс элемента для массивов/Set-коллекции, либо имя свойства объекта или ключа элемента Map-коллекции
-*	**value** - значение элемента коллекции
+*	**value** - значение элемента коллекции. Для keyName='index' преобразуется к Number, для keyName='id' преобразуется к BigInt
 *	**item** - запись коллекции (для массивов или Set-коллекции равно **value**)
-*	**collection** - коллекция, в которое присутствует item
+*	**collection** - коллекция, в которой присутствует item
 *	**property** - имя свойства в атрибуте sg-for
 *	**type** - тип данных (SGModel.TYPE_ARRAY|SGModel.TYPE_ARRAY_NUMBERS|SGModel.TYPE_OBJECT|SGModel.TYPE_OBJECT_NUMBERS|SGModel.TYPE_SET|SGModel.TYPE_MAP)	
+*	**keyName** - имя ключа (м.б. id, uuid, code, hash или index)
 *	**$item** - корневой DOM-элемент записи
 *	**$control** - DOM-элемент, на который нажал пользователь, например, BUTTON
 *	**hash** - хэш записи (ключа)

@@ -26,11 +26,6 @@ class SGModel {
 	 * @readonly
 	 */
 	static isBrowser = (typeof window === 'object' && window !== null && window.document !== undefined);
-
-	/**
-	 * Enable singleton pattern for model
-	 */
-	static singleInstance = false;
 	
 	/**
 	 * SGModel types
@@ -58,6 +53,16 @@ class SGModel {
 		//'DATASET:complex', // @announcement v1.1+
 	];
 	static TYPES_COMPLEX = {};
+
+	/**
+	 * Enable singleton pattern for model
+	 */
+	static singleInstance = false;
+
+	/**
+	 * @private
+	 */
+	static __instance = null;
 
 	/** @protected */
 	static __instances = {};
@@ -100,7 +105,7 @@ class SGModel {
 	 * Инкриминирующее значение счётчика
 	 * @private
 	 */
-	static __uid = 0;
+	static #uid = 0;
 
 	/**
 	 * Главный объект экземпляров SGModel (свойства экземпляра).
@@ -121,10 +126,16 @@ class SGModel {
 	//static data;
 
 	/**
-	 * Promise возвращаемый методом initialize()
+	 * Объект и методы промиса, отвечающие за инициализацию (результат this.initialize())
 	 * @public
 	 */
-	initialized = null;
+	initialization = Promise.withResolvers();
+
+	/**
+	 * Это this.initialization.promise
+	 * @public
+	 */
+	initialized = (this.initialization.promise._sg_instance = this, this.initialization.promise);
 
 	/**
 	 * reset manually!
@@ -136,6 +147,10 @@ class SGModel {
 	 * Если true, значит экземпляр прошёл процедуру уничтожения destroy()
 	 */
 	destroyed = false;
+
+	static #nextUID() {
+		return ++SGModel.#uid;
+	}
 
 	/**
 	 * @private
@@ -254,7 +269,7 @@ class SGModel {
 		delete defaults.uuid;
 		delete properties.uuid;
 
-		this.__uid = nextUID();
+		this.__uid = SGModel.#nextUID();
 
 		SGModel.__instances[this.uuid] = this;
 		(SGModel.__instancesByClass[this.constructor.name] = SGModel.__instancesByClass[this.constructor.name] || {})[this.uuid] = this;
@@ -267,11 +282,6 @@ class SGModel {
 		}
 		
 		if (typeof clonedOptions === 'object' && clonedOptions !== null) {
-			if (typeof clonedOptions._this === 'object' && clonedOptions._this !== null) { // TODO: DEL DEPRECATED
-				console.warn('"options._this" will be deprecated soon! The third parameter in the constructor is used, see "thisProperties".');
-				Object.assign(this, clonedOptions._this); // add internal properties to the object, accessible through this.*
-				delete clonedOptions._this;
-			}
 			Object.assign(this.options, SGModel.clone(clonedOptions));
 		}
 		
@@ -337,7 +347,8 @@ class SGModel {
 		
 		// Дёргаем initialize() экземпляра после выполнения конструктора, что бы инициализировались приватные свойства! См. также #deferredProperties в SGModelView.
 		setTimeout(() => {
-			this.initialized = this.initialize.apply(this, arguments);
+			//this.initialized = this.initialize.apply(this, arguments);
+			this.initialize.apply(this, arguments);
 		}, 0);
 	}
 	
@@ -346,7 +357,8 @@ class SGModel {
 	 * @return {Promise}
 	 */
 	async initialize() {
-		return Promise.resolve(true); // stub (you can override this method)
+		//return Promise.resolve(true); // stub (you can override this method)
+		return this.initialization.resolve(true); // stub (you can override this method)
 	}
 
 	/**
@@ -618,22 +630,41 @@ class SGModel {
 		switch (this.constructor.typeProperties[name]) {
 			case SGModel.TYPE_ARRAY: case SGModel.TYPE_ARRAY_NUMBERS: {
 				if (collection.length) {
-					const firstElement = collection[0];
-					if (firstElement instanceof Object) { // элементы коллекции - объекты
-						if (!firstElement.id && !firstElement.uuid && !firstElement.code) {
-							throw new Error(`Error in removeFrom() method! If the collection elements are objects, then they must store a property-key - either id or uuid!`);
-						}
-						const index = collection.findIndex((item) => {
-							return ((item.id === indexOrKeyOrValue) || (item.uuid === indexOrKeyOrValue) || (item.code === indexOrKeyOrValue));
-						});
-						if (index >= 0) {
-							collection.splice(index, 1);
-							changed = true;
-						}
-					} else {
+					if (typeof indexOrKeyOrValue === 'number') { // Значит keyName = 'index'
 						const deletedElements = collection.splice(indexOrKeyOrValue, 1); // collection как объект останется тем же!
 						if (deletedElements.length) {
 							changed = true;
+						}
+					} else {
+						const firstElement = collection[0];
+						if (firstElement instanceof Object) { // элементы коллекции - объекты
+							if (typeof indexOrKeyOrValue === 'bigint') { // Значит keyName = 'id'
+								if (!firstElement.id) {
+									throw new Error(`Error in removeFrom() method! For indexOrKeyOrValue with type BigInt, if the collection elements are objects, then they must store the property key - id!`);
+								}
+								const index = collection.findIndex((item) => {
+									return (BigInt(item.id) === indexOrKeyOrValue);
+								});
+								if (index >= 0) {
+									collection.splice(index, 1);
+									changed = true;
+								}
+							} else if (typeof indexOrKeyOrValue === 'string') { // keyName = 'uuid' или keyName = 'code' или keyName = 'hash'
+								if (!firstElement.uuid && !firstElement.code && !firstElement.hash) {
+									throw new Error(`Error in removeFrom() method! For indexOrKeyOrValue with type String, if the collection elements are objects, then they must store the property key - uuid or code or hash!`);
+								}
+								const index = collection.findIndex((item) => {
+									return ((item.uuid === indexOrKeyOrValue) || (item.code === indexOrKeyOrValue) || (item.hash === indexOrKeyOrValue));
+								});
+								if (index >= 0) {
+									collection.splice(index, 1);
+									changed = true;
+								}
+							} else {
+								throw new Error(`Error in removeFrom() method! indexOrKeyOrValue has an unsupported data type!`);
+							}
+						} else {
+							throw new Error(`Error in removeFrom() method! indexOrKeyOrValue is not a Number, but the collection contains primitive elements!`);
 						}
 					}
 				}
@@ -988,6 +1019,33 @@ class SGModel {
 		}
 		return result;
 	}
+
+	/** @public */
+	static getOrCreateInstance = function() {
+		if (!this.singleInstance) {
+			throw new Error('Error in getOrCreateInstance()! static singleInstance is false!');
+		}
+		if (this.__instance) {
+			return this.__instance;
+		}
+		this.__instance = new this();
+		return this.__instance;
+	};
+
+	/**
+	 * Method **save()** for single instance of a class
+	 */
+	static save() {
+		if (this.__instance) {
+			if (this.singleInstance) {
+				return this.__instance.save();
+			} else {
+				throw new Error('Error! The class must be with singleInstance=true!');
+			}
+		}
+		throw new Error('Error! this.__instance is empty!');
+	};
+
 }
 
 SGModel.TYPES.forEach((typeDef, index) => {
@@ -1014,10 +1072,6 @@ SGModel.FLAG_NO_CALLBACKS = 0b00000100; // if given, no callbacks are executed
 SGModel.FLAG_FORCE_CALLBACKS = 0b00001000; // execute callbacks even if there is no change
 
 SGModel.DELETE_EMPTIES = true;
-
-function nextUID() {
-	return ++SGModel.__uid;
-}
 
 SGModel.fStub = (v) => v;
 
@@ -1201,9 +1255,6 @@ SGModel.isEmpty = function(value) {
 	return true;
 };
 
-/** @protected */
-SGModel.__instance = null;
-
 /**
  * Enable multiple instances
  */
@@ -1213,18 +1264,6 @@ SGModel.multipleInstances = true;
  * Automatic saving to storage when any property is changed
  */
 SGModel.autoSave = false;
-
-/** @public */
-SGModel.getInstance = function() {
-	if (!this.singleInstance) {
-		throw new Error('Error in getInstance()! static singleInstance is false!');
-	}
-	if (this.__instance) {
-		return this.__instance;
-	}
-	this.__instance = new this();
-	return this.__instance;
-};
 
 // TODO: назначение статических методов get, set, addTo и т.д. написать в виде единственного блока кода? Учесть JSDoc!
 
@@ -1283,20 +1322,6 @@ SGModel.on = function(...args) {
  */
 SGModel.off = function(...args) {
 	return this.__instance && this.__instance.off(...args);
-};
-
-/**
- * Method **save()** for single instance of a class
- */
-SGModel.save = function() {
-	if (this.__instance) {
-		if (this.singleInstance) {
-			return this.__instance.save();
-		} else {
-			throw new Error('Error! The class must be with singleInstance=true!');
-		}
-	}
-	throw new Error('Error! this.__instance is empty!');
 };
 
 if (typeof globalThis === 'object') globalThis.SGModel = SGModel;

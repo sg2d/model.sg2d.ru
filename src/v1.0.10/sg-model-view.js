@@ -16,7 +16,6 @@ class SGModelView extends SGModel {
 
 	/*static version = SGModel.version; // @see SGModel.version*/
 
-	// @private
 	static #ATTRIBUTES = {};
 
 	/**
@@ -46,32 +45,18 @@ class SGModelView extends SGModel {
 	static enablePrintingUUIDClass = true;
 
 	/**
-	 * #prevPWR - для вывода экземпляров представлений всех классов, унаследованных от SGModelView, в том порядке, в котором вызывались конструкторы. To add content and resolve the result initialize() in the order in which the instance constructors of all classes inherited from SGModel were called
-	 * @private
+	 * Для вывода экземпляров представлений всех классов, унаследованных от SGModelView, в том порядке, в котором вызывались конструкторы.
+	 * @english To add content and resolve the result initialize() in the order in which the instance constructors of all classes inherited from SGModel were called
 	 */
 	static #prevPWR = null;
 
-	/**
-	 * @private
-	 * @param {string} property 
-	 * @param {string} keyOrIndex 
-	 * @param {mixed} valueOrItem 
-	 * @param {number} type 
-	 * @returns {string}
-	 */
-	#getItemHash(property, keyOrIndex, valueOrItem, type = void 0) {
-		type = type || this.constructor.typeProperties[property];
-		if (type === SGModel.TYPE_ARRAY || type === SGModel.TYPE_OBJECT || type === SGModel.TYPE_SET || type === SGModel.TYPE_MAP) {
-			const key = (valueOrItem?.id || valueOrItem?.uuid || valueOrItem?.code) || keyOrIndex;
-			const hash = SGModelView.sha256trimL(`${this.uuid}:${property}:${key}:${JSON.stringify(valueOrItem)}`);
-			return `${hash}:${key}`;
-		} else if (type === SGModel.TYPE_ARRAY_NUMBERS || type === SGModel.TYPE_OBJECT_NUMBERS) {
-			const hash = SGModelView.sha256trimL(`${this.uuid}:${property}:${keyOrIndex}`);
-			return `${hash}:${keyOrIndex}`;
-		}
-		throw new Error(`Error in this.#getItemHash()! The property "${property}" does not support data type "${SGModel.TYPES[type]}"!`);
-	}
-
+	#binderInitialized = false;
+	#elementsEvents = [];
+	#eventsCounter = 0;
+	#propertyElementLinks = {};
+	#prrSeqConstructor = Promise.withResolvers(); // Промис, обеспечивающий нужную последовательность отрисовки вьюхи согласно порядку вызова конструктора этой вьюхи относительно всех вызовов конструкторов SGModelView
+	#deferredProperties = new Set();
+	
 	/**
 	 * Автоматические загрузка и парсинг шаблонов
 	 * @english Loading and parsing templates.
@@ -148,21 +133,11 @@ class SGModelView extends SGModel {
 			// 4. Определяем templateId
 			autoLoadBind.templateId = autoLoadBind.templateId && String(autoLoadBind.templateId).replace(/^#/, '') || defaultTemplateId;
 		}
-		// Некоторые проверки. @english: Some checks.
 		if (this.multipleInstance && autoLoadBind.viewId) {
 			throw new Error(`Error! autoLoadBind.viewId is not allowed for multiple instances!`);
 		}
 		return true;
 	}
-
-	#binderInitialized = false;
-	#elementsEvents = [];
-	#eventsCounter = 0;
-	#propertyElementLinks = {};
-	#deferredProperties = new Set();
-	//#pwrSettled = false;
-	//#pwrResolved = false;
-	//#pwrRejected = false;
 	
 	/**
 	 * Constructor
@@ -187,6 +162,11 @@ class SGModelView extends SGModel {
 		// Сюда приходим после полного выполнения конструктора в SGModel
 		// @english: We come here after complete execution of the constructor in SGModel
 
+		// Свойства в #propertyElementLinks должны быть добавлены в той же последовательности, в какой они объявлены! Т.о. при первоначальном рефреше контролов можно, например, решить проблему dropdown-спискоа, в которых при задании текущего select-значения в момент инициализации (например, из localStorage) не обновляется innerHTML контрола (<button>) innerHTML'ом пункта (<li>).
+		for (let propName in this.data) {
+			this.#propertyElementLinks[propName] = [];
+		}
+
 		this.constructor._initialized = 0;
 		if (!this.constructor._pInitialize) {
 			this.constructor._pInitialize = this.constructor.initialize(this).then((result) => { // eslint-disable-line no-unused-vars
@@ -198,18 +178,18 @@ class SGModelView extends SGModel {
 			});
 		}
 
-		this._pwr = Promise.withResolvers(); // @private
+		this.#prrSeqConstructor = Promise.withResolvers(); 
 		const isFirstPWR = !SGModelView.#prevPWR;
 		if (!isFirstPWR) {
 			SGModelView.#prevPWR.promise.finally(() => {
-				this.constructor._pInitialize.finally(this._pwr.resolve);
+				this.constructor._pInitialize.finally(this.#prrSeqConstructor.resolve);
 			});
 		}
-		SGModelView.#prevPWR = this._pwr;
+		SGModelView.#prevPWR = this.#prrSeqConstructor;
 
 		// Вывод контента по умолчанию (клонирование шаблона) и связывание с данными.
 		// @english: Default content output (template cloning) and data binding.
-		this._pwr.promise.then((result) => { // eslint-disable-line no-unused-vars
+		this.#prrSeqConstructor.promise.then((result) => { // eslint-disable-line no-unused-vars
 			const autoLoadBind = this.constructor.autoLoadBind;
 			const containerId = this.options.containerId || autoLoadBind.containerId;
 			const viewId = this.options.viewId || autoLoadBind.viewId;
@@ -278,13 +258,13 @@ class SGModelView extends SGModel {
 				}
 			}
 			return true;
-		});
+		}).then(this.initialization.resolve);
 
 		if (isFirstPWR) {
-			this.constructor._pInitialize.then(this._pwr.resolve);
+			this.constructor._pInitialize.then(this.#prrSeqConstructor.resolve);
 		}
 		
-		return this._pwr.promise;
+		return this.initialized;
 	}
 
 	/**
@@ -426,7 +406,7 @@ class SGModelView extends SGModel {
 		this.#bindElements([this.eView], true);
 
 		for (const name in this.#propertyElementLinks) {
-			if (!this.#deferredProperties.has(name) && this.#propertyElementLinks[name]) { // отложенные отрисовываются отдельно, поэтому не имеет смысла их отрисовывать ещё раз
+			if (this.#propertyElementLinks[name]) {
 				this.#refreshElement(name);
 			}
 		}
@@ -484,10 +464,12 @@ class SGModelView extends SGModel {
 						}
 					}
 				} else {
-					const eItems = document.querySelectorAll(`[${SGModelView.#ATTRIBUTES.SG_DROPDOWN}=${sgProperty}]`);
-					for (let i = 0; i < eItems.length; i++) {
-						eItems[i].onclick = this._dropdownItemClick;
+					const eList = document.querySelector(`[aria-labelledby=${elementDOM.id}]`);
+					if (!eList) {
+						throw new Error(`Error in this.#bindElements()! Dropdown lists must have an id attribute (for example in a button) and an aria-labelledby attribute of the list container (for example in a <UL> tag).`);
 					}
+					eList._sg_control = elementDOM;
+					eList.addEventListener('click', this._dropdownItemsClick);
 					elementDOM.addEventListener('change', this.onChangeDOMElementValue);
 				}
 			}
@@ -795,13 +777,13 @@ class SGModelView extends SGModel {
 				if (SGModelView.#ATTRIBUTES[attr.name]) { // Example: SGModelView.#ATTRIBUTES["sg-value"]="SG_VALUE"
 					sgAttrs[attr.name] = String(attr.value).trim();
 				} else {
-					for (let subProperty in valueOrItem) {
+					for (const subProperty in valueOrItem) {
 						attr.value = attr.value.replaceAll(`$${subProperty}`, valueOrItem[subProperty]);
 					}
 				}
 				if (sgItemVariables) {
-					for (let subProperty in sgItemVariables) {
-						attr.value = attr.value.replaceAll(`$${subProperty}`, sgItemVariables[subProperty]);
+					for (const subProperty in sgItemVariables) {
+						attr.value = attr.value.replaceAll(subProperty, sgItemVariables[subProperty]);
 					}
 				}
 			}
@@ -832,14 +814,22 @@ class SGModelView extends SGModel {
 				element.innerHTML = valueOrItem[attrValue]; // TODO: sg-format
 			}
 
+			attrValue = String(sgAttrs[SGModelView.#ATTRIBUTES.SG_OPTION] || '');
+			if (attrValue) {
+				element.setAttribute(SGModelView.#ATTRIBUTES.SG_OPTION, valueOrItem[attrValue]);
+			}
+
 			//TODO: attrValue = String(sgAttrs[SGModelView.#ATTRIBUTES.SG_CSS] || '').slice(1);
 		}
 		for (const childNode of element.childNodes) {
 			if (childNode.nodeType === Node.ELEMENT_NODE) {
 				this.#scanTemplateContentAndSetValues(childNode, valueOrItem, sgItemVariables);
 			} else if (childNode.nodeType === Node.TEXT_NODE) {
-				if (childNode.nodeValue.includes('$value')) {
-					childNode.textContent = childNode.textContent.replaceAll('$value', valueOrItem.value);
+				for (const subProperty in valueOrItem) {
+					const _subProperty = `$${subProperty}`;
+					if (childNode.nodeValue.includes(_subProperty)) {
+						childNode.textContent = childNode.textContent.replaceAll(_subProperty, valueOrItem[subProperty]);
+					}
 				}
 			}
 		}		
@@ -877,13 +867,21 @@ class SGModelView extends SGModel {
 				break;
 		}
 	}
-	
+
 	/** @private */
-	_dropdownItemClick() {
-		const button = this.parentNode.parentNode.querySelector('button');
-		button.value = this.getAttribute('sg-option');
-		button.innerHTML = this.innerHTML;
-		button.dispatchEvent(new Event('change'));
+	_dropdownItemsClick(evt) {
+		const eTarget = evt.target;
+		let eItem = eTarget;
+		while (eItem.parentNode) {
+			if (eItem.parentNode.getAttribute('aria-labelledby') && eItem.parentNode._sg_control) {
+				const eControl = eItem.parentNode._sg_control;
+				eControl.value = eItem.getAttribute('sg-option');
+				eControl.innerHTML = eItem.innerHTML;
+				eControl.dispatchEvent(new Event('change'));
+				break;
+			}
+			eItem = eItem.parentNode;
+		}
 	}
 	
 	/** @private */
@@ -902,7 +900,7 @@ class SGModelView extends SGModel {
 
 	/**
 	 * Преобразует текстовое представление объекта из атрибита в Javascript-объект.
-	 * Пример sg-атрибута со значениями: sg-item-variables="{ tagClass: 'text-bg-primary', tagStyle: 'background-color: green', x: -123.45, y: 400, description: 'Some text3...' }"
+	 * Пример sg-атрибута со значениями: sg-item-variables="{ $tagClass: 'text-bg-primary', $tagStyle: 'background-color: $green', $x: -123.45, $y: 400, $description: 'Some text3...' }"
 	 * @ai ChatGPT
 	 * @param {string} line 
 	 * @returns {object}
@@ -930,7 +928,7 @@ class SGModelView extends SGModel {
 	 * Overriding the **SGModel->set** method
 	 * @override
 	 */
-	set(name) {
+	set(name, valueOrCollection, options = SGModel.OBJECT_EMPTY, flags = 0, event = void 0, elem = void 0) {
 		return this.#sarc(name, super.set.apply(this, arguments));
 	}
 
@@ -938,7 +936,7 @@ class SGModelView extends SGModel {
 	 * Overriding the **SGModel->addTo** method
 	 * @override
 	 */
-	addTo(name) {
+	addTo(name, value, key = void 0, options = void 0, flags = 0) {
 		return this.#sarc(name, super.addTo.apply(this, arguments));
 	}
 
@@ -946,15 +944,23 @@ class SGModelView extends SGModel {
 	 * Overriding the **SGModel->removeFrom** method
 	 * @override
 	 */
-	removeFrom(name) {
+	removeFrom(name, indexOrKeyOrValue, options = void 0, flags = 0) {
 		return this.#sarc(name, super.removeFrom.apply(this, arguments));
+	}
+
+	/**
+	 * Overriding the **SGModel->clearProperty()** method
+	 */
+	clearProperty(name, value = void 0, flags = 0) {
+		super.clearProperty.call(this, name, value, flags);
+		this.#sarc(name, true);
 	}
 
 	/**
 	 * Overriding the **SGModel->clear** method
 	 * @override
 	 */
-	clear(name) {
+	clear(options = void 0, flags = 0) {
 		return this.#sarc(name, super.clear.apply(this, arguments));
 	}
 
@@ -973,15 +979,52 @@ class SGModelView extends SGModel {
 	}
 
 	/**
+	 * @private
+	 * @param {string} property 
+	 * @param {string} keyOrIndex 
+	 * @param {mixed} valueOrItem 
+	 * @param {number} type 
+	 * @returns {string}
+	 */
+	#getItemHash(property, keyOrIndex, valueOrItem, type = void 0) {
+		type = type || this.constructor.typeProperties[property];
+		if (type === SGModel.TYPE_ARRAY || type === SGModel.TYPE_OBJECT || type === SGModel.TYPE_SET || type === SGModel.TYPE_MAP) {
+			let keyName = 'index';
+			let keyValue = keyOrIndex;
+			if (valueOrItem instanceof Object) {
+				if (valueOrItem.id) {
+					keyName = 'id';
+					keyValue = valueOrItem.id;
+				} else if (valueOrItem.uuid) {
+					keyName = 'uuid';
+					keyValue = valueOrItem.uuid;
+				} else if (valueOrItem.code) {
+					keyName = 'code';
+					keyValue = valueOrItem.code;
+				} else if (valueOrItem.hash) {
+					return `hash:${valueOrItem.hash}`;
+				}
+			}
+			const hash = SGModelView.sha256trimL(`${this.uuid}:${property}:${keyName}:${keyValue}`);
+			return `${keyName}:${keyValue}:${hash}`;
+		} else if (type === SGModel.TYPE_ARRAY_NUMBERS || type === SGModel.TYPE_OBJECT_NUMBERS) {
+			const hash = SGModelView.sha256trimL(`${this.uuid}:${property}:index:${keyOrIndex}`);
+			return `index:${keyOrIndex}:${hash}`;
+		}
+		throw new Error(`Error in this.#getItemHash()! The property "${property}" does not support data type "${SGModel.TYPES[type]}"!`);
+	}
+
+	/**
 	 * Получить данные элемента/записи коллекции
 	 * @param {Event|HTMLElement} eventOrElement
 	 * @returns {object} Вернёт объект: { key {string}, value {mixed}, item {mixed}, collection, property {string}, type {SGModel.TYPE_%}, $item {HTMLElement}, $control {HTMLElement}, hash {string} }, где:
 	 *	key - либо индекс элемента для массивов/Set-коллекции, либо имя свойства объекта или ключа элемента Map-коллекции
-	 *	value - значение элемента коллекции
+	 *	value - значение элемента коллекции. Для keyName='index' преобразуется к Number, для keyName='id' преобразуется к BigInt
 	 *	item - запись коллекции (для массивов или Set-коллекции равно **value**)
 	 *	collection - сама коллекция
 	 *	property - имя свойства в атрибуте sg-for
 	 *	type - тип данных (SGModel.TYPE_ARRAY|SGModel.TYPE_ARRAY_NUMBERS|SGModel.TYPE_OBJECT|SGModel.TYPE_OBJECT_NUMBERS|SGModel.TYPE_SET|SGModel.TYPE_MAP)	
+	 *	keyName - имя ключа (м.б. id, uuid, code, hash или index)
 	 *	$item - корневой DOM-элемент записи
 	 *	$control - DOM-элемент, на который нажал пользователь, например, BUTTON
 	 *	hash - хэш записи (ключа)
@@ -996,18 +1039,19 @@ class SGModelView extends SGModel {
 				}
 				const sgItemValue = eventOrElement.getAttribute(SGModelView.#ATTRIBUTES.SG_ITEM);
 				if (sgItemValue) {
-					const [hash, key] = String(sgItemValue).split(':');
+					const [keyName, keyValue, hash] = String(sgItemValue).split(':');
 					// Формируем объект. По стандарту порядок выдачи свойств в цикле for..in не определён, но некоторое соглашение об этом, всё же, есть. Соглашение говорит, что если имя свойства – нечисловая строка, то такие ключи всегда перебираются в том же порядке, в каком присваивались. Так получилось по историческим причинам и изменить это сложно: поломается много готового кода.
 					const result = {
-						key,
+						key: (keyName === 'index' ? Number(keyValue) : (keyName === 'id' ? BigInt(keyValue) : keyValue)),
 						value: null,
 						item: null,
 						collection: null,
 						property: null,
 						type: null,
+						keyName,
 						$item: eventOrElement,
 						$control,
-						hash,
+						hash: hash || keyValue,
 					};
 					result.property = eventOrElement.parentElement.getAttribute(SGModelView.#ATTRIBUTES.SG_FOR);
 					result.collection = this.data[result.property];
@@ -1032,9 +1076,6 @@ class SGModelView extends SGModel {
 								keyOrIndex,
 								result.collection[keyOrIndex],
 							)) {
-								if (result.type === SGModel.TYPE_ARRAY_NUMBERS || result.item?.id) {
-									result.key = Number(result.key);
-								}
 								break;
 							}
 						}
@@ -1105,14 +1146,6 @@ class SGModelView extends SGModel {
 	 */
 	 trigger(name, value = void 0, flags = 0) {
 		super.trigger.call(this, name, value, flags);
-		this.#sarc(name, true);
-	}
-
-	/**
-	 * Overriding the **SGModel->clearProperty()** method
-	 */
-	clearProperty(name, value = void 0, flags = 0) {
-		super.clearProperty.call(this, name, value, flags);
 		this.#sarc(name, true);
 	}
 }
