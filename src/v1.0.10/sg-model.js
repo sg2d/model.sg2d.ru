@@ -159,6 +159,7 @@ class SGModel {
 
 	static #vcResult = { // @aos (for acceleration and optimization, but synchronously)
 		value: null,
+		previous: null,
 		changed: false,
 		isComplexType: false,
 	};
@@ -376,6 +377,7 @@ class SGModel {
 	 * @param {mixed} nextValue
 	 * @param {mixed} [previousValue] Для сложных объектов сами объекты сохраняются (не пересоздаются!), но очищаются! Для изменения элементов коллекции используйте методы addTo(), removeFrom() и др.
 	 * @param {object} [options=SGModel.OBJECT_EMPTY]
+	 * @param {function}	[options.format] - Функция для обработки элемента коллекции (item, index)=>{return...}. Например, можно элемент в виде массива ['http://test.ru', 'Title...'] превратить в объект { url: 'http://test.ru', title: 'Title...' }
 	 * @param {number} [flags=0]
 	 * @returns {object} SGModel.#vcResult = { value, previous, changed, isComplexType } Для сложных объектов - value - это сама коллекция!
 	 */
@@ -486,7 +488,8 @@ class SGModel {
 				}
 				if (typeof options.format === 'function') {
 					let index = 0;
-					for (const value of nextValue) {
+					const aTemp = Array.from(nextValue);
+					for (const value of aTemp) {
 						nextValue.delete(value);
 						nextValue.add(options.format(value, index++));
 					}
@@ -538,7 +541,7 @@ class SGModel {
 	* @param {mixed}	valueOrCollection
 	* @param {object}	[options=SGModel.OBJECT_EMPTY]
 	* @param {mixed}	[options.previous_value] - Use this value as the previous value
-	* @param {function}	[options.format] - функция для обработки элемента коллекции. Например, можно элемент в виде массива ['http://test.ru', 'Title...'] превратить в объект { url: 'http://test.ru', title: 'Title...' }
+	* @param {function}	[options.format] - Функция для обработки элемента коллекции (item, index)=>{return...}. Например, можно элемент в виде массива ['http://test.ru', 'Title...'] превратить в объект { url: 'http://test.ru', title: 'Title...' }
 	* @param {number}	[flags=0] - Valid flags: **FLAG_OFF_MAY_BE** | **FLAG_PREV_VALUE_CLONE** | **FLAG_NO_CALLBACKS** | **FLAG_FORCE_CALLBACKS**
 	* @param {Event}	[event] - event when using SGModelView
 	* @param {DOMElement} [elem] - event source element when using SGModelView
@@ -562,27 +565,31 @@ class SGModel {
 	 * Добавить элемент/свойство в коллекцию - один из методов для работы с массивами, объектами и коллекциями Map/Set
 	 * @param {string} name
 	 * @param {mixed} value
-	 * @param {mixed} [key]
-	 * @param {object} [options]
+	 * @param {mixed} [key] Указывается для коллекций объектов и множеств Map
+	 * @param {object} [options=SGModel.OBJECT_EMPTY]
+	 * @param {function}	[options.format] - Функция для обработки элемента коллекции (item, index)=>{return...}. Например, можно элемент в виде массива ['http://test.ru', 'Title...'] превратить в объект { url: 'http://test.ru', title: 'Title...' }
 	 * @param {number} [flags=0]
 	 * @returns {boolean|Promise} true, если данные в свойстве изменились (например, для коллекции-Set добавление уже существующего значения в коллекции метод вернёт false). Вернёт Promise при autoSave=true
 	 */
-	addTo(name, value, key = void 0, options = void 0, flags = 0) {
+	addTo(name, value, key = void 0, options = SGModel.OBJECT_EMPTY, flags = 0) {
 		const collection = this.#data[name];
 		let changed = false;
 		switch (this.constructor.typeProperties[name]) {
 			case SGModel.TYPE_ARRAY: {
+				value = (options.format instanceof Function) && options.format(value, collection.length) || value;
 				collection.push(value);
 				changed = true;
 				break;
 			}
 			case SGModel.TYPE_ARRAY_NUMBERS: {
+				value = (options.format instanceof Function) && options.format(value, collection.length) || value;
 				collection.push(Number(value));
 				changed = true;
 				break;
 			}
 			case SGModel.TYPE_OBJECT: {
 				if (collection[key] !== value) {
+					value = (options.format instanceof Function) && options.format(value, key) || value;
 					collection[key] = value;
 					changed = true;
 				}
@@ -591,6 +598,7 @@ class SGModel {
 			case SGModel.TYPE_OBJECT_NUMBERS: {
 				value = Number(value);
 				if (collection[key] !== value) {
+					value = (options.format instanceof Function) && options.format(value, key) || value;
 					collection[key] = value;
 					changed = true;
 				}
@@ -598,6 +606,7 @@ class SGModel {
 			}
 			case SGModel.TYPE_SET: {
 				if (!collection.has(value)) {
+					value = (options.format instanceof Function) && options.format(value, collection.size) || value;
 					collection.add(value);
 					changed = true;
 				}
@@ -605,6 +614,7 @@ class SGModel {
 			}
 			case SGModel.TYPE_MAP: {
 				if (!collection.has(key) || collection.get(key) !== value) {
+					value = (options.format instanceof Function) && options.format(value, key) || value;
 					collection.set(key, value);
 					changed = true;
 				}
@@ -692,6 +702,45 @@ class SGModel {
 	}
 
 	/**
+	 * Перебор всех элементов в коллекции
+	 * @param {string} name
+	 * @param {function} callback (item, indexOrKey) => {...}
+	 */
+	forEach(name, callback) {
+		const collection = this.#data[name];
+		switch (this.constructor.typeProperties[name]) {
+			case SGModel.TYPE_ARRAY: case SGModel.TYPE_ARRAY_NUMBERS: {
+				for (let index = 0; index < collection.length; index++) {
+					callback(collection[index], index);
+				}
+				break;
+			}
+			case SGModel.TYPE_OBJECT: case SGModel.TYPE_OBJECT_NUMBERS: {
+				let index = 0;
+				for (const value of collection) {
+					callback(value, index++);
+				}
+				break;
+			}
+			case SGModel.TYPE_SET: {
+				for (const key in collection) {
+					callback(collection[key], key);
+				}
+				break;
+			}
+			case SGModel.TYPE_SET: {
+				for (const [key, value] of collection) {
+					callback(value, key);
+				}
+				break;
+			}
+			default: {
+				throw new Error(`Error in forEach() method! Unknown type for property "${name}"!`);
+			}
+		}
+	}
+
+	/**
 	 * Очистить свойство - методов работает также со сложными типами данных - с массивами, объектами и коллекциями Map/Set
 	 * @param {string} name
 	 * @returns {boolean|Promise} true, если данные в свойстве изменились.
@@ -699,7 +748,7 @@ class SGModel {
 	clearProperty(name, options = void 0, flags = 0) {
 		let changed = false;
 		const valueOrCollection = this.#data[name];
-		switch (this.constructor.typeProperties[name] || 0) {
+		switch (this.constructor.typeProperties[name] || SGModel.TYPE_ANY) {
 			case SGModel.TYPE_ANY: changed = (valueOrCollection !== null); this.#data[name] = null; break;
 			case SGModel.TYPE_STRING: changed = (valueOrCollection !== ''); if (changed) this.#data[name] = ''; break;
 			case SGModel.TYPE_NUMBER: changed = (valueOrCollection !== 0); this.#data[name] = 0; break;
@@ -763,7 +812,7 @@ class SGModel {
 				}
 				break;
 			}
-			default: throw new Error(`Error in clearProperty()! Unknown type!`);
+			default: throw new Error(`Error in clearProperty()! Unknown type for property "${name}"!`);
 		}
 		return this.#changedAndCallbacks(changed, name, valueOrCollection, null, options, flags);
 	}

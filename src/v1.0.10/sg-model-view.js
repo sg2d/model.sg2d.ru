@@ -19,6 +19,11 @@ class SGModelView extends SGModel {
 	static #ATTRIBUTES = {};
 
 	/**
+	 * Имя ключа объекта в каждом DOM-элементе для служебного использования объекта фреймворком
+	 */
+	static #sgPrefixInNode = '__sg';
+
+	/**
 	 * Переопределить префикс атрибутов для SGModelView.
 	 * Можно переопределить в основном модуле вашего приложения (например, в точке входа, таком как main.js или app.js), после этого все остальные модули, которые импортируют SGModelView, будут видеть и использовать ваш префикс
 	 * @param {string} newPrefix 
@@ -34,7 +39,7 @@ class SGModelView extends SGModel {
 			.forEach((name) => {
 				const ucName = `SG_${name.replaceAll('-', '_').toUpperCase()}`;
 				SGModelView.#ATTRIBUTES[ucName] = `${newPrefix}${name}`;
-				SGModelView.#ATTRIBUTES[`${newPrefix}${name}`] = ucName; // use in this.#scanTemplateContentAndSetValues()
+				SGModelView.#ATTRIBUTES[`${newPrefix}${name}`] = ucName; // use in this.#scanItemContentAndSetValues()
 			});
 	}
 
@@ -218,8 +223,8 @@ class SGModelView extends SGModel {
 					}
 					if (viewId) {
 						this.eView = eTarget;
-						if (this.eView.__SGModelUUID) {
-							throw new Error(`Error! The container with id="${viewId}" already binding with other SGModel instance with uuid: "${this.eView.__SGModelUUID}" and class: ${SGModel.__instances[this.eView.__SGModelUUID].constructor.name}!`);
+						if (this.eView.__sgModelUUID) {
+							throw new Error(`Error! The container with id="${viewId}" already binding with other SGModel instance with uuid: "${this.eView.__sgModelUUID}" and class: ${SGModel.__instances[this.eView.__sgModelUUID].constructor.name}!`);
 						}
 						this.eView.append(eContent);
 					} else { // Сохраняем существующий контент для вывода нескольких экземпляров. @english: Preserve existing content to support multiple instances of printing.
@@ -268,7 +273,7 @@ class SGModelView extends SGModel {
 	}
 
 	/**
-	 * Найти элемент с определенным значением атрибута sg-model. Элементы (и вложенные также) с установленным __SGModelUUID пропускаются!
+	 * Найти элемент с определенным значением атрибута sg-model. Элементы (и вложенные также) с установленным __sgModelUUID пропускаются!
 	 * @private
 	 * @param {string} className 
 	 * @param {mixed} [root]
@@ -281,14 +286,14 @@ class SGModelView extends SGModel {
 			} else {
 				root = document.body;
 			}
-			if (!root.__SGModelUUID && root.getAttribute(SGModelView.#ATTRIBUTES.SG_MODEL) === className) { // @aos
+			if (!root.__sgModelUUID && root.getAttribute(SGModelView.#ATTRIBUTES.SG_MODEL) === className) { // @aos
 				return root;
 			}
 		} else if (!(root instanceof HTMLElement)) {
 			throw new Error(`Error in #findElementBySGClass()! Incorrect type of parameter "root"!`);
 		}
 		for (let node of root.childNodes) {
-			if (node.nodeType !== Node.ELEMENT_NODE || node.__SGModelUUID) continue;
+			if (node.nodeType !== Node.ELEMENT_NODE || node.__sgModelUUID) continue;
 			if (node.getAttribute(SGModelView.#ATTRIBUTES.SG_MODEL) === className) {
 				return node;
 			}
@@ -345,10 +350,10 @@ class SGModelView extends SGModel {
 		} else {
 			let name, item;
 			for (name in this.#propertyElementLinks) {
-				const propertyElementLink = this.#propertyElementLinks[name];
-				if (propertyElementLink.type === SGModelView._LINKTYPE_VALUE) {
-					propertyElementLink.element.removeEventListener('change', this.onChangeDOMElementValue);
-					propertyElementLink.element.removeEventListener('input', this.onChangeDOMElementValue);
+				const link = this.#propertyElementLinks[name];
+				if (link.linkType === SGModelView._LINKTYPE_VALUE) {
+					link.element.removeEventListener('change', this.onChangeDOMElementValue);
+					link.element.removeEventListener('input', this.onChangeDOMElementValue);
 				}
 				delete this.#propertyElementLinks[name];
 			}
@@ -361,9 +366,9 @@ class SGModelView extends SGModel {
 		if (!this.eView) {
 			throw new Error(`Error in ${this.constructor.name}->bindHTML()! Container "${root}" does not exist!`);
 		}
-		this.eView.__SGModelUUID = this.uuid;
+		this.eView.__sgModelUUID = this.uuid;
 		if (this.constructor.enablePrintingUUIDClass === true) {
-			this.eView.setAttribute(SGModelView.#ATTRIBUTES.SG_UUID, `${this.uuid}:${this.constructor.name}:${this.__uid}`);
+			this.eView.setAttribute(SGModelView.#ATTRIBUTES.SG_UUID, `${this.constructor.name}:${this.__uid}:${this.uuid}`);
 		}
 		
 		this._reProps = {};
@@ -416,9 +421,11 @@ class SGModelView extends SGModel {
 	#bindElements(elements, isRoot = false) {
 		for (let e = 0; e < elements.length; e++) {
 			const elementDOM = elements[e];
-			if (elementDOM.__SGModelUUID && !isRoot || elementDOM.nodeType !== Node.ELEMENT_NODE) { // Пропускаем вложенные инстансы SGModel-представлений и узлы других типов
+			if (elementDOM.__sgModelUUID && !isRoot || elementDOM.nodeType !== Node.ELEMENT_NODE) { // Пропускаем вложенные инстансы SGModel-представлений и узлы других типов
 				continue;
 			}
+			
+			const sgInNode = elementDOM[SGModelView.#sgPrefixInNode] || (elementDOM[SGModelView.#sgPrefixInNode] = {});
 			
 			const sgProperty = elementDOM.getAttribute(SGModelView.#ATTRIBUTES.SG_PROPERTY);
 			const sgValue = elementDOM.getAttribute(SGModelView.#ATTRIBUTES.SG_VALUE); // Now attributes are implemented only for static output (only at initialization)
@@ -439,9 +446,9 @@ class SGModelView extends SGModel {
 			
 			if (sgProperty && this.has(sgProperty)) {
 				this.#regPropertyElementLink(sgProperty, elementDOM, SGModelView._LINKTYPE_VALUE);
-				elementDOM._sg_property = sgProperty;
-				elementDOM._sg_type = sgType;
-				elementDOM._sg_format = this[sgFormat];
+				sgInNode.property = sgProperty;
+				sgInNode.type = sgType;
+				sgInNode.format = this[sgFormat];
 				if (sgType !== 'dropdown') {
 					if (elementDOM.type) {
 						let sEvent = '';
@@ -468,7 +475,8 @@ class SGModelView extends SGModel {
 					if (!eList) {
 						throw new Error(`Error in this.#bindElements()! Dropdown lists must have an id attribute (for example in a button) and an aria-labelledby attribute of the list container (for example in a <UL> tag).`);
 					}
-					eList._sg_control = elementDOM;
+					const sgInList = eList[SGModelView.#sgPrefixInNode] || (eList[SGModelView.#sgPrefixInNode] = {});
+					sgInList.control = elementDOM;
 					eList.addEventListener('click', this._dropdownItemsClick);
 					elementDOM.addEventListener('change', this.onChangeDOMElementValue);
 				}
@@ -548,11 +556,11 @@ class SGModelView extends SGModel {
 					}
 				}
 				try {
-					elementDOM._sg_css = (new Function(`return ${_sgCSS}`)).bind(this);
+					sgInNode.css = (new Function(`return ${_sgCSS}`)).bind(this);
 				} catch(err) {
 					throw err;
 				}
-				elementDOM._sg_css_static_classes = [...elementDOM.classList];
+				sgInNode.css_static_classes = [...elementDOM.classList];
 				if (!bProperties && bFunctions) {
 					this.#regPropertyElementLink(sgProperty, elementDOM, SGModelView._LINKTYPE_CSS);
 				}
@@ -591,10 +599,20 @@ class SGModelView extends SGModel {
 			if (sgFor && sgTemplate) {
 				const template = this.constructor.templates[sgTemplate];
 				if (template) {
-					this.#regPropertyElementLink(sgFor, elementDOM, SGModelView._LINKTYPE_FORTEMPLATE);
-					elementDOM._sg_template = template;
+					const link = this.#regPropertyElementLink(sgFor, elementDOM, SGModelView._LINKTYPE_FORTEMPLATE);
+					sgInNode.template = template;
 					if (sgItemVariables) {
-						elementDOM._sg_item_variables = SGModelView.parseItemVariablesLine(sgItemVariables);
+						sgInNode.item_variables = SGModelView.parseItemVariablesLine(sgItemVariables);
+						// Поиск динамических переменных, значения которых могу меняться в процессе работы приложения
+						for (const varName in sgInNode.item_variables) {
+							const value = sgInNode.item_variables[varName];
+							const nameInValue = (String(value)[0] === '$' ? value.substring(1) : void 0);
+							if (this.has(nameInValue)) {
+								sgInNode.item_variables[varName] = {
+									propertyName: nameInValue,
+								};
+							}
+						}
 					}
 				} else {
 					console.warn(`Error in this.#bindElements()! Template "${sgTemplate}" not found! Property: ${sgOptions}, constructor: ${this.constructor.name}`);
@@ -606,19 +624,26 @@ class SGModelView extends SGModel {
 	}
 	
 	/** @private */
-	#regPropertyElementLink(property, element, type) {
-		let item = this.#propertyElementLinks[property];
-		if (!item) {
-			item = this.#propertyElementLinks[property] = [];
+	#regPropertyElementLink(property, elementDOM, linkType) {
+		let links = this.#propertyElementLinks[property];
+		if (!links) {
+			links = this.#propertyElementLinks[property] = [];
 		}
-		if (item.indexOf(element) === -1) {
-			item.push({element: element, type: type});
+		let link = links.find(link => link.element === elementDOM);
+		if (!link) {
+			link = {
+				element: elementDOM,
+				linkType,
+			};
+			links.push(link);
 		}
+		return link;
 	}
 
 	/** @private */
 	#printItem(property, elementDOM, collection, keyOrIndex, valueOrItem, requiredSection) {
-		const eContent = elementDOM._sg_template.content.cloneNode(true);
+		const sgInNode = elementDOM[SGModelView.#sgPrefixInNode];
+		const eContent = sgInNode.template.content.cloneNode(true);
 		let eItem;
 		if (requiredSection) {
 			eItem = document.createElement('SECTION');
@@ -630,21 +655,22 @@ class SGModelView extends SGModel {
 		}
 		const sgItemValue = this.#getItemHash(property, keyOrIndex, valueOrItem);
 		eItem.setAttribute(SGModelView.#ATTRIBUTES.SG_ITEM, sgItemValue);
-		this.#scanTemplateContentAndSetValues(eItem, valueOrItem, elementDOM._sg_item_variables);
+		this.#scanItemContentAndSetValues(property, eItem, valueOrItem, sgInNode.item_variables);
 	}
 	
 	/** @private */
 	#refreshElement(property) {
 		for (let j = 0; j < this.#propertyElementLinks[property].length; j++) {
-			const propertyElementLink = this.#propertyElementLinks[property][j];
-			const elementDOM = propertyElementLink.element;
+			const link = this.#propertyElementLinks[property][j];
+			const elementDOM = link.element;
 			if (!elementDOM) return false;
-			switch (propertyElementLink.type) {
+			const sgInNode = elementDOM[SGModelView.#sgPrefixInNode];
+			switch (link.linkType) {
 				case SGModelView._LINKTYPE_VALUE: {
 				
 					const value = this.data[property];
 
-					switch (elementDOM._sg_type) {
+					switch (sgInNode.type) {
 						case 'dropdown':
 							const eItems = document.querySelectorAll(`[${SGModelView.#ATTRIBUTES.SG_DROPDOWN}=${property}]`);
 							for (let i = 0; i < eItems.length; i++) {
@@ -665,7 +691,7 @@ class SGModelView extends SGModel {
 									case 'datetime-local': elementDOM.value = String(value).replace(/[+-]\d+$/, ''); break; // YYYY-MM-DD HH:MM:SS
 									case 'time': elementDOM.value = value.match(/\d\d:\d\d:\d\d/)?.[0]; break; // YYYY-MM-DD HH:MM:SS+PP
 									case 'text': case 'textarea': case 'button':
-										const v = (elementDOM._sg_format ? elementDOM._sg_format.call(this, value) : value);
+										const v = (sgInNode.format ? sgInNode.format.call(this, value) : value);
 										elementDOM.value = v;
 										if (elementDOM.type === 'button') {
 											elementDOM.innerText = v;
@@ -687,20 +713,20 @@ class SGModelView extends SGModel {
 									}
 								}
 							} else {
-								elementDOM.innerHTML = (elementDOM._sg_format ? elementDOM._sg_format.call(this, value) : value);
+								elementDOM.innerHTML = (sgInNode.format ? sgInNode.format.call(this, value) : value);
 							}
 						}
 					}
 					break;
 				}
 				case SGModelView._LINKTYPE_CSS: {
-					if (elementDOM._sg_css) {
+					if (sgInNode.css) {
 						for (let i = elementDOM.classList.length - 1; i >= 0; i--) {
-							if (elementDOM._sg_css_static_classes.indexOf(elementDOM.classList[i]) === -1) {
+							if (sgInNode.css_static_classes.indexOf(elementDOM.classList[i]) === -1) {
 								elementDOM.classList.remove(elementDOM.classList[i]);
 							}
 						}
-						let result = elementDOM._sg_css();
+						let result = sgInNode.css();
 						if (typeof result === 'function') {
 							result = result.call(this, property);
 						}
@@ -718,27 +744,26 @@ class SGModelView extends SGModel {
 					break;
 				}
 				case SGModelView._LINKTYPE_FORTEMPLATE: {
-					const elementDOM = propertyElementLink.element;
-					const requiredSection = this.#requiredSection(elementDOM._sg_template.content);
-					elementDOM.innerHTML = '';
+					const requiredSection = this.#requiredSection(sgInNode.template.content);
+					link.element.innerHTML = '';
 					const collection = this.data[property];
 					const type = this.constructor.typeProperties[property];
 					let keyOrIndex = 0;
 					if (type === SGModel.TYPE_SET) {
 						for (const valueOrItem of collection) {
-							this.#printItem(property, elementDOM, collection, keyOrIndex++, valueOrItem, requiredSection);
+							this.#printItem(property, link.element, collection, keyOrIndex++, valueOrItem, requiredSection);
 						}
 					} else if (type === SGModel.TYPE_ARRAY || type === SGModel.TYPE_ARRAY_NUMBERS) {
 						for (keyOrIndex = 0; keyOrIndex < collection.length; keyOrIndex++) {
-							this.#printItem(property, elementDOM, collection, keyOrIndex, collection[keyOrIndex], requiredSection);
+							this.#printItem(property, link.element, collection, keyOrIndex, collection[keyOrIndex], requiredSection);
 						}
 					} else if (type === SGModel.TYPE_OBJECT || type === SGModel.TYPE_OBJECT_NUMBERS) {
 						for (keyOrIndex in collection) {
-							this.#printItem(property, elementDOM, collection, keyOrIndex, collection[keyOrIndex], requiredSection);
+							this.#printItem(property, link.element, collection, keyOrIndex, collection[keyOrIndex], requiredSection);
 						}
 					} else if (type === SGModel.TYPE_MAP) {
 						for (const item of collection) {
-							this.#printItem(property, elementDOM, collection, item[0], item[1], requiredSection);
+							this.#printItem(property, link.element, collection, item[0], item[1], requiredSection);
 						}
 					} else {
 						throw new Error(`Error in this.#refreshElement()! Invalid property type!`);
@@ -760,7 +785,7 @@ class SGModelView extends SGModel {
 	 * @param {DOMElement} element
 	 * @param {mixed} valueOrItem
 	 */
-	#scanTemplateContentAndSetValues(element, valueOrItem, sgItemVariables) {
+	#scanItemContentAndSetValues(property, element, valueOrItem, sgItemVariables) {
 
 		// @aos
 		if (!(valueOrItem instanceof Object)) {
@@ -769,12 +794,14 @@ class SGModelView extends SGModel {
 		}
 		
 		if (element instanceof HTMLElement) {
+
+			const sgInNode = (element[SGModelView.#sgPrefixInNode] || (element[SGModelView.#sgPrefixInNode] = {}));
 			
 			// Собираем все атрибуты, разделяя их на обычные и sg-атрибуты (в обычных атрибутах для доступа к субсвойству необходимо добавлять префикс "$")
 			const sgAttrs = {};
 			for (let i = 0; i < element.attributes.length; i++) {
 				const attr = element.attributes[i];
-				if (SGModelView.#ATTRIBUTES[attr.name]) { // Example: SGModelView.#ATTRIBUTES["sg-value"]="SG_VALUE"
+				if (SGModelView.#ATTRIBUTES[attr.name]) { // Example: SGModelView.#ATTRIBUTES['sg-value'] = 'SG_VALUE'
 					sgAttrs[attr.name] = String(attr.value).trim();
 				} else {
 					for (const subProperty in valueOrItem) {
@@ -783,7 +810,16 @@ class SGModelView extends SGModel {
 				}
 				if (sgItemVariables) {
 					for (const subProperty in sgItemVariables) {
-						attr.value = attr.value.replaceAll(subProperty, sgItemVariables[subProperty]);
+						const itemVar = sgItemVariables[subProperty];
+						if (itemVar instanceof Object) {
+							if (attr.value === subProperty) {
+								sgInNode.item_variables_attributes = sgInNode.item_variables_attributes || {};
+								sgInNode.item_variables_attributes[attr.name] = itemVar;
+								attr.value = this.data[itemVar.propertyName];
+							}
+						} else {
+							attr.value = attr.value.replaceAll(subProperty, itemVar);
+						}
 					}
 				}
 			}
@@ -818,16 +854,15 @@ class SGModelView extends SGModel {
 			if (attrValue) {
 				element.setAttribute(SGModelView.#ATTRIBUTES.SG_OPTION, valueOrItem[attrValue]);
 			}
-
-			//TODO: attrValue = String(sgAttrs[SGModelView.#ATTRIBUTES.SG_CSS] || '').slice(1);
 		}
 		for (const childNode of element.childNodes) {
 			if (childNode.nodeType === Node.ELEMENT_NODE) {
-				this.#scanTemplateContentAndSetValues(childNode, valueOrItem, sgItemVariables);
+				this.#scanItemContentAndSetValues(property, childNode, valueOrItem, sgItemVariables);
 			} else if (childNode.nodeType === Node.TEXT_NODE) {
+				if (childNode.textContent.trim() === '') continue; // @aos
 				for (const subProperty in valueOrItem) {
 					const _subProperty = `$${subProperty}`;
-					if (childNode.nodeValue.includes(_subProperty)) {
+					if (childNode.textContent.includes(_subProperty)) {
 						childNode.textContent = childNode.textContent.replaceAll(_subProperty, valueOrItem[subProperty]);
 					}
 				}
@@ -838,32 +873,34 @@ class SGModelView extends SGModel {
 	/** @private */
 	#onChangeDOMElementValue(event) {
 		const elem = event.currentTarget;
+		const sgInNode = elem[SGModelView.#sgPrefixInNode];
 		switch (elem.type) {
 			case 'checkbox':
-				this.set(elem._sg_property, elem.checked, void 0, void 0, event, elem);
+				this.set(sgInNode.property, elem.checked, void 0, void 0, event, elem);
 				break;
 			case 'radio':
 				const form = this._findParentForm(elem);
 				const radioButtons = form.querySelectorAll(`input[name=${elem.name}]`);
 				for (let i = 0; i < radioButtons.length; i++) {
 					const _elem = radioButtons[i];
-					if (_elem.getAttribute('sg-property') !== elem.getAttribute('sg-property') && _elem._sg_property) {
-						this.set(_elem._sg_property, _elem.checked, void 0, void 0, event, _elem);
+					const _sgInNode = _elem[SGModelView.#sgPrefixInNode];
+					if (_elem.getAttribute('sg-property') !== elem.getAttribute('sg-property') && _sgInNode.property) {
+						this.set(_sgInNode.property, _elem.checked, void 0, void 0, event, _elem);
 					}
 				}
-				this.set(elem._sg_property, elem.checked, void 0, void 0, event, elem);
+				this.set(sgInNode.property, elem.checked, void 0, void 0, event, elem);
 				break;
 			case 'text': case 'textarea': case 'date': case 'time': case 'datetime-local': case 'button': case 'select-one':
-				this.set(elem._sg_property, elem.value, void 0, void 0, event, elem);
+				this.set(sgInNode.property, elem.value, void 0, void 0, event, elem);
 				break;
 			case 'range':
-				this.set(elem._sg_property, elem.value, void 0, void 0, event, elem); break;
+				this.set(sgInNode.property, elem.value, void 0, void 0, event, elem); break;
 			case 'select-multiple':
 				const result = [];
 				for (let i = 0; i < elem.selectedOptions.length; i++) {
 					result.push( elem.selectedOptions[i].value );
 				}
-				this.set(elem._sg_property, result, void 0, void 0, event, elem);
+				this.set(sgInNode.property, result, void 0, void 0, event, elem);
 				break;
 		}
 	}
@@ -873,8 +910,9 @@ class SGModelView extends SGModel {
 		const eTarget = evt.target;
 		let eItem = eTarget;
 		while (eItem.parentNode) {
-			if (eItem.parentNode.getAttribute('aria-labelledby') && eItem.parentNode._sg_control) {
-				const eControl = eItem.parentNode._sg_control;
+			const sgInParentNode = eItem.parentNode[SGModelView.#sgPrefixInNode];
+			if (sgInParentNode && sgInParentNode.control && eItem.parentNode.getAttribute('aria-labelledby')) {
+				const eControl = sgInParentNode.control;
 				eControl.value = eItem.getAttribute('sg-option');
 				eControl.innerHTML = eItem.innerHTML;
 				eControl.dispatchEvent(new Event('change'));
@@ -918,6 +956,8 @@ class SGModelView extends SGModel {
 				value = Number(value); // Преобразуем числа
 			} else if (value === 'true' || value === 'false') {
 				value = value === 'true'; // Преобразуем boolean
+			} else {
+				value = `$${value}`; // Если значение - это не число и без одинарных кавычек, значит это имя свойства!
 			}
 			result[key] = value;
 		});
@@ -1034,7 +1074,7 @@ class SGModelView extends SGModel {
 		eventOrElement = $control;
 		if ($control instanceof HTMLElement) {
 			while (eventOrElement) {
-				if (eventOrElement.__SGModelUUID) {
+				if (eventOrElement.__sgModelUUID) {
 					return {};
 				}
 				const sgItemValue = eventOrElement.getAttribute(SGModelView.#ATTRIBUTES.SG_ITEM);

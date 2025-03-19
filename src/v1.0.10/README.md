@@ -232,7 +232,7 @@ Promise возвращаемый методом initialize()
 * `val`
 * `options`
 	* `previous_value` - Если задано, то используется в качестве предыдущего значения
-	* `format` - Форматирование элементов коллекции, например, если элемент - это массив ['url', 'title'] и его нужно преобразовать в объект { url: 'url', title: 'title' } для вывода во вьюхе с циклом sg-for
+	* `format` - Функция для форматирования элементов коллекции ((item, index)=>{...}). Например, если элемент - это массив ['url', 'title'] и его можно нужно преобразовать в объект { url: 'url', title: 'title' } для вывода во вьюхе с циклом sg-for
 * `flags`	- допустимые флаги:
 	* `SGModel.FLAG_OFF_MAY_BE` - если при .set() могут быть .off() то нужно передать этот флаг
 	* `SGModel.FLAG_PREV_VALUE_CLONE` - передавать предыдущее значение (делается тяжёлый clone)
@@ -739,28 +739,36 @@ class MyForm extends SGModelView {
 Для простой коллекции, состоящей из примитивных элементов, например, текст или число, в представлении в простых атрибутах (не sg-*) или в текстовом узле используется ключевое слово `$value`, которое заменяется на примитивное значение.
 Для коллекции, элементы которой - объекты, подстановка свойств объекта в sg-атрибуты выполняется как обычно (например: `sg-property="itemprop1"`), а в стандартные элементы - с добавлением префикса "$" (например: `href="$url"`).
 
-В корневом теге списка можно задать статические переменные, используя атрибут **sg-item-variables**, например:
+В корневом теге списка можно задать статические и динамические переменные, используя атрибут **sg-item-variables**, например, заведём две переменные - $tagClass и $inputType:
 
 ```html
 <h2>Выбранные проекты:</h2>
 <div sg-for="selectedProjects"
 			sg-template="tmp_filters_item_selected"
-			sg-item-variables="{ $tagClass: 'text-bg-primary' }"
+			sg-item-variables="{ $tagClass: 'text-bg-primary', $inputType: input_type }"
 			sg-click="onClickSelectedItems">
 </div>
 <h2>Выбранные задачи:</h2>
 <div sg-for="selectedTasks"
 			sg-template="tmp_filters_item_selected"
-			sg-item-variables="{ $tagClass: 'text-bg-secondary' }"
+			sg-item-variables="{ $tagClass: 'text-bg-secondary', $inputType: input_type }"
+			sg-click="onClickSelectedItems">
+</div>
+<h2>Сотрудник:</h2>
+<div sg-for="selectedEmployees"
+			sg-template="tmp_filters_item_selected"
+			sg-item-variables="{ $tagClass: 'text-bg-warning', $inputType: input_type }"
 			sg-click="onClickSelectedItems">
 </div>
 ```
 
-В самом шаблоне переменные подставляются простой заменой, например, `$tagClass` в каждом атрибуте заменится на `text-bg-success`:
+В самом шаблоне переменные подставляются простой заменой, например, `$tagClass` в каждом атрибуте заменится на `text-bg-success`, а $inputType на текущее значение `this.data.input_name` (например, `radio` или `checkbox`):
 
 ```html
 <template id="tmp_filters_item_selected">
-	<span class="badge bg-gradient wob-tag $tagClass"><span sg-property="code" title="ИД=$id"></span><button type="button" class="btn-close"></button></span>
+	<span class="badge bg-gradient wob-tag $tagClass">
+		<input type="$inputType" sg-property="checked"/><span sg-property="code" title="ИД=$id"></span><button type="button" class="btn-close" title="Удалить тег"></button>
+	</span>
 </template>
 ```
 
