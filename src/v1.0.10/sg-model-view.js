@@ -1188,6 +1188,42 @@ class SGModelView extends SGModel {
 		super.trigger.call(this, name, value, flags);
 		this.#sarc(name, true);
 	}
+
+	/**
+	 * @private
+	 */
+	static #toJSONExclude = {
+		thisProperties: 'eView,data,_reProps,_rePropsChecked,_reThis,_sysThis,initialization,initialized'.split(','),
+		classProperties: 'data,templates,DELETE_EMPTIES,FLAG_FORCE_CALLBACKS,FLAG_IMMEDIATELY,FLAG_NO_CALLBACKS,FLAG_OFF_MAY_BE,FLAG_PREV_VALUE_CLONE,OBJECT_EMPTY,TYPES,TYPES_COMPLEX,TYPE_ANY,TYPE_ARRAY,TYPE_ARRAY_NUMBERS,TYPE_BOOLEAN,TYPE_FUNCTION,TYPE_MAP,TYPE_NUMBER,TYPE_OBJECT,TYPE_OBJECT_NUMBERS,TYPE_SET,TYPE_STRING,TYPE_XY,toJSONExclude,_HASHLEN,_LINKTYPE_CSS,_LINKTYPE_FORTEMPLATE,_LINKTYPE_VALUE,__instance,__instances,__instancesByClass,_initialized,_pInitialize'.split(','),
+	};
+
+	/**
+	 * Подготовить инстанс для преобразования в текстовое json-представление
+	 * @returns {string}
+	 */
+	toJSON() {
+		const cls = this.constructor;
+		const result = {
+			data: this.getAllData(),
+			eView: this.eView && this.eView.toString() || null,
+			eViewId: this.eView && this.eView.id || void 0,
+			__class: {
+				name: this.constructor.name,
+				templates: Object.fromEntries(Object.entries(cls.templates).map(([key, value]) => [key, value.toString()])),
+			},
+		};
+		for (let name in this) {
+			if (typeof this[name] !== 'function' && !SGModelView.#toJSONExclude.thisProperties.includes(name)) {
+				result[name] = this[name];
+			}
+		}
+		for (let name in cls) {
+			if (typeof cls[name] !== 'function' && !SGModelView.#toJSONExclude.classProperties.includes(name)) {
+				result.__class[name] = cls[name];
+			}
+		}
+		return result;
+	}
 }
 
 SGModelView._LINKTYPE_VALUE = 1;

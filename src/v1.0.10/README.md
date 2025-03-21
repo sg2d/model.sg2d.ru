@@ -41,6 +41,7 @@
 	* [clear()](#clear)
 	* [save()](#save)
 	* [getData(bDeleteEmpties = false)](#getdatabdeleteempties--false)
+	* [toJSON()](#tojson)
 	* [destroy()](#destroy)
 * [Поддержка Singleton паттерна в наследуемых классах](#поддержка-singleton-паттерна-в-наследуемых-классах)
 	* [static singleInstance = false](#static-singleinstance--false)
@@ -313,6 +314,10 @@ this.on(
 ### getData(bDeleteEmpties = false)
 
 Получить объект с properties и значениями. Используется либо данные `storageProperties`, либо берутся свойства без начального символа "_". Флаг `bDeleteEmpties` определяет - будут ли в возвращаемом объекте свойства со значениями `null` и `undefined`.
+
+### toJSON()
+
+Подготовить инстанс для преобразования в текстовое json-представление. Статические свойства класса инстанса запишутся в свойство-объект __class. Функция `this.toJSON()` также используется при некоторых вызовах стандартных функций, например: `JSON.stringify(instance1)`.
 
 ### destroy()
 

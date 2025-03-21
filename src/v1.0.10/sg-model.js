@@ -996,7 +996,6 @@ class SGModel {
 	
 	/**
 	 * Get data for saved
-	 * @public
 	 * @return {object}
 	 */
 	getData(bDeleteEmpties = true) { // SGModel.DELETE_EMPTIES=true
@@ -1020,6 +1019,14 @@ class SGModel {
 			}
 		}
 		return dest;
+	}
+
+	/**
+	 * Get all data
+	 * @returns {object}
+	 */
+	getAllData() {
+		return this.#data;
 	}
 	
 	/** Destroy the instance */
@@ -1064,6 +1071,36 @@ class SGModel {
 				line = line.slice(1, -1);
 				const item = line.split(',');
 				result.push(...item);
+			}
+		}
+		return result;
+	}
+
+	static #toJSONExclude = {
+		thisProperties: 'data,initialization,initialized'.split(','),
+		classProperties: 'data,DELETE_EMPTIES,FLAG_FORCE_CALLBACKS,FLAG_IMMEDIATELY,FLAG_NO_CALLBACKS,FLAG_OFF_MAY_BE,FLAG_PREV_VALUE_CLONE,OBJECT_EMPTY,TYPES,TYPES_COMPLEX,TYPE_ANY,TYPE_ARRAY,TYPE_ARRAY_NUMBERS,TYPE_BOOLEAN,TYPE_FUNCTION,TYPE_MAP,TYPE_NUMBER,TYPE_OBJECT,TYPE_OBJECT_NUMBERS,TYPE_SET,TYPE_STRING,TYPE_XY,__instance,__instances,__instancesByClass'.split(','),
+	};
+	
+	/**
+	 * Подготовить инстанс для преобразования в текстовое json-представление
+	 * @returns {string}
+	 */
+	toJSON() {
+		const cls = this.constructor;
+		const result = {
+			data: this.getAllData(),
+			__class: {
+				name: this.constructor.name,
+			},
+		};
+		for (let name in this) {
+			if (typeof this[name] !== 'function' && !SGModel.#toJSONExclude.thisProperties.includes(name)) {
+				result[name] = this[name];
+			}
+		}
+		for (let name in cls) {
+			if (typeof cls[name] !== 'function' && !SGModel.#toJSONExclude.classProperties.includes(name)) {
+				result.__class[name] = cls[name];
 			}
 		}
 		return result;
@@ -1307,7 +1344,7 @@ SGModel.isEmpty = function(value) {
 /**
  * Enable multiple instances
  */
-SGModel.multipleInstances = true;
+SGModel.multipleInstances = false;
 
 /**
  * Automatic saving to storage when any property is changed
