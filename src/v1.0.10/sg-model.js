@@ -52,7 +52,16 @@ class SGModel {
 		'MAP:complex', // коллекции new Map()
 		//'DATASET:complex', // @announcement v1.1+
 	];
-	static TYPES_COMPLEX = {};
+
+	static TYPES_COMPLEX = this.TYPES.reduce((results, typeDef, index) => {
+		const [typeCode, complex] = typeDef.split(':');
+		this[`TYPE_${typeCode}`] = index;
+		if (complex === 'complex') {
+			results[index] = true;
+			results[typeCode] = true;
+		}
+		return results;
+	}, {});
 
 	/**
 	 * Enable singleton pattern for model
@@ -1039,8 +1048,16 @@ class SGModel {
 	}
 	
 	/**
-	 * Получить массив строк из текстового представления массива в формате PostgreSQL
+	 * Получить массив строк из текстового представления в формате PostgreSQL массива
 	 * @param {string} line 
+	 * @example
+	 * const data = `{"(\"SGModel & SGModelView - Binding models and MVVM pattern\",https://model.sg2d.ru/)","(\"Special symbols: ', \"\", \\\\, /, (, ), |, -, _, +, =, {, }, \`, !, ?, @, #, $, %, ^, &, *, ~, . end!\",https://sg2d.ru)"}`
+	 * const arr = this.parsePgStrArray(data);
+	 * // result:
+	 * //		Array(2)
+	 * //			0:	['SGModel & SGModelView - Binding models and MVVM pattern', 'https://model.sg2d.ru/']
+	 * //			1:	['Special symbols: \', ", \\, /, (, ), |, -, _, +, =, {, }, `, !, ?, @, #, $, %, ^, &, *, ~, . end!', 'https://sg2d.ru']
+	 * //			length: 2
 	 * @returns {Array}
 	 */
 	parsePgStrArray(line) {
@@ -1078,7 +1095,7 @@ class SGModel {
 
 	static #toJSONExclude = {
 		thisProperties: 'data,initialization,initialized'.split(','),
-		classProperties: 'data,DELETE_EMPTIES,FLAG_FORCE_CALLBACKS,FLAG_IMMEDIATELY,FLAG_NO_CALLBACKS,FLAG_OFF_MAY_BE,FLAG_PREV_VALUE_CLONE,OBJECT_EMPTY,TYPES,TYPES_COMPLEX,TYPE_ANY,TYPE_ARRAY,TYPE_ARRAY_NUMBERS,TYPE_BOOLEAN,TYPE_FUNCTION,TYPE_MAP,TYPE_NUMBER,TYPE_OBJECT,TYPE_OBJECT_NUMBERS,TYPE_SET,TYPE_STRING,TYPE_XY,__instance,__instances,__instancesByClass'.split(','),
+		classProperties: 'data,__instance,__instances,__instancesByClass'.split(','),
 	};
 	
 	/**
@@ -1091,6 +1108,12 @@ class SGModel {
 			data: this.getAllData(),
 			__class: {
 				name: this.constructor.name,
+				__prototype: {
+					name: 'SGModel',
+					version: SGModel.version,
+					isNode: SGModel.isNode,
+					isBrowser: SGModel.isBrowser,
+				},
 			},
 		};
 		for (let name in this) {
@@ -1100,6 +1123,7 @@ class SGModel {
 		}
 		for (let name in cls) {
 			if (typeof cls[name] !== 'function' && !SGModel.#toJSONExclude.classProperties.includes(name)) {
+				if (Object.hasOwn(SGModel, name)) continue;
 				result.__class[name] = cls[name];
 			}
 		}
@@ -1132,283 +1156,274 @@ class SGModel {
 		throw new Error('Error! this.__instance is empty!');
 	};
 
-}
+	/**
+	 * The flag passed in the **.on(...)** call to execute the callback
+	 * @constant {boolean}
+	 */
+	static FLAG_IMMEDIATELY = 1;
 
-SGModel.TYPES.forEach((typeDef, index) => {
-  const [typeCode, complex] = typeDef.split(':');
-  SGModel[`TYPE_${typeCode}`] = index;
-  if (complex === 'complex') {
-    SGModel.TYPES_COMPLEX[index] = true;
-    SGModel.TYPES_COMPLEX[typeCode] = true;
-  }
-});
+	/** @protected */
+	static OBJECT_EMPTY = Object.preventExtensions({}); // @aos
 
-/**
- * The flag passed in the **.on(...)** call to execute the callback
- * @constant {boolean}
- */
-SGModel.FLAG_IMMEDIATELY = 1;
+	static FLAG_OFF_MAY_BE = 0b00000001; // if set can be .off(), then you need to pass this flag
+	static FLAG_PREV_VALUE_CLONE = 0b00000010; // Pass the previous value (heavy clone for objects / arrays)
+	static FLAG_NO_CALLBACKS = 0b00000100; // if given, no callbacks are executed
+	static FLAG_FORCE_CALLBACKS = 0b00001000; // execute callbacks even if there is no change
 
-/** @private */
-SGModel.OBJECT_EMPTY = Object.preventExtensions({}); // @aos
+	static DELETE_EMPTIES = true;
+	
+	// Функция-заглушка
+	static fStub = (v) => v;
 
-SGModel.FLAG_OFF_MAY_BE = 0b00000001; // if set can be .off(), then you need to pass this flag
-SGModel.FLAG_PREV_VALUE_CLONE = 0b00000010; // Pass the previous value (heavy clone for objects / arrays)
-SGModel.FLAG_NO_CALLBACKS = 0b00000100; // if given, no callbacks are executed
-SGModel.FLAG_FORCE_CALLBACKS = 0b00001000; // execute callbacks even if there is no change
-
-SGModel.DELETE_EMPTIES = true;
-
-SGModel.fStub = (v) => v;
-
-/**
- * If **dest** does not have a property from **sources**, then it is copied from **sources** to **dest** (composite objects are copied completely using recursion!)
- * @param {object} dest
- * @param {object} sources 
- */
-SGModel.defaults = function(dest, ...sources) {
-	for (let i = sources.length; i--; ) {
-		const source = sources[i];
-		for (const p in source) {
-			if (dest[p] === void 0) {
-				dest[p] = (typeof source[p] === 'object' ? SGModel.clone(source[p]) : source[p]);
+	/**
+	 * If **dest** does not have a property from **sources**, then it is copied from **sources** to **dest** (composite objects are copied completely using recursion!)
+	 * @param {object} dest
+	 * @param {object} sources 
+	 */
+	static defaults = function(dest, ...sources) {
+		for (let i = sources.length; i--; ) {
+			const source = sources[i];
+			for (const p in source) {
+				if (dest[p] === void 0) {
+					dest[p] = (typeof source[p] === 'object' ? SGModel.clone(source[p]) : source[p]);
+				}
 			}
 		}
-	}
-	return dest;
-};
+		return dest;
+	};
 
-/**
- * Full cloning (with nested objects).
- * Attention! There is no check for circular references. You cannot allow nested objects to refer to each other through properties, because recursion is used!
- * @param {object|primitive} source
- * @return {object|primitive}
- */
-SGModel.clone = function(source) {
-	// Стандартную функцию structuredClone() не используем, т.к. она не поддерживает свойства-функции и не учитывает особенности объектов на основе пользовательских классов
-	let dest;
-	if (Array.isArray(source)) {
-		dest = [];
-		for (let i = 0; i < source.length; i++) {
-			dest[i] = (
-				typeof source[i] === 'object' ?
-				SGModel.clone(source[i]) :
-				source[i]
-			);
-		}
-	} else if (typeof source === 'object') {
-		if (source === null) {
-			dest = null;
-		} else {
-			if (source instanceof Set) {
-				dest = new Set();
-				for (const value of source) {
-					dest.add(SGModel.clone(value));
-				}
-			} else if (source instanceof Map) {
-				dest = new Map();
-				for (const [key, value] of source) {
-					dest.set(key, SGModel.clone(value));
-				}
+	/**
+	 * Full cloning (with nested objects).
+	 * Attention! There is no check for circular references. You cannot allow nested objects to refer to each other through properties, because recursion is used!
+	 * @param {object|primitive} source
+	 * @return {object|primitive}
+	 */
+	static clone = function(source) {
+		// Стандартную функцию structuredClone() не используем, т.к. она не поддерживает свойства-функции и не учитывает особенности объектов на основе пользовательских классов
+		let dest;
+		if (Array.isArray(source)) {
+			dest = [];
+			for (let i = 0; i < source.length; i++) {
+				dest[i] = (
+					typeof source[i] === 'object' ?
+					SGModel.clone(source[i]) :
+					source[i]
+				);
+			}
+		} else if (typeof source === 'object') {
+			if (source === null) {
+				dest = null;
 			} else {
-				dest = {};
-				for (const p in source) {
-					dest[p] = (
-						typeof source[p] === 'object' ?
-						SGModel.clone(source[p]) :
-						source[p]
-					);
-				}
-			}
-		}
-	} else {
-		dest = source; // string, number, boolean, function
-	}
-	return dest;
-};
-
-/**
- * Перезаписать рекурсивно значения всех свойств/элементов объекта/массива **dest** соответствующими значениями свойств/элементов объекта/массива **sources**.
- * @english Fill the values **dest** with the values from **source** (with recursion). If there is no property in **source**, then it is ignored for **dest**
- * @param {object|array} dest
- * @param {object|array} source
- * @returns {dest}
- */
-SGModel.initObjectByObject = function(dest, source) {
-	if (Array.isArray(dest)) {
-		for (let index = 0; index < source.length; index++) {
-			if (typeof dest[index] === 'object') {
-				this.initObjectByObject(dest[index], source[index]);
-			} else {
-				dest[index] = source[index];
-			}
-		}
-	} else if (dest instanceof Object) {
-		for (const propName in dest) {
-			if (source.hasOwnProperty(propName)) {
-				if (typeof dest[propName] === 'object') {
-					this.initObjectByObject(dest[propName], source[propName]);
+				if (source instanceof Set) {
+					dest = new Set();
+					for (const value of source) {
+						dest.add(SGModel.clone(value));
+					}
+				} else if (source instanceof Map) {
+					dest = new Map();
+					for (const [key, value] of source) {
+						dest.set(key, SGModel.clone(value));
+					}
 				} else {
-					dest[propName] = source[propName];
+					dest = {};
+					for (const p in source) {
+						dest[p] = (
+							typeof source[p] === 'object' ?
+							SGModel.clone(source[p]) :
+							source[p]
+						);
+					}
 				}
 			}
+		} else {
+			dest = source; // string, number, boolean, function
 		}
-	} else {
-		dest = source;
-	}
-	return dest;
-};
+		return dest;
+	};
 
-/** @public */
-SGModel.upperFirstLetter = function(s) {
-	return s.charAt(0).toUpperCase() + s.slice(1);
-};
-
-SGModel.toNumberOrNull = function(value, precision = void 0) {
-	if (value === null || value === '') {
-		return null;
-	}
-	return SGModel.toNumber(value, precision);
-};
-
-SGModel.toNumber = function(value, precision = void 0) {
-	if (typeof value === 'string') {
-		if (/[\d]+\.[\d]+$/.test(value)) {
-			value = value.replace(',', '');
+	/**
+	 * Перезаписать рекурсивно значения всех свойств/элементов объекта/массива **dest** соответствующими значениями свойств/элементов объекта/массива **sources**.
+	 * @english Fill the values **dest** with the values from **source** (with recursion). If there is no property in **source**, then it is ignored for **dest**
+	 * @param {object|array} dest
+	 * @param {object|array} source
+	 * @returns {dest}
+	 */
+	static initObjectByObject = function(dest, source) {
+		if (Array.isArray(dest)) {
+			for (let index = 0; index < source.length; index++) {
+				if (typeof dest[index] === 'object') {
+					this.initObjectByObject(dest[index], source[index]);
+				} else {
+					dest[index] = source[index];
+				}
+			}
+		} else if (dest instanceof Object) {
+			for (const propName in dest) {
+				if (source.hasOwnProperty(propName)) {
+					if (typeof dest[propName] === 'object') {
+						this.initObjectByObject(dest[propName], source[propName]);
+					} else {
+						dest[propName] = source[propName];
+					}
+				}
+			}
+		} else {
+			dest = source;
 		}
-		value = value.replace(',', '.').replace(/\s/g, '').replace('−', '-'); // 6,724.33 -> 6724.33
-	}
-	return precision ? SGModel.roundTo(value, precision) : Number(value);
-};
+		return dest;
+	};
 
-/**
- * Преобразовать элементы коллекции в числа
- * @aos
- * @param {Array|object} collection 
- * @param {number} [precision]
- * @returns {Array|object}
- */
-SGModel.toNumbers = function(collection, precision = void 0) {
-	var value;
-	for (var p in collection) {
-		var value = collection[p];
+	/** @public */
+	static upperFirstLetter = function(s) {
+		return s.charAt(0).toUpperCase() + s.slice(1);
+	};
+
+	static toNumberOrNull = function(value, precision = void 0) {
+		if (value === null || value === '') {
+			return null;
+		}
+		return SGModel.toNumber(value, precision);
+	};
+
+	static toNumber = function(value, precision = void 0) {
 		if (typeof value === 'string') {
 			if (/[\d]+\.[\d]+$/.test(value)) {
 				value = value.replace(',', '');
 			}
 			value = value.replace(',', '.').replace(/\s/g, '').replace('−', '-'); // 6,724.33 -> 6724.33
 		}
-		collection[p] = (precision ? SGModel.roundTo(value, precision) : Number(value));
-	}
-	return collection;
-};
+		return precision ? SGModel.roundTo(value, precision) : Number(value);
+	};
 
-/**
- * Rounding to the required precision
- * @param {Number} value
- * @param {Number} [precision=0]
- * @returns {Number}
- */
-SGModel.roundTo = function(value, precision = 0) {
-	const m = 10 ** precision;
-	return Math.round(Number(value) * m) / m;
-};
+	/**
+	 * Преобразовать элементы коллекции в числа
+	 * @aos
+	 * @param {Array|object} collection 
+	 * @param {number} [precision]
+	 * @returns {Array|object}
+	 */
+	static toNumbers = function(collection, precision = void 0) {
+		var value;
+		for (var p in collection) {
+			var value = collection[p];
+			if (typeof value === 'string') {
+				if (/[\d]+\.[\d]+$/.test(value)) {
+					value = value.replace(',', '');
+				}
+				value = value.replace(',', '.').replace(/\s/g, '').replace('−', '-'); // 6,724.33 -> 6724.33
+			}
+			collection[p] = (precision ? SGModel.roundTo(value, precision) : Number(value));
+		}
+		return collection;
+	};
 
-/** @public */
-SGModel.toBooleanOrNull = function(value) {
-	if (value === null) {
-		return null;
-	}
-	if (typeof value === 'string') {
-		return value === '1' || value.toUpperCase() === 'TRUE' ? true : false;
-	}
-	return Boolean(value);
-};
+	/**
+	 * Rounding to the required precision
+	 * @param {Number} value
+	 * @param {Number} [precision=0]
+	 * @returns {Number}
+	 */
+	static roundTo = function(value, precision = 0) {
+		const m = 10 ** precision;
+		return Math.round(Number(value) * m) / m;
+	};
 
-/** @public */
-SGModel.toStringOrNull = function(value) {
-	if (value === null) {
-		return null;
-	}
-	return value ? String(value) : '';
-};
+	/** @public */
+	static toBooleanOrNull = function(value) {
+		if (value === null) {
+			return null;
+		}
+		if (typeof value === 'string') {
+			return value === '1' || value.toUpperCase() === 'TRUE' ? true : false;
+		}
+		return Boolean(value);
+	};
 
-/** @public */
-SGModel.isEmpty = function(value) {
-	if (value) {
-		return Object.keys(value).length === 0 && value.constructor === Object;
-	}
-	return true;
-};
+	/** @public */
+	static toStringOrNull = function(value) {
+		if (value === null) {
+			return null;
+		}
+		return value ? String(value) : '';
+	};
 
-/**
- * Enable multiple instances
- */
-SGModel.multipleInstances = false;
+	/** @public */
+	static isEmpty = function(value) {
+		if (value) {
+			return Object.keys(value).length === 0 && value.constructor === Object;
+		}
+		return true;
+	};
 
-/**
- * Automatic saving to storage when any property is changed
- */
-SGModel.autoSave = false;
+	/**
+	 * Enable multiple instances
+	 */
+	static multipleInstances = false;
 
-// TODO: назначение статических методов get, set, addTo и т.д. написать в виде единственного блока кода? Учесть JSDoc!
+	/**
+	 * Automatic saving to storage when any property is changed
+	 */
+	static autoSave = false;
 
-/**
- * Method **get()** for single instance of a class
- */
-SGModel.get = function(...args) {
-	return this.__instance && this.__instance.get(...args);
-};
+	// TODO: назначение статических методов get, set, addTo и т.д. написать в виде единственного блока кода? Учесть JSDoc!
 
-/**
- * Method **set()** for single instance of a class
- */
-SGModel.set = function(...args) {
-	return this.__instance && this.__instance.set(...args);
-};
+	/**
+	 * Method **get()** for single instance of a class
+	 */
+	static get = function(...args) {
+		return this.__instance && this.__instance.get(...args);
+	};
 
-/**
- * Method **addTo()** for single instance of a class
- */
-SGModel.addTo = function(...args) {
-	return this.__instance && this.__instance.addTo(...args);
-};
+	/**
+	 * Method **set()** for single instance of a class
+	 */
+	static set = function(...args) {
+		return this.__instance && this.__instance.set(...args);
+	};
 
-/**
- * Method **removeFrom()** for single instance of a class
- */
-SGModel.removeFrom = function(...args) {
-	return this.__instance && this.__instance.removeFrom(...args);
-};
+	/**
+	 * Method **addTo()** for single instance of a class
+	 */
+	static addTo = function(...args) {
+		return this.__instance && this.__instance.addTo(...args);
+	};
 
-/**
- * Method **clearProperty()** for single instance of a class
- */
-SGModel.clearProperty = function(...args) {
-	return this.__instance && this.__instance.clearProperty(...args);
-};
+	/**
+	 * Method **removeFrom()** for single instance of a class
+	 */
+	static removeFrom = function(...args) {
+		return this.__instance && this.__instance.removeFrom(...args);
+	};
 
-/**
- * Method **size()** for single instance of a class
- */
-SGModel.size = function(...args) {
-	return this.__instance && this.__instance.size(...args);
-};
+	/**
+	 * Method **clearProperty()** for single instance of a class
+	 */
+	static clearProperty = function(...args) {
+		return this.__instance && this.__instance.clearProperty(...args);
+	};
 
-/**
- * Method on() for single instance of a class
- * @public
- */
-SGModel.on = function(...args) {
-	return this.__instance && this.__instance.on(...args);
-};
+	/**
+	 * Method **size()** for single instance of a class
+	 */
+	static size = function(...args) {
+		return this.__instance && this.__instance.size(...args);
+	};
 
-/**
- * Method *off()** for single instance of a class
- */
-SGModel.off = function(...args) {
-	return this.__instance && this.__instance.off(...args);
-};
+	/**
+	 * Method on() for single instance of a class
+	 * @public
+	 */
+	static on = function(...args) {
+		return this.__instance && this.__instance.on(...args);
+	};
+
+	/**
+	 * Method *off()** for single instance of a class
+	 */
+	static off = function(...args) {
+		return this.__instance && this.__instance.off(...args);
+	};
+}
 
 if (typeof globalThis === 'object') globalThis.SGModel = SGModel;
 

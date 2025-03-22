@@ -55,12 +55,21 @@ class SGModelView extends SGModel {
 	 */
 	static #prevPWR = null;
 
+	static #ITEM_HASH_LEN = 16;
+	static #LINKTYPE_VALUE = 1;
+	static #LINKTYPE_CSS = 2;
+	static #LINKTYPE_FORTEMPLATE = 3;
+
 	#binderInitialized = false;
 	#elementsEvents = [];
 	#eventsCounter = 0;
 	#propertyElementLinks = {};
 	#prrSeqConstructor = Promise.withResolvers(); // Промис, обеспечивающий нужную последовательность отрисовки вьюхи согласно порядку вызова конструктора этой вьюхи относительно всех вызовов конструкторов SGModelView
 	#deferredProperties = new Set();
+	#reProps = {};
+	#rePropsChecked = {};
+	#sysThis = {};
+	#reThis = {};
 	
 	/**
 	 * Автоматические загрузка и парсинг шаблонов
@@ -172,13 +181,13 @@ class SGModelView extends SGModel {
 			this.#propertyElementLinks[propName] = [];
 		}
 
-		this.constructor._initialized = 0;
-		if (!this.constructor._pInitialize) {
-			this.constructor._pInitialize = this.constructor.initialize(this).then((result) => { // eslint-disable-line no-unused-vars
-				this.constructor._initialized = 1;
+		this.constructor.initialized = 0;
+		if (!this.constructor.__pInitialize) {
+			this.constructor.__pInitialize = this.constructor.initialize(this).then((result) => { // eslint-disable-line no-unused-vars
+				this.constructor.initialized = 1;
 				return result;
 			}, (err) => { // eslint-disable-line no-unused-vars
-				this.constructor._initialized = -1;
+				this.constructor.initialized = -1;
 				return err;
 			});
 		}
@@ -187,7 +196,7 @@ class SGModelView extends SGModel {
 		const isFirstPWR = !SGModelView.#prevPWR;
 		if (!isFirstPWR) {
 			SGModelView.#prevPWR.promise.finally(() => {
-				this.constructor._pInitialize.finally(this.#prrSeqConstructor.resolve);
+				this.constructor.__pInitialize.finally(this.#prrSeqConstructor.resolve);
 			});
 		}
 		SGModelView.#prevPWR = this.#prrSeqConstructor;
@@ -215,7 +224,7 @@ class SGModelView extends SGModel {
 						}
 					} else {
 						eContent = document.createElement('DIV');
-						if (this.constructor._initialized === 1) {
+						if (this.constructor.initialized === 1) {
 							eContent.innerText = `Error! Template with autoLoadBind.templateId = "${autoLoadBind.templateId}" not found!`;
 						} else {
 							eContent.innerText = `Еrror occurred while initializing the view of ${this.constructor.name}!`;
@@ -236,7 +245,7 @@ class SGModelView extends SGModel {
 							eTarget.append(eContent);
 						}
 					}
-					if (this.constructor._initialized === 1) {
+					if (this.constructor.initialized === 1) {
 						this.bindHTML(this.eView);
 					} else {
 						console.error(`Binding was not completed because initialization failed!`);
@@ -250,7 +259,7 @@ class SGModelView extends SGModel {
 				const eView = this.#findElementBySGClass(this.constructor.name);
 				if (eView) {
 					this.eView = eView;
-					if (this.constructor._initialized === 1) {
+					if (this.constructor.initialized === 1) {
 						this.bindHTML(this.eView);
 					} else {
 						console.error(`Binding was not completed because initialization failed!`);
@@ -266,7 +275,7 @@ class SGModelView extends SGModel {
 		}).then(this.initialization.resolve);
 
 		if (isFirstPWR) {
-			this.constructor._pInitialize.then(this.#prrSeqConstructor.resolve);
+			this.constructor.__pInitialize.then(this.#prrSeqConstructor.resolve);
 		}
 		
 		return this.initialized;
@@ -351,7 +360,7 @@ class SGModelView extends SGModel {
 			let name, item;
 			for (name in this.#propertyElementLinks) {
 				const link = this.#propertyElementLinks[name];
-				if (link.linkType === SGModelView._LINKTYPE_VALUE) {
+				if (link.linkType === SGModelView.#LINKTYPE_VALUE) {
 					link.element.removeEventListener('change', this.onChangeDOMElementValue);
 					link.element.removeEventListener('input', this.onChangeDOMElementValue);
 				}
@@ -371,10 +380,10 @@ class SGModelView extends SGModel {
 			this.eView.setAttribute(SGModelView.#ATTRIBUTES.SG_UUID, `${this.constructor.name}:${this.__uid}:${this.uuid}`);
 		}
 		
-		this._reProps = {};
-		this._rePropsChecked = {};
+		this.#reProps = {};
+		this.#rePropsChecked = {};
 		for (let name in this.data) {
-			this._reProps[name] = {
+			this.#reProps[name] = {
 				re: [
 					new RegExp(`([^\\w\\.\\-])${name}([^\\w\\.\\-])`, 'g'),
 					new RegExp(`^()${name}([^\\w\\-])`, 'g'), //new RegExp(`^()${name}([^\\w\\.\\-])`, 'g'),
@@ -383,20 +392,20 @@ class SGModelView extends SGModel {
 				],
 				to: `$1this.data.${name}$2`
 			};
-			this._rePropsChecked[name] = [
+			this.#rePropsChecked[name] = [
 				new RegExp(`[^\\w\\.\\-]this\\.data\\.${name}[^\\w\\.\\-]`, 'g'),
 				new RegExp(`^this\\.data\\.${name}[^\\w\\.\\-]`, 'g'),
 				new RegExp(`[^\\w\\.\\-]this\\.data\\.${name}$`, 'g'),
 				new RegExp(`^this\\.data\\.${name}$`, 'g')
 			];
 		}
-		this._sysThis = ['constructor', 'initialize', 'defaults'];
-		this._reThis = {};
+		this.#sysThis = ['constructor', 'initialize', 'defaults'];
+		this.#reThis = {};
 		let thisNames = Object.getOwnPropertyNames(this.__proto__);
 		for (let i = 0; i < thisNames.length; i++) {
 			const name = thisNames[i];
-			if (this._sysThis.indexOf(name) === -1 && !/^_/.test(name)) {
-				this._reThis[name] = {
+			if (this.#sysThis.indexOf(name) === -1 && !/^_/.test(name)) {
+				this.#reThis[name] = {
 					re: [
 						new RegExp(`([^\\w\\.\\-])${name}([^\\w\\.\\-])`, 'g'),
 						new RegExp(`^()${name}([^\\w\\-])`, 'g'), //new RegExp(`^()${name}([^\\w\\.\\-])`, 'g'),
@@ -445,7 +454,7 @@ class SGModelView extends SGModel {
 			}
 			
 			if (sgProperty && this.has(sgProperty)) {
-				this.#regPropertyElementLink(sgProperty, elementDOM, SGModelView._LINKTYPE_VALUE);
+				this.#regPropertyElementLink(sgProperty, elementDOM, SGModelView.#LINKTYPE_VALUE);
 				sgInNode.property = sgProperty;
 				sgInNode.type = sgType;
 				sgInNode.format = this[sgFormat];
@@ -522,20 +531,20 @@ class SGModelView extends SGModel {
 			
 			if (sgCSS) {
 				let _sgCSS = sgCSS;
-				for (let name in this._reProps) {
-					const reProps = this._reProps[name];
+				for (let name in this.#reProps) {
+					const reProps = this.#reProps[name];
 					const aRE = reProps.re;
 					const len = _sgCSS.length;
 					for (const re of aRE) {
 						_sgCSS = _sgCSS.replace(re, reProps.to);
 					}
 					if (len !== _sgCSS.length) {
-						this.#regPropertyElementLink(name, elementDOM, SGModelView._LINKTYPE_CSS);
+						this.#regPropertyElementLink(name, elementDOM, SGModelView.#LINKTYPE_CSS);
 					}
 				}
 				let bProperties = false;
-				for (let name in this._rePropsChecked) {
-					const re = this._rePropsChecked[name];
+				for (let name in this.#rePropsChecked) {
+					const re = this.#rePropsChecked[name];
 					for (let p = 0; p < re.length; p++) {
 						if (re[p].test(_sgCSS)) {
 							bProperties = true;
@@ -545,11 +554,11 @@ class SGModelView extends SGModel {
 					if (bProperties) break;
 				}
 				let bFunctions = false;
-				for (let name in this._reThis) {
-					const re = this._reThis[name].re;
+				for (let name in this.#reThis) {
+					const re = this.#reThis[name].re;
 					const len = _sgCSS.length;
 					for (let p = 0; p < re.length; p++) {
-						_sgCSS = _sgCSS.replace(re[p], this._reThis[name].to);
+						_sgCSS = _sgCSS.replace(re[p], this.#reThis[name].to);
 					}
 					if (len !== _sgCSS.length) {
 						bFunctions = true;
@@ -562,7 +571,7 @@ class SGModelView extends SGModel {
 				}
 				sgInNode.css_static_classes = [...elementDOM.classList];
 				if (!bProperties && bFunctions) {
-					this.#regPropertyElementLink(sgProperty, elementDOM, SGModelView._LINKTYPE_CSS);
+					this.#regPropertyElementLink(sgProperty, elementDOM, SGModelView.#LINKTYPE_CSS);
 				}
 			}
 			
@@ -599,7 +608,7 @@ class SGModelView extends SGModel {
 			if (sgFor && sgTemplate) {
 				const template = this.constructor.templates[sgTemplate];
 				if (template) {
-					const link = this.#regPropertyElementLink(sgFor, elementDOM, SGModelView._LINKTYPE_FORTEMPLATE);
+					const link = this.#regPropertyElementLink(sgFor, elementDOM, SGModelView.#LINKTYPE_FORTEMPLATE);
 					sgInNode.template = template;
 					if (sgItemVariables) {
 						sgInNode.item_variables = SGModelView.parseItemVariablesLine(sgItemVariables);
@@ -666,7 +675,7 @@ class SGModelView extends SGModel {
 			if (!elementDOM) return false;
 			const sgInNode = elementDOM[SGModelView.#sgPrefixInNode];
 			switch (link.linkType) {
-				case SGModelView._LINKTYPE_VALUE: {
+				case SGModelView.#LINKTYPE_VALUE: {
 				
 					const value = this.data[property];
 
@@ -719,7 +728,7 @@ class SGModelView extends SGModel {
 					}
 					break;
 				}
-				case SGModelView._LINKTYPE_CSS: {
+				case SGModelView.#LINKTYPE_CSS: {
 					if (sgInNode.css) {
 						for (let i = elementDOM.classList.length - 1; i >= 0; i--) {
 							if (sgInNode.css_static_classes.indexOf(elementDOM.classList[i]) === -1) {
@@ -743,7 +752,7 @@ class SGModelView extends SGModel {
 					}
 					break;
 				}
-				case SGModelView._LINKTYPE_FORTEMPLATE: {
+				case SGModelView.#LINKTYPE_FORTEMPLATE: {
 					const requiredSection = this.#requiredSection(sgInNode.template.content);
 					link.element.innerHTML = '';
 					const collection = this.data[property];
@@ -1193,8 +1202,8 @@ class SGModelView extends SGModel {
 	 * @private
 	 */
 	static #toJSONExclude = {
-		thisProperties: 'eView,data,_reProps,_rePropsChecked,_reThis,_sysThis,initialization,initialized'.split(','),
-		classProperties: 'data,templates,DELETE_EMPTIES,FLAG_FORCE_CALLBACKS,FLAG_IMMEDIATELY,FLAG_NO_CALLBACKS,FLAG_OFF_MAY_BE,FLAG_PREV_VALUE_CLONE,OBJECT_EMPTY,TYPES,TYPES_COMPLEX,TYPE_ANY,TYPE_ARRAY,TYPE_ARRAY_NUMBERS,TYPE_BOOLEAN,TYPE_FUNCTION,TYPE_MAP,TYPE_NUMBER,TYPE_OBJECT,TYPE_OBJECT_NUMBERS,TYPE_SET,TYPE_STRING,TYPE_XY,toJSONExclude,_HASHLEN,_LINKTYPE_CSS,_LINKTYPE_FORTEMPLATE,_LINKTYPE_VALUE,__instance,__instances,__instancesByClass,_initialized,_pInitialize'.split(','),
+		thisProperties: 'data,eView,initialization,initialized'.split(','),
+		classProperties: 'data,templates,__instance,__instances,__instancesByClass,__pInitialize'.split(','),
 	};
 
 	/**
@@ -1210,6 +1219,12 @@ class SGModelView extends SGModel {
 			__class: {
 				name: this.constructor.name,
 				templates: Object.fromEntries(Object.entries(cls.templates).map(([key, value]) => [key, value.toString()])),
+				__prototype: {
+					name: 'SGModelView',
+					version: SGModelView.version,
+					isNode: SGModelView.isNode,
+					isBrowser: SGModelView.isBrowser,
+				},
 			},
 		};
 		for (let name in this) {
@@ -1219,66 +1234,61 @@ class SGModelView extends SGModel {
 		}
 		for (let name in cls) {
 			if (typeof cls[name] !== 'function' && !SGModelView.#toJSONExclude.classProperties.includes(name)) {
+				if (Object.hasOwn(SGModel, name) || Object.hasOwn(SGModelView, name)) continue;
 				result.__class[name] = cls[name];
 			}
 		}
 		return result;
 	}
+
+	/**
+	 * SGModelView.sha256 - Хеширование данных
+	 * [js-sha256]{@link https://github.com/emn178/js-sha256}
+	 * @version 0.11.0
+	 * @author Chen, Yi-Cyuan [emn178@gmail.com]
+	 * @copyright Chen, Yi-Cyuan 2014-2024
+	 * @license MIT
+	 * @minify https://minify-js.com
+	 * @notes Удалёны: код для sha224, определение root, экспорты, код использующий Node.js
+	 */
+	static #sha256 = function(){"use strict";var t="input is invalid type",h=("undefined"!=typeof ArrayBuffer),i="0123456789abcdef".split(""),
+		r=[-2147483648,8388608,32768,128],s=[24,16,8,0],
+		e=[1116352408,1899447441,3049323471,3921009573,961987163,1508970993,2453635748,2870763221,3624381080,310598401,607225278,1426881987,1925078388,2162078206,2614888103,3248222580,3835390401,4022224774,264347078,604807628,770255983,1249150122,1555081692,1996064986,2554220882,2821834349,2952996808,3210313671,3336571891,3584528711,113926993,338241895,666307205,773529912,1294757372,1396182291,1695183700,1986661051,2177026350,2456956037,2730485921,2820302411,3259730800,3345764771,3516065817,3600352804,4094571909,275423344,430227734,506948616,659060556,883997877,958139571,1322822218,1537002063,1747873779,1955562222,2024104815,2227730452,2361852424,2428436474,2756734187,3204031479,3329325298],
+		n=["hex","array","digest","arrayBuffer"],o=[];Array.isArray||(Array.isArray=function(t){return"[object Array]"===Object.prototype.toString.call(t)}),h&&!ArrayBuffer.isView&&(ArrayBuffer.isView=function(t){return"object"==typeof t&&t.buffer&&t.buffer.constructor===ArrayBuffer});
+		var a=function(t){return function(h){return new u(!0).update(h)[t]()}},f=function(t){return function(h,i){return new c(h,!0).update(i)[t]()}};
+		function u(t){t?(o[0]=o[16]=o[1]=o[2]=o[3]=o[4]=o[5]=o[6]=o[7]=o[8]=o[9]=o[10]=o[11]=o[12]=o[13]=o[14]=o[15]=0,this.blocks=o):this.blocks=[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],this.h0=1779033703,this.h1=3144134277,this.h2=1013904242,this.h3=2773480762,this.h4=1359893119,this.h5=2600822924,this.h6=528734635,this.h7=1541459225,this.block=this.start=this.bytes=this.hBytes=0,this.finalized=this.hashed=!1,this.first=!0}
+		function c(i,r){var s,e=typeof i;if("string"===e){var n,o=[],a=i.length,f=0;for(s=0;s<a;++s)(n=i.charCodeAt(s))<128?o[f++]=n:n<2048?(o[f++]=192|n>>>6,o[f++]=128|63&n):n<55296||n>=57344?(o[f++]=224|n>>>12,o[f++]=128|n>>>6&63,o[f++]=128|63&n):(n=65536+((1023&n)<<10|1023&i.charCodeAt(++s)),o[f++]=240|n>>>18,o[f++]=128|n>>>12&63,o[f++]=128|n>>>6&63,o[f++]=128|63&n);i=o}else{if("object"!==e)throw new Error(t);
+		if(null===i)throw new Error(t);if(h&&i.constructor===ArrayBuffer)i=new Uint8Array(i);else if(!(Array.isArray(i)||h&&ArrayBuffer.isView(i)))throw new Error(t)}i.length>64&&(i=new u(!0).update(i).array());var c=[],y=[];for(s=0;s<64;++s){var p=i[s]||0;c[s]=92^p,y[s]=54^p}u.call(this,r),this.update(y),this.oKeyPad=c,this.inner=!0,this.sharedMemory=r}u.prototype.update=function(i){if(!this.finalized){var r,e=typeof i;
+		if("string"!==e){if("object"!==e)throw new Error(t);if(null===i)throw new Error(t);if(h&&i.constructor===ArrayBuffer)i=new Uint8Array(i);else if(!(Array.isArray(i)||h&&ArrayBuffer.isView(i)))throw new Error(t);r=!0}for(var n,o,a=0,f=i.length,u=this.blocks;a<f;){if(this.hashed&&(this.hashed=!1,u[0]=this.block,this.block=u[16]=u[1]=u[2]=u[3]=u[4]=u[5]=u[6]=u[7]=u[8]=u[9]=u[10]=u[11]=u[12]=u[13]=u[14]=u[15]=0),r)for(o=this.start;a<f&&o<64;++a)u[o>>>2]|=i[a]<<s[3&o++];else for(o=this.start;a<f&&o<64;++a)(n=i.charCodeAt(a))<128?u[o>>>2]|=n<<s[3&o++]:n<2048?(u[o>>>2]|=(192|n>>>6)<<s[3&o++],u[o>>>2]|=(128|63&n)<<s[3&o++]):n<55296||n>=57344?(u[o>>>2]|=(224|n>>>12)<<s[3&o++],u[o>>>2]|=(128|n>>>6&63)<<s[3&o++],u[o>>>2]|=(128|63&n)<<s[3&o++]):(n=65536+((1023&n)<<10|1023&i.charCodeAt(++a)),u[o>>>2]|=(240|n>>>18)<<s[3&o++],u[o>>>2]|=(128|n>>>12&63)<<s[3&o++],u[o>>>2]|=(128|n>>>6&63)<<s[3&o++],u[o>>>2]|=(128|63&n)<<s[3&o++]);this.lastByteIndex=o,this.bytes+=o-this.start,o>=64?(this.block=u[16],this.start=o-64,this.hash(),this.hashed=!0):this.start=o}return this.bytes>4294967295&&(this.hBytes+=this.bytes/4294967296<<0,this.bytes=this.bytes%4294967296),this}},
+		u.prototype.finalize=function(){if(!this.finalized){this.finalized=!0;var t=this.blocks,h=this.lastByteIndex;t[16]=this.block,t[h>>>2]|=r[3&h],this.block=t[16],h>=56&&(this.hashed||this.hash(),t[0]=this.block,t[16]=t[1]=t[2]=t[3]=t[4]=t[5]=t[6]=t[7]=t[8]=t[9]=t[10]=t[11]=t[12]=t[13]=t[14]=t[15]=0),t[14]=this.hBytes<<3|this.bytes>>>29,t[15]=this.bytes<<3,this.hash()}},
+		u.prototype.hash=function(){var t,h,i,r,s,n,o,a,f,u=this.h0,c=this.h1,y=this.h2,p=this.h3,l=this.h4,d=this.h5,b=this.h6,w=this.h7,A=this.blocks;for(t=16;t<64;++t)h=((s=A[t-15])>>>7|s<<25)^(s>>>18|s<<14)^s>>>3,i=((s=A[t-2])>>>17|s<<15)^(s>>>19|s<<13)^s>>>10,A[t]=A[t-16]+h+A[t-7]+i<<0;for(f=c&y,t=0;t<64;t+=4)this.first?(n=704751109,w=(s=A[0]-210244248)-1521486534<<0,p=s+143694565<<0,this.first=!1):(h=(u>>>2|u<<30)^(u>>>13|u<<19)^(u>>>22|u<<10),r=(n=u&c)^u&y^f,w=p+(s=w+(i=(l>>>6|l<<26)^(l>>>11|l<<21)^(l>>>25|l<<7))+(l&d^~l&b)+e[t]+A[t])<<0,p=s+(h+r)<<0),h=(p>>>2|p<<30)^(p>>>13|p<<19)^(p>>>22|p<<10),r=(o=p&u)^p&c^n,b=y+(s=b+(i=(w>>>6|w<<26)^(w>>>11|w<<21)^(w>>>25|w<<7))+(w&l^~w&d)+e[t+1]+A[t+1])<<0,h=((y=s+(h+r)<<0)>>>2|y<<30)^(y>>>13|y<<19)^(y>>>22|y<<10),r=(a=y&p)^y&u^o,d=c+(s=d+(i=(b>>>6|b<<26)^(b>>>11|b<<21)^(b>>>25|b<<7))+(b&w^~b&l)+e[t+2]+A[t+2])<<0,h=((c=s+(h+r)<<0)>>>2|c<<30)^(c>>>13|c<<19)^(c>>>22|c<<10),r=(f=c&y)^c&p^a,l=u+(s=l+(i=(d>>>6|d<<26)^(d>>>11|d<<21)^(d>>>25|d<<7))+(d&b^~d&w)+e[t+3]+A[t+3])<<0,u=s+(h+r)<<0,this.chromeBugWorkAround=!0;this.h0=this.h0+u<<0,this.h1=this.h1+c<<0,this.h2=this.h2+y<<0,this.h3=this.h3+p<<0,this.h4=this.h4+l<<0,this.h5=this.h5+d<<0,this.h6=this.h6+b<<0,this.h7=this.h7+w<<0},
+		u.prototype.hex=function(){this.finalize();var t=this.h0,h=this.h1,r=this.h2,s=this.h3,e=this.h4,n=this.h5,o=this.h6,a=this.h7;return i[t>>>28&15]+i[t>>>24&15]+i[t>>>20&15]+i[t>>>16&15]+i[t>>>12&15]+i[t>>>8&15]+i[t>>>4&15]+i[15&t]+i[h>>>28&15]+i[h>>>24&15]+i[h>>>20&15]+i[h>>>16&15]+i[h>>>12&15]+i[h>>>8&15]+i[h>>>4&15]+i[15&h]+i[r>>>28&15]+i[r>>>24&15]+i[r>>>20&15]+i[r>>>16&15]+i[r>>>12&15]+i[r>>>8&15]+i[r>>>4&15]+i[15&r]+i[s>>>28&15]+i[s>>>24&15]+i[s>>>20&15]+i[s>>>16&15]+i[s>>>12&15]+i[s>>>8&15]+i[s>>>4&15]+i[15&s]+i[e>>>28&15]+i[e>>>24&15]+i[e>>>20&15]+i[e>>>16&15]+i[e>>>12&15]+i[e>>>8&15]+i[e>>>4&15]+i[15&e]+i[n>>>28&15]+i[n>>>24&15]+i[n>>>20&15]+i[n>>>16&15]+i[n>>>12&15]+i[n>>>8&15]+i[n>>>4&15]+i[15&n]+i[o>>>28&15]+i[o>>>24&15]+i[o>>>20&15]+i[o>>>16&15]+i[o>>>12&15]+i[o>>>8&15]+i[o>>>4&15]+i[15&o]+i[a>>>28&15]+i[a>>>24&15]+i[a>>>20&15]+i[a>>>16&15]+i[a>>>12&15]+i[a>>>8&15]+i[a>>>4&15]+i[15&a]},
+		u.prototype.toString=u.prototype.hex,
+		u.prototype.digest=function(){this.finalize();var t=this.h0,h=this.h1,i=this.h2,r=this.h3,s=this.h4,e=this.h5,n=this.h6,o=this.h7;return[t>>>24&255,t>>>16&255,t>>>8&255,255&t,h>>>24&255,h>>>16&255,h>>>8&255,255&h,i>>>24&255,i>>>16&255,i>>>8&255,255&i,r>>>24&255,r>>>16&255,r>>>8&255,255&r,s>>>24&255,s>>>16&255,s>>>8&255,255&s,e>>>24&255,e>>>16&255,e>>>8&255,255&e,n>>>24&255,n>>>16&255,n>>>8&255,255&n,o>>>24&255,o>>>16&255,o>>>8&255,255&o]},
+		u.prototype.array=u.prototype.digest,
+		u.prototype.arrayBuffer=function(){this.finalize();var t=new ArrayBuffer(32),h=new DataView(t);return h.setUint32(0,this.h0),h.setUint32(4,this.h1),h.setUint32(8,this.h2),h.setUint32(12,this.h3),h.setUint32(16,this.h4),h.setUint32(20,this.h5),h.setUint32(24,this.h6),h.setUint32(28,this.h7),t},c.prototype=new u,c.prototype.finalize=function(){if(u.prototype.finalize.call(this),this.inner){this.inner=!1;var t=this.array();u.call(this,this.sharedMemory),this.update(this.oKeyPad),this.update(t),u.prototype.finalize.call(this)}};
+		var y=function(){var t=a("hex");t.create=function(){return new u},t.update=function(h){return t.create().update(h)};for(var h=0;h<n.length;++h){var i=n[h];t[i]=a(i)}return t}();y.sha256=y,y.sha256.hmac=function(){var t=f("hex");t.create=function(t){return new c(t)},t.update=function(h,i){return t.create(h).update(i)};for(var h=0;h<n.length;++h){var i=n[h];t[i]=f(i)}return t}();return y.sha256}();
+	static sha256 = this.#sha256.sha256;
+
+	/**
+	 * Получить первые N шестнадцатеричных цифер хеша
+	 * @param {string} line 
+	 * @param {number} [len=SGModelView.#ITEM_HASH_LEN]
+	 * @returns {string}
+	 */
+	static sha256trimL = (line, len = SGModelView.#ITEM_HASH_LEN) => {
+		return this.sha256(line).substring(0, len);
+	};
 }
 
-SGModelView._LINKTYPE_VALUE = 1;
-SGModelView._LINKTYPE_CSS = 2;
-SGModelView._LINKTYPE_FORTEMPLATE = 3;
-
-/**
- * SGModelView.sha256 - Хеширование данных
- * [js-sha256]{@link https://github.com/emn178/js-sha256}
- * @version 0.11.0
- * @author Chen, Yi-Cyuan [emn178@gmail.com]
- * @copyright Chen, Yi-Cyuan 2014-2024
- * @license MIT
- * @minify https://minify-js.com
- * @notes Удалёны: код для sha224, определение root, экспорты, код использующий Node.js
- */
-SGModelView._sha256 = function(){"use strict";var t="input is invalid type",h=("undefined"!=typeof ArrayBuffer),i="0123456789abcdef".split(""),
-r=[-2147483648,8388608,32768,128],s=[24,16,8,0],
-e=[1116352408,1899447441,3049323471,3921009573,961987163,1508970993,2453635748,2870763221,3624381080,310598401,607225278,1426881987,1925078388,2162078206,2614888103,3248222580,3835390401,4022224774,264347078,604807628,770255983,1249150122,1555081692,1996064986,2554220882,2821834349,2952996808,3210313671,3336571891,3584528711,113926993,338241895,666307205,773529912,1294757372,1396182291,1695183700,1986661051,2177026350,2456956037,2730485921,2820302411,3259730800,3345764771,3516065817,3600352804,4094571909,275423344,430227734,506948616,659060556,883997877,958139571,1322822218,1537002063,1747873779,1955562222,2024104815,2227730452,2361852424,2428436474,2756734187,3204031479,3329325298],
-n=["hex","array","digest","arrayBuffer"],o=[];Array.isArray||(Array.isArray=function(t){return"[object Array]"===Object.prototype.toString.call(t)}),h&&!ArrayBuffer.isView&&(ArrayBuffer.isView=function(t){return"object"==typeof t&&t.buffer&&t.buffer.constructor===ArrayBuffer});
-var a=function(t){return function(h){return new u(!0).update(h)[t]()}},f=function(t){return function(h,i){return new c(h,!0).update(i)[t]()}};
-function u(t){t?(o[0]=o[16]=o[1]=o[2]=o[3]=o[4]=o[5]=o[6]=o[7]=o[8]=o[9]=o[10]=o[11]=o[12]=o[13]=o[14]=o[15]=0,this.blocks=o):this.blocks=[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],this.h0=1779033703,this.h1=3144134277,this.h2=1013904242,this.h3=2773480762,this.h4=1359893119,this.h5=2600822924,this.h6=528734635,this.h7=1541459225,this.block=this.start=this.bytes=this.hBytes=0,this.finalized=this.hashed=!1,this.first=!0}
-function c(i,r){var s,e=typeof i;if("string"===e){var n,o=[],a=i.length,f=0;for(s=0;s<a;++s)(n=i.charCodeAt(s))<128?o[f++]=n:n<2048?(o[f++]=192|n>>>6,o[f++]=128|63&n):n<55296||n>=57344?(o[f++]=224|n>>>12,o[f++]=128|n>>>6&63,o[f++]=128|63&n):(n=65536+((1023&n)<<10|1023&i.charCodeAt(++s)),o[f++]=240|n>>>18,o[f++]=128|n>>>12&63,o[f++]=128|n>>>6&63,o[f++]=128|63&n);i=o}else{if("object"!==e)throw new Error(t);
-if(null===i)throw new Error(t);if(h&&i.constructor===ArrayBuffer)i=new Uint8Array(i);else if(!(Array.isArray(i)||h&&ArrayBuffer.isView(i)))throw new Error(t)}i.length>64&&(i=new u(!0).update(i).array());var c=[],y=[];for(s=0;s<64;++s){var p=i[s]||0;c[s]=92^p,y[s]=54^p}u.call(this,r),this.update(y),this.oKeyPad=c,this.inner=!0,this.sharedMemory=r}u.prototype.update=function(i){if(!this.finalized){var r,e=typeof i;
-if("string"!==e){if("object"!==e)throw new Error(t);if(null===i)throw new Error(t);if(h&&i.constructor===ArrayBuffer)i=new Uint8Array(i);else if(!(Array.isArray(i)||h&&ArrayBuffer.isView(i)))throw new Error(t);r=!0}for(var n,o,a=0,f=i.length,u=this.blocks;a<f;){if(this.hashed&&(this.hashed=!1,u[0]=this.block,this.block=u[16]=u[1]=u[2]=u[3]=u[4]=u[5]=u[6]=u[7]=u[8]=u[9]=u[10]=u[11]=u[12]=u[13]=u[14]=u[15]=0),r)for(o=this.start;a<f&&o<64;++a)u[o>>>2]|=i[a]<<s[3&o++];else for(o=this.start;a<f&&o<64;++a)(n=i.charCodeAt(a))<128?u[o>>>2]|=n<<s[3&o++]:n<2048?(u[o>>>2]|=(192|n>>>6)<<s[3&o++],u[o>>>2]|=(128|63&n)<<s[3&o++]):n<55296||n>=57344?(u[o>>>2]|=(224|n>>>12)<<s[3&o++],u[o>>>2]|=(128|n>>>6&63)<<s[3&o++],u[o>>>2]|=(128|63&n)<<s[3&o++]):(n=65536+((1023&n)<<10|1023&i.charCodeAt(++a)),u[o>>>2]|=(240|n>>>18)<<s[3&o++],u[o>>>2]|=(128|n>>>12&63)<<s[3&o++],u[o>>>2]|=(128|n>>>6&63)<<s[3&o++],u[o>>>2]|=(128|63&n)<<s[3&o++]);this.lastByteIndex=o,this.bytes+=o-this.start,o>=64?(this.block=u[16],this.start=o-64,this.hash(),this.hashed=!0):this.start=o}return this.bytes>4294967295&&(this.hBytes+=this.bytes/4294967296<<0,this.bytes=this.bytes%4294967296),this}},
-u.prototype.finalize=function(){if(!this.finalized){this.finalized=!0;var t=this.blocks,h=this.lastByteIndex;t[16]=this.block,t[h>>>2]|=r[3&h],this.block=t[16],h>=56&&(this.hashed||this.hash(),t[0]=this.block,t[16]=t[1]=t[2]=t[3]=t[4]=t[5]=t[6]=t[7]=t[8]=t[9]=t[10]=t[11]=t[12]=t[13]=t[14]=t[15]=0),t[14]=this.hBytes<<3|this.bytes>>>29,t[15]=this.bytes<<3,this.hash()}},
-u.prototype.hash=function(){var t,h,i,r,s,n,o,a,f,u=this.h0,c=this.h1,y=this.h2,p=this.h3,l=this.h4,d=this.h5,b=this.h6,w=this.h7,A=this.blocks;for(t=16;t<64;++t)h=((s=A[t-15])>>>7|s<<25)^(s>>>18|s<<14)^s>>>3,i=((s=A[t-2])>>>17|s<<15)^(s>>>19|s<<13)^s>>>10,A[t]=A[t-16]+h+A[t-7]+i<<0;for(f=c&y,t=0;t<64;t+=4)this.first?(n=704751109,w=(s=A[0]-210244248)-1521486534<<0,p=s+143694565<<0,this.first=!1):(h=(u>>>2|u<<30)^(u>>>13|u<<19)^(u>>>22|u<<10),r=(n=u&c)^u&y^f,w=p+(s=w+(i=(l>>>6|l<<26)^(l>>>11|l<<21)^(l>>>25|l<<7))+(l&d^~l&b)+e[t]+A[t])<<0,p=s+(h+r)<<0),h=(p>>>2|p<<30)^(p>>>13|p<<19)^(p>>>22|p<<10),r=(o=p&u)^p&c^n,b=y+(s=b+(i=(w>>>6|w<<26)^(w>>>11|w<<21)^(w>>>25|w<<7))+(w&l^~w&d)+e[t+1]+A[t+1])<<0,h=((y=s+(h+r)<<0)>>>2|y<<30)^(y>>>13|y<<19)^(y>>>22|y<<10),r=(a=y&p)^y&u^o,d=c+(s=d+(i=(b>>>6|b<<26)^(b>>>11|b<<21)^(b>>>25|b<<7))+(b&w^~b&l)+e[t+2]+A[t+2])<<0,h=((c=s+(h+r)<<0)>>>2|c<<30)^(c>>>13|c<<19)^(c>>>22|c<<10),r=(f=c&y)^c&p^a,l=u+(s=l+(i=(d>>>6|d<<26)^(d>>>11|d<<21)^(d>>>25|d<<7))+(d&b^~d&w)+e[t+3]+A[t+3])<<0,u=s+(h+r)<<0,this.chromeBugWorkAround=!0;this.h0=this.h0+u<<0,this.h1=this.h1+c<<0,this.h2=this.h2+y<<0,this.h3=this.h3+p<<0,this.h4=this.h4+l<<0,this.h5=this.h5+d<<0,this.h6=this.h6+b<<0,this.h7=this.h7+w<<0},
-u.prototype.hex=function(){this.finalize();var t=this.h0,h=this.h1,r=this.h2,s=this.h3,e=this.h4,n=this.h5,o=this.h6,a=this.h7;return i[t>>>28&15]+i[t>>>24&15]+i[t>>>20&15]+i[t>>>16&15]+i[t>>>12&15]+i[t>>>8&15]+i[t>>>4&15]+i[15&t]+i[h>>>28&15]+i[h>>>24&15]+i[h>>>20&15]+i[h>>>16&15]+i[h>>>12&15]+i[h>>>8&15]+i[h>>>4&15]+i[15&h]+i[r>>>28&15]+i[r>>>24&15]+i[r>>>20&15]+i[r>>>16&15]+i[r>>>12&15]+i[r>>>8&15]+i[r>>>4&15]+i[15&r]+i[s>>>28&15]+i[s>>>24&15]+i[s>>>20&15]+i[s>>>16&15]+i[s>>>12&15]+i[s>>>8&15]+i[s>>>4&15]+i[15&s]+i[e>>>28&15]+i[e>>>24&15]+i[e>>>20&15]+i[e>>>16&15]+i[e>>>12&15]+i[e>>>8&15]+i[e>>>4&15]+i[15&e]+i[n>>>28&15]+i[n>>>24&15]+i[n>>>20&15]+i[n>>>16&15]+i[n>>>12&15]+i[n>>>8&15]+i[n>>>4&15]+i[15&n]+i[o>>>28&15]+i[o>>>24&15]+i[o>>>20&15]+i[o>>>16&15]+i[o>>>12&15]+i[o>>>8&15]+i[o>>>4&15]+i[15&o]+i[a>>>28&15]+i[a>>>24&15]+i[a>>>20&15]+i[a>>>16&15]+i[a>>>12&15]+i[a>>>8&15]+i[a>>>4&15]+i[15&a]},
-u.prototype.toString=u.prototype.hex,
-u.prototype.digest=function(){this.finalize();var t=this.h0,h=this.h1,i=this.h2,r=this.h3,s=this.h4,e=this.h5,n=this.h6,o=this.h7;return[t>>>24&255,t>>>16&255,t>>>8&255,255&t,h>>>24&255,h>>>16&255,h>>>8&255,255&h,i>>>24&255,i>>>16&255,i>>>8&255,255&i,r>>>24&255,r>>>16&255,r>>>8&255,255&r,s>>>24&255,s>>>16&255,s>>>8&255,255&s,e>>>24&255,e>>>16&255,e>>>8&255,255&e,n>>>24&255,n>>>16&255,n>>>8&255,255&n,o>>>24&255,o>>>16&255,o>>>8&255,255&o]},
-u.prototype.array=u.prototype.digest,
-u.prototype.arrayBuffer=function(){this.finalize();var t=new ArrayBuffer(32),h=new DataView(t);return h.setUint32(0,this.h0),h.setUint32(4,this.h1),h.setUint32(8,this.h2),h.setUint32(12,this.h3),h.setUint32(16,this.h4),h.setUint32(20,this.h5),h.setUint32(24,this.h6),h.setUint32(28,this.h7),t},c.prototype=new u,c.prototype.finalize=function(){if(u.prototype.finalize.call(this),this.inner){this.inner=!1;var t=this.array();u.call(this,this.sharedMemory),this.update(this.oKeyPad),this.update(t),u.prototype.finalize.call(this)}};
-var y=function(){var t=a("hex");t.create=function(){return new u},t.update=function(h){return t.create().update(h)};for(var h=0;h<n.length;++h){var i=n[h];t[i]=a(i)}return t}();y.sha256=y,y.sha256.hmac=function(){var t=f("hex");t.create=function(t){return new c(t)},t.update=function(h,i){return t.create(h).update(i)};for(var h=0;h<n.length;++h){var i=n[h];t[i]=f(i)}return t}();return y.sha256}();
-SGModelView.sha256 = SGModelView._sha256.sha256;
-
-console.assert(SGModelView.sha256('test') === '9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08', 'Test with SGModelView.sha256("test") failed!');
-
-SGModelView._HASHLEN = 16;
-
-/**
- * Получить первые N шестнадцатеричных цифер хеша
- * @param {string} line 
- * @param {number} [len=SGModelView._HASHLEN]
- * @returns {string}
- */
-SGModelView.sha256trimL = (line, len = SGModelView._HASHLEN) => {
-	return SGModelView.sha256(line).substring(0, len);
-};
+//console.assert(SGModelView.sha256('test') === '9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08', 'Test with SGModelView.sha256("test") failed!');
 
 SGModelView.setAttributesPrefix();
 
-if (SGModel.isNode) {
+if (SGModelView.isNode) {
 	module.exports = SGModelView;
-} else if (SGModel.isBrowser) {
-	window['SGModel'] = SGModelView;
+} else if (SGModelView.isBrowser) {
+	window['SGModelView'] = SGModelView;
 }
 
 export default SGModelView;
