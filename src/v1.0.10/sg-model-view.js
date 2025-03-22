@@ -116,6 +116,7 @@ class SGModelView extends SGModel {
 				eHtml.appendChild(cntDiv);
 			}
 			// 2. Парсинг шаблонов
+			// 2.1. Собираем все TEMPLATE, даже те, которые не на первом уровне вложенности
 			let defaultTemplateId = null;
 			const tmps = eHtml.querySelectorAll('TEMPLATE'); // instanceof HTMLTemplateElement (.content instanceof DocumentFragment)
 			for (let i = 0; i < tmps.length; i++) {
@@ -128,11 +129,12 @@ class SGModelView extends SGModel {
 			if (eHtml.firstChild && eHtml.firstChild.id === _uuid) {
 				eHtml = eHtml.firstChild;
 			}
-			// 2.1. HTML-элементы (кроме стилей и скриптов) вне TEMPLATE-тегов разместим в шаблоне по умолчанию с templateId равным UUID первого экземпляра.
+			// 2.2. HTML-элементы (кроме стилей и скриптов) вне TEMPLATE-тегов разместим в шаблоне по умолчанию с templateId равным UUID первого экземпляра.
 			// @english: HTML elements (except styles and scripts) outside TEMPLATE tags will be placed in the default template with templateId equal to UUID of first instance
 			if (eHtml.childElementCount) {
 				const template = document.createElement('TEMPLATE');
-				for (const child of eHtml.children) {
+				while (eHtml.children.length) {
+					const child = eHtml.children[0];
 					if (child.tagName === 'STYLE' || child.tagName === 'SCRIPT') {
 						document.body.append(child);
 					} else {
@@ -142,9 +144,28 @@ class SGModelView extends SGModel {
 				this.templates[instance.uuid] = template;
 				defaultTemplateId = defaultTemplateId || instance.uuid;
 			}
-			// 3. Определяем вложенные шаблоны для циклов (sg-for)
-			// TODO: вытащить содержимое элементов с sg-for в templates с ключом равным значению в sg-template, если оно задано, либо сгенерировать uuid. В sg-template, если он не указан, прописать uuid шаблона.
-			// 4. Определяем templateId
+			// 2.3. Формируем шаблоны из содержимого элементов с атрибутом sg-for
+			for (const template of Object.values(this.templates)) {
+				const eFors = template.content.querySelectorAll('[sg-for]');
+				for (const eFor of eFors) {
+					const templateId = eFor.getAttribute('sg-template') || SGModel.uuidLite();
+					eFor.setAttribute('sg-template', templateId);
+					if (!this.templates[templateId]) {
+						const template = document.createElement('TEMPLATE');
+						while (eFor.childNodes.length) {
+							const child = eFor.childNodes[0];
+							if (child.tagName === 'STYLE' || child.tagName === 'SCRIPT') {
+								console.warn('Error in sg-for inline-template! The inline-template cannot contain script and style tags!');
+								child.remove();
+							} else {
+								template.content.append(child);
+							}
+						}
+						this.templates[templateId] = template;
+					}
+				}
+			}
+			// 3. Определяем templateId
 			autoLoadBind.templateId = autoLoadBind.templateId && String(autoLoadBind.templateId).replace(/^#/, '') || defaultTemplateId;
 		}
 		if (this.multipleInstance && autoLoadBind.viewId) {
@@ -225,7 +246,7 @@ class SGModelView extends SGModel {
 					} else {
 						eContent = document.createElement('DIV');
 						if (this.constructor.initialized === 1) {
-							eContent.innerText = `Error! Template with autoLoadBind.templateId = "${autoLoadBind.templateId}" not found!`;
+							eContent.innerText = `Error! Template with autoLoadBind.templateId = "${autoLoadBind.templateId}" not found! View class: ${this.constructor.name}`;
 						} else {
 							eContent.innerText = `Еrror occurred while initializing the view of ${this.constructor.name}!`;
 						}
@@ -233,7 +254,7 @@ class SGModelView extends SGModel {
 					if (viewId) {
 						this.eView = eTarget;
 						if (this.eView.__sgModelUUID) {
-							throw new Error(`Error! The container with id="${viewId}" already binding with other SGModel instance with uuid: "${this.eView.__sgModelUUID}" and class: ${SGModel.__instances[this.eView.__sgModelUUID].constructor.name}!`);
+							throw new Error(`Error! The container with id="${viewId}" (view class: ${this.constructor.name}) already binding with other SGModel instance with uuid: "${this.eView.__sgModelUUID}" and class: ${SGModel.__instances[this.eView.__sgModelUUID].constructor.name}!`);
 						}
 						this.eView.append(eContent);
 					} else { // Сохраняем существующий контент для вывода нескольких экземпляров. @english: Preserve existing content to support multiple instances of printing.
@@ -248,10 +269,10 @@ class SGModelView extends SGModel {
 					if (this.constructor.initialized === 1) {
 						this.bindHTML(this.eView);
 					} else {
-						console.error(`Binding was not completed because initialization failed!`);
+						console.error(`Binding was not completed because initialization failed! View class: ${this.constructor.name}`);
 					}
 				} else {
-					throw new Error(`Error! The container with id="${eTarget}" does not exists!`);
+					throw new Error(`Error! The container with id="${eTarget}" does not exists! View class: ${this.constructor.name}`);
 				}
 			}
 			// Для варианта, когда используется атрибут sg-model без template-шаблонов
@@ -262,7 +283,7 @@ class SGModelView extends SGModel {
 					if (this.constructor.initialized === 1) {
 						this.bindHTML(this.eView);
 					} else {
-						console.error(`Binding was not completed because initialization failed!`);
+						console.error(`Binding was not completed because initialization failed! View class: ${this.constructor.name}`);
 					}
 				}
 			}
@@ -323,7 +344,7 @@ class SGModelView extends SGModel {
 		let q = 0;
 		for (const node of eRoot.childNodes) {
 			if (
-				(node.nodeType === Node.TEXT_NODE && node.data.replace(/\s*/g, '')) ||
+				(node.nodeType === Node.TEXT_NODE && node.textContent.replace(/\s*/g, '')) ||
 				(node.nodeType === Node.ELEMENT_NODE) ||
 				(node.nodeType === Node.COMMENT_NODE)
 			) {

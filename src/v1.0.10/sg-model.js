@@ -274,8 +274,7 @@ class SGModel {
 
 		let defaults = this.defaults();
 
-		this.uuid = this.uuid || defaults.uuid || properties.uuid || crypto.randomUUID && crypto.randomUUID() // must be https protocol to support the function crypto.randomUUID()
-			|| '10000000-1000-4000-8000-100000000000'.replace(/[018]/g, c => (+c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> +c / 4).toString(16));
+		this.uuid = this.uuid || defaults.uuid || properties.uuid || SGModel.uuidLite();
 		delete defaults.uuid;
 		delete properties.uuid;
 
@@ -1174,6 +1173,15 @@ class SGModel {
 	
 	// Функция-заглушка
 	static fStub = (v) => v;
+
+	/**
+	 * Сгенерировать uuid
+	 * @returns {string}
+	 */
+	static uuidLite() {
+		return crypto.randomUUID && crypto.randomUUID() // must be https protocol to support the function crypto.randomUUID()
+		|| '10000000-1000-4000-8000-100000000000'.replace(/[018]/g, c => (+c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> +c / 4).toString(16));
+	}
 
 	/**
 	 * If **dest** does not have a property from **sources**, then it is copied from **sources** to **dest** (composite objects are copied completely using recursion!)
