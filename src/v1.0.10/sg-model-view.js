@@ -79,9 +79,7 @@ class SGModelView extends SGModel {
 	static async initialize(instance) {
 		this.templates = this.templates || {};
 		this.autoLoadBind = (
-			typeof this.autoLoadBind === 'object' && this.autoLoadBind !== null
-			? this.autoLoadBind
-			: {}
+			typeof this.autoLoadBind === 'object' && this.autoLoadBind !== null ? this.autoLoadBind : {}
 		);
 		const autoLoadBind = this.autoLoadBind;
 		let eHtml;
@@ -204,10 +202,10 @@ class SGModelView extends SGModel {
 
 		this.constructor.initialized = 0;
 		if (!this.constructor.__pInitialize) {
-			this.constructor.__pInitialize = this.constructor.initialize(this).then((result) => { // eslint-disable-line no-unused-vars
+			this.constructor.__pInitialize = this.constructor.initialize(this).then((result) => {
 				this.constructor.initialized = 1;
 				return result;
-			}, (err) => { // eslint-disable-line no-unused-vars
+			}, (err) => {
 				this.constructor.initialized = -1;
 				return err;
 			});
@@ -327,7 +325,7 @@ class SGModelView extends SGModel {
 			if (node.getAttribute(SGModelView.#ATTRIBUTES.SG_MODEL) === className) {
 				return node;
 			}
-			if (node = this.#findElementBySGClass(className, node)) {
+			if (node = this.#findElementBySGClass(className, node)) { // eslint-disable-line no-cond-assign
 				return node;
 			}
 		}
@@ -387,7 +385,7 @@ class SGModelView extends SGModel {
 				}
 				delete this.#propertyElementLinks[name];
 			}
-			while (item = this.#elementsEvents.pop()) {
+			while (item = this.#elementsEvents.pop()) { // eslint-disable-line no-cond-assign
 				item.element.removeEventListener(item.event, item.callback);
 			}
 		}
@@ -514,39 +512,31 @@ class SGModelView extends SGModel {
 			
 			// Now attributes are implemented only for static output (only at initialization)
 			if (sgAttributes) {
-				try {
-					const attributes = JSON.parse(sgAttributes.replace(/(\w+):\s([\w]+)(\([^)]*\)){0,1}([,\s]{0,1})/g, '"$1": "$2$3"$4'));
-					for (let a in attributes) {
-						const valueOrProperty = attributes[a];
-						const method = valueOrProperty.replace(/(\w+)(.*)/, '$1');
-						if (typeof this[method] === 'function') {
-							const args = Array.from(valueOrProperty.matchAll(/'(.*?)'/g));
-							elementDOM.setAttribute(a, this[method].apply(this, args.map((o)=>o[1])));
-						} else if (Object.hasOwn(this.data, valueOrProperty)) {
-							elementDOM.setAttribute(a, this.data[valueOrProperty]);
-						}
+				const attributes = JSON.parse(sgAttributes.replace(/(\w+):\s([\w]+)(\([^)]*\)){0,1}([,\s]{0,1})/g, '"$1": "$2$3"$4'));
+				for (let a in attributes) {
+					const valueOrProperty = attributes[a];
+					const method = valueOrProperty.replace(/(\w+)(.*)/, '$1');
+					if (typeof this[method] === 'function') {
+						const args = Array.from(valueOrProperty.matchAll(/'(.*?)'/g));
+						elementDOM.setAttribute(a, this[method].apply(this, args.map((o)=>o[1])));
+					} else if (Object.hasOwn(this.data, valueOrProperty)) {
+						elementDOM.setAttribute(a, this.data[valueOrProperty]);
 					}
-				} catch(err) {
-					throw err;
 				}
 			}
 			
 			// Now attributes are implemented only for static output (only at initialization)
 			if (sgValue) {
-				try {
-					const fFormat = this[sgFormat] || SGModel.fStub;
-					const method = sgValue.replace(/(\w+)(.*)/, '$1');
-					const args = Array.from(sgValue.matchAll(/'(.*?)'/g));
-					if (typeof this[method] === 'function') {
-						elementDOM.innerHTML = fFormat.call(this, this[method].apply(this, args.map((o)=>o[1])));
-					} else {
-						const props = sgValue.split('.');
-						if (props.length === 2 && props[0] === this.constructor.name) {
-							elementDOM.innerHTML = fFormat.call(this, this.constructor[props[1]]);
-						}
+				const fFormat = this[sgFormat] || SGModel.fStub;
+				const method = sgValue.replace(/(\w+)(.*)/, '$1');
+				const args = Array.from(sgValue.matchAll(/'(.*?)'/g));
+				if (typeof this[method] === 'function') {
+					elementDOM.innerHTML = fFormat.call(this, this[method].apply(this, args.map((o)=>o[1])));
+				} else {
+					const props = sgValue.split('.');
+					if (props.length === 2 && props[0] === this.constructor.name) {
+						elementDOM.innerHTML = fFormat.call(this, this.constructor[props[1]]);
 					}
-				} catch(err) {
-					throw err;
 				}
 			}
 			
@@ -585,11 +575,7 @@ class SGModelView extends SGModel {
 						bFunctions = true;
 					}
 				}
-				try {
-					sgInNode.css = (new Function(`return ${_sgCSS}`)).bind(this);
-				} catch(err) {
-					throw err;
-				}
+				sgInNode.css = (new Function(`return ${_sgCSS}`)).bind(this);
 				sgInNode.css_static_classes = [...elementDOM.classList];
 				if (!bProperties && bFunctions) {
 					this.#regPropertyElementLink(sgProperty, elementDOM, SGModelView.#LINKTYPE_CSS);
@@ -629,7 +615,7 @@ class SGModelView extends SGModel {
 			if (sgFor && sgTemplate) {
 				const template = this.constructor.templates[sgTemplate];
 				if (template) {
-					const link = this.#regPropertyElementLink(sgFor, elementDOM, SGModelView.#LINKTYPE_FORTEMPLATE);
+					const link = this.#regPropertyElementLink(sgFor, elementDOM, SGModelView.#LINKTYPE_FORTEMPLATE); // eslint-disable-line no-unused-vars
 					sgInNode.template = template;
 					if (sgItemVariables) {
 						sgInNode.item_variables = SGModelView.parseItemVariablesLine(sgItemVariables);
@@ -701,7 +687,7 @@ class SGModelView extends SGModel {
 					const value = this.data[property];
 
 					switch (sgInNode.type) {
-						case 'dropdown':
+						case 'dropdown': {
 							const eItems = document.querySelectorAll(`[${SGModelView.#ATTRIBUTES.SG_DROPDOWN}=${property}]`);
 							for (let i = 0; i < eItems.length; i++) {
 								const sgValue = eItems[i].getAttribute(SGModelView.#ATTRIBUTES.SG_OPTION);
@@ -712,6 +698,7 @@ class SGModelView extends SGModel {
 								}
 							}
 							break;
+						}
 						default: {
 							if (elementDOM.type) {
 								switch (elementDOM.type) {
@@ -720,13 +707,14 @@ class SGModelView extends SGModel {
 									case 'date': elementDOM.value = String(value).replace(/\s.*/, ''); break; // YYYY-MM-DD
 									case 'datetime-local': elementDOM.value = String(value).replace(/[+-]\d+$/, ''); break; // YYYY-MM-DD HH:MM:SS
 									case 'time': elementDOM.value = value.match(/\d\d:\d\d:\d\d/)?.[0]; break; // YYYY-MM-DD HH:MM:SS+PP
-									case 'text': case 'textarea': case 'button':
+									case 'text': case 'textarea': case 'button': {
 										const v = (sgInNode.format ? sgInNode.format.call(this, value) : value);
 										elementDOM.value = v;
 										if (elementDOM.type === 'button') {
 											elementDOM.innerText = v;
 										}
 										break;
+									}
 									case 'select-multiple': {
 										if (!Array.isArray(value)) break;
 										for (let i = 0; i < elementDOM.options.length; i++) {
@@ -905,10 +893,11 @@ class SGModelView extends SGModel {
 		const elem = event.currentTarget;
 		const sgInNode = elem[SGModelView.#sgPrefixInNode];
 		switch (elem.type) {
-			case 'checkbox':
+			case 'checkbox': {
 				this.set(sgInNode.property, elem.checked, void 0, void 0, event, elem);
 				break;
-			case 'radio':
+			}
+			case 'radio': {
 				const form = this._findParentForm(elem);
 				const radioButtons = form.querySelectorAll(`input[name=${elem.name}]`);
 				for (let i = 0; i < radioButtons.length; i++) {
@@ -920,18 +909,22 @@ class SGModelView extends SGModel {
 				}
 				this.set(sgInNode.property, elem.checked, void 0, void 0, event, elem);
 				break;
-			case 'text': case 'textarea': case 'date': case 'time': case 'datetime-local': case 'button': case 'select-one':
+			}
+			case 'text': case 'textarea': case 'date': case 'time': case 'datetime-local': case 'button': case 'select-one': {
 				this.set(sgInNode.property, elem.value, void 0, void 0, event, elem);
 				break;
-			case 'range':
+			}
+			case 'range': {
 				this.set(sgInNode.property, elem.value, void 0, void 0, event, elem); break;
-			case 'select-multiple':
+			}
+			case 'select-multiple': {
 				const result = [];
 				for (let i = 0; i < elem.selectedOptions.length; i++) {
 					result.push( elem.selectedOptions[i].value );
 				}
 				this.set(sgInNode.property, result, void 0, void 0, event, elem);
 				break;
+			}
 		}
 	}
 
@@ -976,7 +969,7 @@ class SGModelView extends SGModel {
 	static parseItemVariablesLine(line) {
 		const result = {};
 		const content = line.trim().slice(1, -1); // Убираем { и }
-		let pairs = content.split(/,(?![^\[]*\]|[^\{]*\})/); // Разбиваем по запятым, игнорируя вложенные структуры
+		let pairs = content.split(/,(?![^[]*\]|[^{]*\})/); // Разбиваем по запятым, игнорируя вложенные структуры
 		pairs.forEach(pair => {
 			let [key, value] = pair.split(/:(.+)/).map(s => s.trim()); // Разделяем по первому двоеточию
 			key = key.replace(/^"|"$/g, '').replace(/^'|'$/g, ''); // Убираем кавычки у ключа
@@ -998,7 +991,7 @@ class SGModelView extends SGModel {
 	 * Overriding the **SGModel->set** method
 	 * @override
 	 */
-	set(name, valueOrCollection, options = SGModel.OBJECT_EMPTY, flags = 0, event = void 0, elem = void 0) {
+	set(name, valueOrCollection, options = SGModel.OBJECT_EMPTY, flags = 0, event = void 0, elem = void 0) { // eslint-disable-line no-unused-vars
 		return this.#sarc(name, super.set.apply(this, arguments));
 	}
 
@@ -1006,7 +999,7 @@ class SGModelView extends SGModel {
 	 * Overriding the **SGModel->addTo** method
 	 * @override
 	 */
-	addTo(name, value, key = void 0, options = void 0, flags = 0) {
+	addTo(name, value, key = void 0, options = void 0, flags = 0) { // eslint-disable-line no-unused-vars
 		return this.#sarc(name, super.addTo.apply(this, arguments));
 	}
 
@@ -1014,7 +1007,7 @@ class SGModelView extends SGModel {
 	 * Overriding the **SGModel->removeFrom** method
 	 * @override
 	 */
-	removeFrom(name, indexOrKeyOrValue, options = void 0, flags = 0) {
+	removeFrom(name, indexOrKeyOrValue, options = void 0, flags = 0) { // eslint-disable-line no-unused-vars
 		return this.#sarc(name, super.removeFrom.apply(this, arguments));
 	}
 
@@ -1030,7 +1023,7 @@ class SGModelView extends SGModel {
 	 * Overriding the **SGModel->clear** method
 	 * @override
 	 */
-	clear(options = void 0, flags = 0) {
+	clear(options = void 0, flags = 0) { // eslint-disable-line no-unused-vars
 		return this.#sarc(name, super.clear.apply(this, arguments));
 	}
 
@@ -1271,7 +1264,7 @@ class SGModelView extends SGModel {
 	 * @license MIT
 	 * @minify https://minify-js.com
 	 * @notes Удалёны: код для sha224, определение root, экспорты, код использующий Node.js
-	 */
+	 *//* eslint-disable */
 	static #sha256 = function(){"use strict";var t="input is invalid type",h=("undefined"!=typeof ArrayBuffer),i="0123456789abcdef".split(""),
 		r=[-2147483648,8388608,32768,128],s=[24,16,8,0],
 		e=[1116352408,1899447441,3049323471,3921009573,961987163,1508970993,2453635748,2870763221,3624381080,310598401,607225278,1426881987,1925078388,2162078206,2614888103,3248222580,3835390401,4022224774,264347078,604807628,770255983,1249150122,1555081692,1996064986,2554220882,2821834349,2952996808,3210313671,3336571891,3584528711,113926993,338241895,666307205,773529912,1294757372,1396182291,1695183700,1986661051,2177026350,2456956037,2730485921,2820302411,3259730800,3345764771,3516065817,3600352804,4094571909,275423344,430227734,506948616,659060556,883997877,958139571,1322822218,1537002063,1747873779,1955562222,2024104815,2227730452,2361852424,2428436474,2756734187,3204031479,3329325298],
@@ -1289,7 +1282,7 @@ class SGModelView extends SGModel {
 		u.prototype.array=u.prototype.digest,
 		u.prototype.arrayBuffer=function(){this.finalize();var t=new ArrayBuffer(32),h=new DataView(t);return h.setUint32(0,this.h0),h.setUint32(4,this.h1),h.setUint32(8,this.h2),h.setUint32(12,this.h3),h.setUint32(16,this.h4),h.setUint32(20,this.h5),h.setUint32(24,this.h6),h.setUint32(28,this.h7),t},c.prototype=new u,c.prototype.finalize=function(){if(u.prototype.finalize.call(this),this.inner){this.inner=!1;var t=this.array();u.call(this,this.sharedMemory),this.update(this.oKeyPad),this.update(t),u.prototype.finalize.call(this)}};
 		var y=function(){var t=a("hex");t.create=function(){return new u},t.update=function(h){return t.create().update(h)};for(var h=0;h<n.length;++h){var i=n[h];t[i]=a(i)}return t}();y.sha256=y,y.sha256.hmac=function(){var t=f("hex");t.create=function(t){return new c(t)},t.update=function(h,i){return t.create(h).update(i)};for(var h=0;h<n.length;++h){var i=n[h];t[i]=f(i)}return t}();return y.sha256}();
-	static sha256 = this.#sha256.sha256;
+	static sha256 = this.#sha256.sha256;/* eslint-enable */
 
 	/**
 	 * Получить первые N шестнадцатеричных цифер хеша

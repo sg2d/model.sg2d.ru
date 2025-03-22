@@ -15,7 +15,7 @@ class SGModel {
 	 * Library version (fixed in minified version)
  	 * @readonly
 	 */
-	static version = typeof __SGMODEL_VERSION__ !== 'undefined' ? __SGMODEL_VERSION__ : '1.0.10';
+	static version = (typeof __SGMODEL_VERSION__ !== 'undefined' ? __SGMODEL_VERSION__ : '1.0.10'); // eslint-disable-line no-undef
 
 	/**
 	 * @readonly
@@ -188,7 +188,7 @@ class SGModel {
 		const callbacks = this.#onChangeCallbacks[name];
 		if (callbacks) {
 			if (func) {
-				for (var i = 0; i < callbacks.length; i++) {
+				for (let i = 0; i < callbacks.length; i++) {
 					if (callbacks[i].f === func) {
 						callbacks.splice(i, 1);
 						i--;
@@ -211,7 +211,7 @@ class SGModel {
 		}
 		if (changed || (flags & SGModel.FLAG_FORCE_CALLBACKS)) {
 			if ((flags & SGModel.FLAG_NO_CALLBACKS) === 0) {
-				const callbacks = this.#onChangeCallbacks[name];
+				let callbacks = this.#onChangeCallbacks[name];
 				if (callbacks) {
 					previous = (options.previous_value !== void 0 ? options.previous_value : previous);
 					if (flags & SGModel.FLAG_OFF_MAY_BE) {
@@ -331,13 +331,13 @@ class SGModel {
 
 		this.#data = SGModel.defaults({}, defaults, properties);
 		this.data = new Proxy(this.#data, {
-			get(properties, prop, receiver) {
+			get(properties, prop, receiver) { // eslint-disable-line no-unused-vars
 				if (prop in properties) {
 					return properties[prop];
 				}
 				throw new Error(`Error! Properties "${prop}" doen't exists! (may not be registered in defaultProperties)`);
 			},
-			set(properties, prop, value, receiver) {
+			set(properties, prop, value, receiver) { // eslint-disable-line no-unused-vars
 				if (prop in properties) {
 					self.set(prop, value);
 					return true;
@@ -555,18 +555,17 @@ class SGModel {
 	* @param {DOMElement} [elem] - event source element when using SGModelView
 	* @return {boolean|Promise} If the value was changed will return **true** or Promise for option autoSave=true
 	*/
-	set(name, valueOrCollection, options = SGModel.OBJECT_EMPTY, flags = 0, event = void 0, elem = void 0) {
-		var previous = this.#data[name];
-		var changed;
+	set(name, valueOrCollection, options = SGModel.OBJECT_EMPTY, flags = 0, event = void 0, elem = void 0) { // eslint-disable-line no-unused-vars
+		let previous = this.#data[name], value, changed;
 		if (valueOrCollection === void 0) {
 			delete this.#data[name];
 		} else {
-			var { value: valueOrCollection, previous, changed } = this.validateProperty(name, valueOrCollection, previous, options, flags);
+			({ value, previous, changed } = this.validateProperty(name, valueOrCollection, previous, options, flags));
 		}
 		if (changed) {
-			this.#data[name] = valueOrCollection;
+			this.#data[name] = value;
 		}
-		return this.#changedAndCallbacks(changed, name, valueOrCollection, previous, options, flags);
+		return this.#changedAndCallbacks(changed, name, value, previous, options, flags);
 	}
 
 	/**
@@ -736,7 +735,7 @@ class SGModel {
 				}
 				break;
 			}
-			case SGModel.TYPE_SET: {
+			case SGModel.TYPE_MAP: {
 				for (const [key, value] of collection) {
 					callback(value, key);
 				}
@@ -755,7 +754,7 @@ class SGModel {
 	 */
 	clearProperty(name, options = void 0, flags = 0) {
 		let changed = false;
-		const valueOrCollection = this.#data[name];
+		let valueOrCollection = this.#data[name];
 		switch (this.constructor.typeProperties[name] || SGModel.TYPE_ANY) {
 			case SGModel.TYPE_ANY: changed = (valueOrCollection !== null); this.#data[name] = null; break;
 			case SGModel.TYPE_STRING: changed = (valueOrCollection !== ''); if (changed) this.#data[name] = ''; break;
@@ -942,7 +941,7 @@ class SGModel {
 	 *		**SGModel.FLAG_OFF_MAY_BE** - if set can be **.off()**, then you need to pass this flag
 	 */
 	trigger(name, value = void 0, flags = 0) {
-		const callbacks = this.#onChangeCallbacks[name];
+		let callbacks = this.#onChangeCallbacks[name];
 		if (callbacks) {
 			if (flags & SGModel.FLAG_OFF_MAY_BE) {
 				callbacks = SGModel.clone(callbacks);
@@ -1213,9 +1212,7 @@ class SGModel {
 			dest = [];
 			for (let i = 0; i < source.length; i++) {
 				dest[i] = (
-					typeof source[i] === 'object' ?
-					SGModel.clone(source[i]) :
-					source[i]
+					typeof source[i] === 'object' ? SGModel.clone(source[i]) : source[i]
 				);
 			}
 		} else if (typeof source === 'object') {
@@ -1236,9 +1233,7 @@ class SGModel {
 					dest = {};
 					for (const p in source) {
 						dest[p] = (
-							typeof source[p] === 'object' ?
-							SGModel.clone(source[p]) :
-							source[p]
+							typeof source[p] === 'object' ? SGModel.clone(source[p]) : source[p]
 						);
 					}
 				}
@@ -1267,7 +1262,7 @@ class SGModel {
 			}
 		} else if (dest instanceof Object) {
 			for (const propName in dest) {
-				if (source.hasOwnProperty(propName)) {
+				if (Object.hasOwn(source, propName)) {
 					if (typeof dest[propName] === 'object') {
 						this.initObjectByObject(dest[propName], source[propName]);
 					} else {
@@ -1311,9 +1306,8 @@ class SGModel {
 	 * @returns {Array|object}
 	 */
 	static toNumbers = function(collection, precision = void 0) {
-		var value;
-		for (var p in collection) {
-			var value = collection[p];
+		for (const p in collection) {
+			let value = collection[p];
 			if (typeof value === 'string') {
 				if (/[\d]+\.[\d]+$/.test(value)) {
 					value = value.replace(',', '');

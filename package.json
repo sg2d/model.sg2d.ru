@@ -15,15 +15,18 @@
 		"sg-model",
 		"sg-model-view",
 		"mvvm",
-    "model",
-    "view"
+		"model",
+		"view"
 	],
 	"devDependencies": {
+		"@eslint/js": "^9.23.0",
+		"eslint": "^9.23.0",
+		"globals": "^16.0.0",
 		"webpack": "latest",
 		"webpack-cli": "latest"
 	},
 	"scripts": {
-		"build": "webpack --config webpack.config.sg-model.js --mode=production --env MINIMIZE=true & webpack --config webpack.config.sg-model-view.js --mode=production --env MINIMIZE=true"
-	},
-	"dependencies": {}
+		"build": "webpack --config webpack.config.sg-model.js --mode=production --env MINIMIZE=true & webpack --config webpack.config.sg-model-view.js --mode=production --env MINIMIZE=true",
+		"eslint": "eslint src/*.js"
+	}
 }
