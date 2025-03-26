@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>SG2D Model - Тесты</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<script type="module" charset="utf-8" src="tests.js" defer></script>
+		<link rel="icon" type="image/x-icon" href="/favicon.ico">
+		<link type="text/css" href="/res/bootstrap/bootstrap.min.css" rel="stylesheet">
+		<link type="text/css" href="main.css" rel="stylesheet">
+  </head>
+  <body style="padding: 10px;">
+		<h5>Автотесты для SGModel & SGModelView v1.0.10</h5>
+		<!--<button onclick="onClickStartButton(this);">Запустить!</button>-->
+		<div id="content"></div>
+		<template id="tmp_tests_group">
+			<h6>$TITLE$
+				<button class="show-code" style="display: none;" onclick="onClickShowCode(this);">Показать код</button>
+				<button class="show-description" style="display: none;" onclick="onClickShowDescription(this);">Показать описание</button>
+			</h6>
+			<pre class="code" style="display: none"></pre>
+			<pre class="description" style="display: none"></pre>
+			<ul></ul>
+		</template>
+		<template id="tmp_tests_item">
+			<li>
+				<div class="item-header" onclick="onClickItemHeader(this);"><span class="ordnum"></span> <span><span class="status">loading...</span> <span class="title"></span></span><span class="close" style="display: none;">x</span></div>
+				<div class="item-details" style="display: none">
+					&nbsp;Входные данные: <code class="input-data"></code><br/>
+					&nbsp;Раннер: <code class="runner"></code><br/>
+					<div class="verify-fact">
+						<div>
+							<div class="text-center">Ожидаемый результат:</div>
+							<pre class="in-out verify"></pre>
+						</div>
+						<div>
+							<div class="text-center">Фактический результат:</div>
+							<pre class="in-out failed-or-error" style="display: none"></pre>
+							<div class="success text-center" style="display: none">совпадает с ожидаемым</div>
+						</div>
+					</div>
+				</div>
+			</li>
+		</template>
+		<!--<script charset="utf-8" src="/res/bootstrap/bootstrap.bundle.min.js"></script>-->
+	</body>
+</html>

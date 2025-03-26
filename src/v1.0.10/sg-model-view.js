@@ -265,7 +265,7 @@ class SGModelView extends SGModel {
 						}
 					}
 					if (this.constructor.initialized === 1) {
-						this.bindHTML(this.eView);
+						this.bindHTML(this.eView, true);
 					} else {
 						console.error(`Binding was not completed because initialization failed! View class: ${this.constructor.name}`);
 					}
@@ -279,7 +279,7 @@ class SGModelView extends SGModel {
 				if (eView) {
 					this.eView = eView;
 					if (this.constructor.initialized === 1) {
-						this.bindHTML(this.eView);
+						this.bindHTML(this.eView, true);
 					} else {
 						console.error(`Binding was not completed because initialization failed! View class: ${this.constructor.name}`);
 					}
@@ -297,7 +297,7 @@ class SGModelView extends SGModel {
 			this.constructor.__pInitialize.then(this.#prrSeqConstructor.resolve);
 		}
 		
-		return this.initialized;
+		return this.initialization.promise;
 	}
 
 	/**
@@ -357,9 +357,12 @@ class SGModelView extends SGModel {
 	 * Data and view binding (MVVM)
 	 * @param {string|HTMLElement} [root] Example "#my_div_id" or HTMLElement object
 	 */
-	bindHTML(root = void 0) {
+	bindHTML(root = void 0, isAutoLoadBind = false) {
 		if (document.readyState === 'loading') {
-			throw new Error('Error! document.readyState = loading!');
+			throw new Error('Error in this.bindHTML()! document.readyState = loading!');
+		}
+		if (!isAutoLoadBind && !this.initialized) {
+			throw new Error(`Error in this.bindHTML()! Manual binding must be done after the view is initialized, example: return super.initialize().then(() => { this.bindHTML("body"); });`);
 		}
 		this.#bindHTML(root);
 	}
@@ -641,11 +644,8 @@ class SGModelView extends SGModel {
 	
 	/** @private */
 	#regPropertyElementLink(property, elementDOM, linkType) {
-		let links = this.#propertyElementLinks[property];
-		if (!links) {
-			links = this.#propertyElementLinks[property] = [];
-		}
-		let link = links.find(link => link.element === elementDOM);
+		const links = (this.#propertyElementLinks[property] || (this.#propertyElementLinks[property] = []));
+		let link = links.find(link => (link.element === elementDOM && link.linkType === linkType));
 		if (!link) {
 			link = {
 				element: elementDOM,
@@ -1184,7 +1184,7 @@ class SGModelView extends SGModel {
 	#sarc(name, changed) {
 		if (changed) { // TODO: Promise for autoSave=true !!!
 			if (this.#binderInitialized) {
-				if (this.#propertyElementLinks[name]) {
+				if (this.#propertyElementLinks[name]?.length) {
 					this.#refreshElement(name);
 				}
 			} else {
@@ -1216,7 +1216,7 @@ class SGModelView extends SGModel {
 	 * @private
 	 */
 	static #toJSONExclude = {
-		thisProperties: 'data,eView,initialization,initialized'.split(','),
+		thisProperties: 'data,eView,initialization'.split(','),
 		classProperties: 'data,templates,__instance,__instances,__instancesByClass,__pInitialize'.split(','),
 	};
 

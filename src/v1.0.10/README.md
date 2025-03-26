@@ -24,13 +24,14 @@
 	* [static autoSave = false](#static-autosave--false)
 * [Свойства и методы экземпляра SGModel](#свойства-и-методы-экземпляра-sgmodel)
 	* [constructor(properties = {}, options = void 0, thisProperties = void 0)](#constructorproperties---options--void-0-thisproperties--void-0)
-	* [data](#data)
 	* [UUID и uid](#uuid-и-uid)
-	* [initialized](#initialized)
+	* [data](#data)
+	* [initialization = {}](#initialization--)
+	* [initialized = false](#initialized--false)
+	* [async initialize()](#async-initialize)
 	* [changed = false](#changed--false)
 	* [destroyed = false](#destroyed--false)
 	* [defaults()](#defaults)
-	* [initialize()](#initialize)
 	* [set(name, value, options = void 0, flags = 0, event = void 0, elem = void 0)](#setname-value-options--void-0-flags--0-event--void-0-elem--void-0)
 	* [get(name)](#getname)
 	* [addTo(), removeFrom(), clearProperty(), size()](#addto-removefrom-clearproperty-size)
@@ -54,6 +55,7 @@
 	* [static initObjectByObject(dest, source)](#static-initobjectbyobjectdest-source)
 	* [static upperFirstLetter(s)](#static-upperfirstletters)
 	* [static roundTo(value, precision = 0)](#static-roundtovalue-precision--0)
+	* [static parsePgStrArray(line)](#static-parsepgstrarrayline)
 * [MVVM-паттерн в SGModelView](#mvvm-паттерн-в-sgmodelview)
 	* [Статические свойства экземпляра SGModelView](#статические-свойства-экземпляра-sgmodelview)
 		* [static templates = {...}](#static-templates--)
@@ -189,6 +191,11 @@ class Tank extends PlayerBase {
 * `options` - пользовательские настройки
 * `thisProperties` - свойства и методы передающиеся в контекст this созданного экземпляра
 
+### UUID и uid
+
+* `this.uuid` - уникальный идентификатор экземпляра. Генерируется автоматически при создании экземпляра, если не был передан вручную в `this.defaults()` (или `static defaultProperties`) или в конструкторе в properties. Значение UUID используется в составе имени ключа для получения сохраненных данных инстанса из локального хранилища (задан `static localStorageKey`).
+* `this.__uid` - (@protected) порядковый сквозной (в разрезе всех классов-потомков унаследованных от SGModel) числовой номер экземпляра. Генерируется автоматически при создании экземпляра.
+
 ### data
 
 Объект для доступа к свойствам. При изменении значений свойств выполняются ранее назначенные колбэки. Если свойства не существует, то выбрасывается ошибка.
@@ -198,14 +205,17 @@ const model = new SGModel({ title: '' });
 model.data.title = 'Title 1';
 ```
 
-### UUID и uid
+### initialization = {...}
 
-* `this.uuid` - уникальный идентификатор экземпляра. Генерируется автоматически при создании экземпляра, если не был передан вручную в `this.defaults()` (или `static defaultProperties`) или в конструкторе в properties. Значение UUID используется в составе имени ключа для получения сохраненных данных инстанса из локального хранилища (задан `static localStorageKey`).
-* `this.__uid` - (@protected) порядковый сквозной (в разрезе всех классов-потомков унаследованных от SGModel) числовой номер экземпляра. Генерируется автоматически при создании экземпляра.
+Объект с промисом инициализации: `this.initialization = { promise, resolve, reject };`. Создаётся автоматически при создании инстанса.
 
-### initialized
+### initialized = false
 
-Promise возвращаемый методом initialize()
+Статус инициализации инстанса. Присваивается в `true`, когда `this.initialization.promise` выполняется успешно.
+
+### async initialize()
+
+Вызывается сразу после создании экземпляра. Переопределяется в классах потомках.
 
 ### changed = false
 
@@ -220,10 +230,6 @@ Promise возвращаемый методом initialize()
 Один из способов задания перечня свойств и их значений по умолчанию при создании экземпляра.
 Этот вариант предпочтителен, когда нужно обратиться к статическим свойствам и методам класса.
 Другой способ - использовать `static defaultsProperties = {...}`, см. выше.
-
-### initialize()
-
-Вызывается сразу после создании экземпляра. Переопределяется в классах потомках.
 
 ### set(name, value, options = void 0, flags = 0, event = void 0, elem = void 0)
 
@@ -396,6 +402,10 @@ new Application();
 ### static roundTo(value, precision = 0)
 
 Округление числа до заданной точности
+
+### static parsePgStrArray(line)
+
+Преобразование из текстового представления массива PostgreSQL в массив объектов
 
 # MVVM-паттерн в SGModelView
 

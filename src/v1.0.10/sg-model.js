@@ -14,16 +14,19 @@ class SGModel {
 	/**
 	 * Library version (fixed in minified version)
  	 * @readonly
+	 * @type {string}
 	 */
 	static version = (typeof __SGMODEL_VERSION__ !== 'undefined' ? __SGMODEL_VERSION__ : '1.0.10'); // eslint-disable-line no-undef
 
 	/**
 	 * @readonly
+	 * @type {boolean}
 	 */
 	static isNode = ((typeof process === 'object' && process !== null) && (process.versions instanceof Object) && process.versions.node !== undefined);
 
 	/**
 	 * @readonly
+	 * @type {boolean}
 	 */
 	static isBrowser = (typeof window === 'object' && window !== null && window.document !== undefined);
 	
@@ -70,6 +73,7 @@ class SGModel {
 
 	/**
 	 * @private
+	 * @type {object}
 	 */
 	static __instance = null;
 
@@ -126,6 +130,7 @@ class SGModel {
 	/**
 	 * Proxy-объект для #data
 	 * @public
+	 * @type {Proxy}
 	 */
 	data = null;
 
@@ -137,14 +142,19 @@ class SGModel {
 	/**
 	 * Объект и методы промиса, отвечающие за инициализацию (результат this.initialize())
 	 * @public
+	 * @type {object}
 	 */
 	initialization = Promise.withResolvers();
 
 	/**
-	 * Это this.initialization.promise
 	 * @public
+	 * @type {boolean}
 	 */
-	initialized = (this.initialization.promise._sg_instance = this, this.initialization.promise);
+	initialized = (
+		this.initialization.promise.__sg_instance = this,
+		this.initialization.promise.then(() => (this.initialized = true)),
+		false
+	);
 
 	/**
 	 * reset manually!
@@ -305,7 +315,7 @@ class SGModel {
 		if (Object.keys(properties).length) {
 			properties = SGModel.clone(properties);
 		}
-
+		
 		for (const propName in defaults) {
 			this.constructor.typeProperties[propName] = this.constructor.typeProperties[propName] || this.getType(defaults[propName]);
 			if (!Object.hasOwn(properties, propName)) {
@@ -356,7 +366,6 @@ class SGModel {
 		
 		// Дёргаем initialize() экземпляра после выполнения конструктора, что бы инициализировались приватные свойства! См. также #deferredProperties в SGModelView.
 		setTimeout(() => {
-			//this.initialized = this.initialize.apply(this, arguments);
 			this.initialize.apply(this, arguments);
 		}, 0);
 	}
@@ -429,7 +438,7 @@ class SGModel {
 			}
 			case SGModel.TYPE_ARRAY: case SGModel.TYPE_ARRAY_NUMBERS: {
 				if (typeof nextValue === 'string') {
-					nextValue = this.parsePgStrArray(nextValue);
+					nextValue = SGModel.parsePgStrArray(nextValue);
 				}
 				if (!Array.isArray(nextValue)) {
 					nextValue = [nextValue];
@@ -478,7 +487,7 @@ class SGModel {
 			}
 			case SGModel.TYPE_SET: {
 				if (typeof nextValue === 'string') {
-					nextValue = this.parsePgStrArray(nextValue);
+					nextValue = SGModel.parsePgStrArray(nextValue);
 				}
 				if (!Array.isArray(nextValue) && !(nextValue instanceof Set)) {
 					throw new Error(`Error in validateProperty()! Property "${name}" (${this.constructor.name}) must be a Set class, Array or string in the format "{value1,value2,...}"!`); // TODO: формат строки м.б. сложнее, например, не просто элементы, а записи, т.е. вложенные {}
@@ -506,7 +515,7 @@ class SGModel {
 			}
 			case SGModel.TYPE_MAP: {
 				if (typeof nextValue === 'string') {
-					const arr = this.parsePgStrArray(nextValue);
+					const arr = SGModel.parsePgStrArray(nextValue);
 					nextValue = new Map();
 					for (let index = 0; index < arr.length; index++) {
 						nextValue.set(index, arr[index]);
@@ -863,7 +872,7 @@ class SGModel {
 				if (value instanceof Set) return SGModel.TYPE_SET;
 				if (value instanceof Map) return SGModel.TYPE_MAP;
 				if (value instanceof Object) return SGModel.TYPE_OBJECT;
-				console.warn('Warning in this.getType()! Object value must be based on Object (not null, not Object.create(null))!');
+				return SGModel.TYPE_ANY;
 			}
 		}
 		return SGModel.TYPE_ANY;
@@ -1047,18 +1056,10 @@ class SGModel {
 	
 	/**
 	 * Получить массив строк из текстового представления в формате PostgreSQL массива
-	 * @param {string} line 
-	 * @example
-	 * const data = `{"(\"SGModel & SGModelView - Binding models and MVVM pattern\",https://model.sg2d.ru/)","(\"Special symbols: ', \"\", \\\\, /, (, ), |, -, _, +, =, {, }, \`, !, ?, @, #, $, %, ^, &, *, ~, . end!\",https://sg2d.ru)"}`
-	 * const arr = this.parsePgStrArray(data);
-	 * // result:
-	 * //		Array(2)
-	 * //			0:	['SGModel & SGModelView - Binding models and MVVM pattern', 'https://model.sg2d.ru/']
-	 * //			1:	['Special symbols: \', ", \\, /, (, ), |, -, _, +, =, {, }, `, !, ?, @, #, $, %, ^, &, *, ~, . end!', 'https://sg2d.ru']
-	 * //			length: 2
+	 * @param {string} line
 	 * @returns {Array}
 	 */
-	parsePgStrArray(line) {
+	static parsePgStrArray(line) {
 		const result = [];
 		if (line.startsWith('{') && line.endsWith('}')) {
 			if (line.at(1) === '"' && line.at(-2) === '"') {
@@ -1092,7 +1093,7 @@ class SGModel {
 	}
 
 	static #toJSONExclude = {
-		thisProperties: 'data,initialization,initialized'.split(','),
+		thisProperties: 'data,initialization'.split(','),
 		classProperties: 'data,__instance,__instances,__instancesByClass'.split(','),
 	};
 	
