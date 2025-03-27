@@ -215,7 +215,7 @@ model.data.title = 'Title 1';
 
 ### async initialize()
 
-Вызывается сразу после создании экземпляра. Переопределяется в классах потомках.
+Вызывается сразу после создания экземпляра. Переопределяется в классах потомках.
 
 ### changed = false
 
@@ -460,9 +460,7 @@ export default class MyViewForm extends SGModelView {
 	};
 	//...
 	async initialize() {
-		return super.initialize().then(() => { // Внимание! Нужно вызвать родительский метод
-			//...
-		});
+		//...
 	}
 }
 ```
@@ -491,9 +489,7 @@ export default class MyRecords extends SGModelView {
 	};
 	//...
 	async initialize() {
-		return super.initialize().then(() => { // Внимание! Нужно вызвать родительский метод
-			//...
-		});
+		//...
 	}
 }
 ```
@@ -936,9 +932,7 @@ export default class FiltersPanel extends SGModelView {
 		keywords: SGModel.TYPE_STRING,
 	};
 	async initialize() {
-		return super.initialize().then((result) => {
-			//...
-		});
+		//...
 	}
 	onClickProject() {
 		//...

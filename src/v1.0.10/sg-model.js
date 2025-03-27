@@ -157,6 +157,15 @@ class SGModel {
 	);
 
 	/**
+	 * Вызывается сразу после создания экземпляра. Переопределяется в классах потомках.
+	 * @overriding
+	 * @public
+	 */
+	async initialize() {
+		// no code
+	}
+
+	/**
 	 * reset manually!
 	 * @public
 	 */
@@ -364,20 +373,30 @@ class SGModel {
 			this.constructor.data = this.data;
 		}
 		
-		// Дёргаем initialize() экземпляра после выполнения конструктора, что бы инициализировались приватные свойства! См. также #deferredProperties в SGModelView.
-		setTimeout(() => {
-			this.initialize.apply(this, arguments);
+		// Дёргаем initialize() экземпляра после выполнения конструктора, что бы инициализировались приватные свойства, и базовой инициализации (для SGModelView актуально)! См. также #deferredProperties в SGModelView.
+		setTimeout(async () => {
+			await this.__initialize();
+			this.initialize();
 		}, 0);
 	}
 	
 	/**
-	 * Called when an instance is created. Override in your classes
+	 * Called when an instance is created.
+	 * @protected
+	 * @overriding Переопределяется в SGModelView
 	 * @return {Promise}
 	 */
-	async initialize() {
-		//return Promise.resolve(true); // stub (you can override this method)
-		return this.initialization.resolve(true); // stub (you can override this method)
+	async __initialize() {
+		return this.initialization.resolve(true);
 	}
+
+	/**
+	 * @overriding
+	 * @returns {boolean}
+	 */
+	/*async initialize() {
+		return true;
+	}*/
 
 	/**
 	 * Sets the default property values. Overriden

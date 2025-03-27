@@ -1,22 +1,86 @@
+/* Common styles */
+.text-center { text-align: center; }
+pre {
+	background-color: #eee;
+	padding: 3px;
+	overflow: auto;
+}
+pre .warn {
+	background-color: #ffa;
+	color: red;
+}
+@keyframes pulse {
+	0% { filter: drop-shadow(0 0 2px #0f0); }
+	50% { filter: drop-shadow(0 0 10px #0f0); }
+	100% { filter: drop-shadow(0 0 2px #0f0); }
+}
+@keyframes glitch {
+	0% { filter: hue-rotate(0deg); }
+	20% { filter: hue-rotate(90deg) blur(0.5px); }
+	40% { filter: hue-rotate(180deg); }
+	60% { filter: hue-rotate(270deg) blur(1px); }
+	80% { filter: hue-rotate(360deg); }
+	100% { filter: hue-rotate(0deg); }
+}
+.passed { color: green; }
+.failed { color: red; }
+.error { color: red; }
+
+/* Header */
+.header {
+	display: flex;
+	width: 100%;
+	padding: 3px;
+}
+.header > div {
+	flex: 1;
+	min-width: 0;
+	box-sizing: border-box;
+	overflow: auto;
+	padding: 3px;
+}
+.header h5 {
+	line-height: normal;
+}
+.header .statistics {
+	font-size: 0.9rem;
+	font-family: sans-serif, Tahoma;
+}
+.header .statistics .btn-collapse-expand {
+	border-radius: 5px;
+	padding: 3px;
+	border: 1px outset #aaa;
+}
+.header .statistics .btn-collapse-expand:not(.no-items) {
+	cursor: pointer;
+}
+.header .statistics .btn-collapse-expand:not(.no-items):hover {
+	filter: drop-shadow(0 0 5px #aaa) drop-shadow(0 0 5px #ff0);
+	border: 1px outset #333;	
+}
+.header .statistics .btn-collapse-expand.no-items {
+	color: initial;
+}
+.header .global-controls {
+	text-align: right;
+}
+
+/* Items */
 ul {
 	list-style-type: none;
 	padding-left: 1rem;
 }
-
-li {
+ul > li {
 	border: 1px solid transparent;
 }
-li:hover {
+ul > li:hover {
 	filter: brightness(0.95);
 }
-
-li.expanded {
+ul > li.expanded {
 	border: 1px dotted gray;
 	border-radius: 10px;
 	background-color: #fff;
 }
-
-.text-center { text-align: center; }
 
 button.show-code, button.show-description {
 	border-radius: 5px;
@@ -30,36 +94,31 @@ button.show-code:hover, button.show-description:hover {
 	color: green;
 	border-color: #999;
 }
-pre {
-	background-color: #eee;
-	padding: 3px;
-	overflow: auto;
-}
+
 pre.code, pre.description {
 	border: 1px outset #999;
 	tab-size: 0.95rem;
 	max-height: 500px;
 }
-pre.in-out {
+
+ul > li .item-details .verify-fact pre.in-out {
 	max-height: 400px;
 }
-pre .warn {
-	background-color: #ffa;
-	color: red;
+ul > li .item-header { cursor: pointer; font-weight: bold; }
+ul > li .item-header:hover { filter: drop-shadow(0 0 5px #0ff) drop-shadow(0 0 10px #0ff); }
+/*ul > li .item-header:hover { animation: pulse 2s infinite; }*/
+/*ul > li .item-header:hover { animation: glitch 0.5s infinite; }*/
+ul > li .item-header span.close {
+	float: right;
+	padding-right: 5px;
 }
-.item-header { cursor: pointer; }
-.item-header:hover { font-weight: bold }
-.item-header span.close { float: right; padding-right: 5px; }
-.status.passed, .success { color: green; }
-.status.failed { color: red; }
-.status.error { color: red; }
-
-.item-details .verify-fact {
+ul > li .item-header .status.passed { color: green; }
+ul > li .item-details .verify-fact {
 	display: flex; /* Делаем контейнер flex-контейнером */
 	width: 100%; /* Ширина контейнера (можно задать конкретное значение) */
 	padding: 3px;
 }
-.item-details .verify-fact > div {
+ul > li .item-details .verify-fact > div {
 	flex: 1; /* Каждый дочерний div займет равное пространство */
 	min-width: 0; /* Для корректного сжатия содержимого */
 	box-sizing: border-box; /* Чтобы padding и border не влияли на ширину */

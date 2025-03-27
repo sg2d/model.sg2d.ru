@@ -35,7 +35,7 @@ INSERT INTO wob_tasks (id, code, description, wiki_links, doc_links) OVERRIDING 
 	ARRAY[('SGModel & SGModelView - Binding models and MVVM pattern','https://model.sg2d.ru/'),('Special symbols: '', ", \\, /, (, ), |, -, _, +, =, {, }, \`, !, ?, @, #, $, %, ^, &, *, ~, . end!','https://ggg.ggg')]::wob_url_type[]
 );
 `,
-		runner: (inData) => SGModel.parsePgStrArray(inData),
+		runner: async (inData) => SGModel.parsePgStrArray(inData),
 		items: [
 			{
 				title: 'простой список',

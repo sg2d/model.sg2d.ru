@@ -10,7 +10,17 @@
 		<link type="text/css" href="main.css" rel="stylesheet">
   </head>
   <body style="padding: 10px;">
-		<h5>Автотесты для SGModel & SGModelView v1.0.10</h5>
+		<div class="header">
+			<div><h5>Автотесты для SGModel & SGModelView v1.0.10</h5></div>
+			<div class="global-controls">
+				<span class="statistics">
+					<span class="btn-collapse-expand passed no-items" onclick="onClickExpandCollapse(this);">passed: 0% (0 из 0)</span>
+					<span class="btn-collapse-expand failed no-items" onclick="onClickExpandCollapse(this);">failed: 0</span>
+					<span class="btn-collapse-expand error no-items" onclick="onClickExpandCollapse(this);">error: 0</span>
+				</span>
+			</div>
+		</div>
+
 		<!--<button onclick="onClickStartButton(this);">Запустить!</button>-->
 		<div id="content"></div>
 		<template id="tmp_tests_group">
@@ -36,7 +46,7 @@
 						<div>
 							<div class="text-center">Фактический результат:</div>
 							<pre class="in-out failed-or-error" style="display: none"></pre>
-							<div class="success text-center" style="display: none">совпадает с ожидаемым</div>
+							<div class="passed text-center" style="display: none">совпадает с ожидаемым</div>
 						</div>
 					</div>
 				</div>

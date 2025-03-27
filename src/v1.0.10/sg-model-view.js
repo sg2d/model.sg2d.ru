@@ -178,19 +178,20 @@ class SGModelView extends SGModel {
 	 * @param {object} [options]
 	 * @param {object} [thisProperties] - Properties and methods passed to the this context of the created instance
 	 */
-	/*constructor(properties = {}, options = void 0, thisProperties = void 0) {
-		super(properties, options, thisProperties);
-	}*/
+	//constructor(properties = {}, options = void 0, thisProperties = void 0) {
+	//	super(properties, options, thisProperties);
+	//}
 	
 	/**
 	 * Called when an instance is created
+	 * @protected
 	 * @see {mixed} [static autoLoadBind.srcHTML] - can be a path to an html file (string), html content (string), a HTMLElement/HTMLTemplateElement (object)
 	 * @see {string} [static autoLoadBind.templateId]
 	 * @see {string} [static autoLoadBind.viewId] or [static autoLoadBind.containerId]
 	 * @see {object} [static templates]
 	 * @return {Promise}
 	 */
-	async initialize() {
+	async __initialize() {
 
 		// Сюда приходим после полного выполнения конструктора в SGModel
 		// @english: We come here after complete execution of the constructor in SGModel

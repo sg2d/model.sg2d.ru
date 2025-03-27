@@ -1,22 +1,32 @@
 import simpleModelWithBasicTests from './modules/simple-model-with-basic-tests.js';
 import parsePgStrArrayTests from './modules/parse-pg-str-array-tests.js';
 
-window.sleep = function(ms) {
+window.sleep = function(ms = 33) {
 	return new Promise(resolve => setTimeout(resolve, ms));
 }
 
 const eContent = document.querySelector('#content');
 const eTemplateTestsGroup = document.querySelector('#tmp_tests_group');
 const eTemplateTestsItem = document.querySelector('#tmp_tests_item');
+const eStatistics = document.querySelector('.statistics');
+const eStatPassed = eStatistics.querySelector('.passed');
+const eStatFailed = eStatistics.querySelector('.failed');
+const eStatError = eStatistics.querySelector('.error');
 let globalCounter = 0;
 
 async function run() {
-	const tests = [
+	const testsGroups = [
 		await simpleModelWithBasicTests(),
 		await parsePgStrArrayTests(),
 	];
 
-	tests.forEach(testsGroup => {
+	const stats = {
+		passed: 0,
+		failed: 0,
+		error: 0,
+	};
+	for (let testIndex = 0; testIndex < testsGroups.length; testIndex++) {
+		const testsGroup = testsGroups[testIndex];
 		if (!testsGroup.title) return;
 		globalCounter++;
 		const eSection = document.createElement('SECTION');
@@ -34,7 +44,8 @@ async function run() {
 		}
 		const eList = eSection.querySelector('ul');
 		let localCounter = 0;
-		testsGroup.items.forEach(item => {
+		for (let testIndex = 0; testIndex < testsGroup.items.length; testIndex++) {
+			const item = testsGroup.items[testIndex];
 			const eItem =  eTemplateTestsItem.content.cloneNode(true);
 			const eStatus = eItem.querySelector('.status');
 			const eDetails = eItem.querySelector('.item-details');
@@ -45,11 +56,13 @@ async function run() {
 			let status = '';
 			const runner = item.runner || item.testsGroup.runner;
 			try {
-				item.fact = runner(item.input);
+				item.fact = await runner(item.input);
 				item.passed = (JSON.stringify(item.fact) === JSON.stringify(item.verify));
 				status = (item.passed ? 'passed' : 'failed');
+				stats[status]++; 
 			} catch (err) {
 				status = 'error';
+				stats.error++;
 				if (!item.fact) {
 					item.fact = JSON.stringify(err, Object.getOwnPropertyNames(err));
 				}
@@ -60,7 +73,7 @@ async function run() {
 			eDetails.querySelector('.runner').innerHTML = String(runner);
 			let verify = JSON.stringify(item.verify, null, 2);
 			if (status === 'passed') {
-				eDetails.querySelector('.success').style.display = 'block';
+				eDetails.querySelector('.passed').style.display = 'block';
 			} else {
 				// Выделяем отличающиеся строки цветом
 				let processedLines1 = verify.split('\n');
@@ -79,7 +92,35 @@ async function run() {
 			}
 			eDetails.querySelector('.verify').innerHTML = verify;
 			eList.append(eItem);
-		});
+		}
+		const total = stats.passed + stats.failed + stats.error;
+		eStatPassed.innerHTML = `passed: ${Number(stats.passed / total * 100).toFixed(1)}% (${stats.passed} из ${total})`;
+		eStatFailed.innerHTML = `failed: ${stats.failed > 0 ? `${Number(stats.failed / total * 100).toFixed(1)}% (${stats.failed})` : 'нет'}`;
+		eStatError.innerHTML = `error: ${stats.error > 0 ? `${Number(stats.error / total * 100).toFixed(1)}% (${stats.error})` : 'нет'}`;
+		if (stats.passed) eStatPassed.classList.remove('no-items'); else eStatPassed.classList.add('no-items');
+		if (stats.failed) eStatFailed.classList.remove('no-items'); else eStatFailed.classList.add('no-items');
+		if (stats.error) eStatError.classList.remove('no-items'); else eStatError.classList.add('no-items');
+	}
+}
+
+let oExpanded = {
+	passed: false,
+	failed: false,
+	error: false,
+};
+document.onClickExpandCollapse = function(eExpandCollapseButton) {
+	const type = (eExpandCollapseButton.classList.contains('passed') ? 'passed' : (eExpandCollapseButton.classList.contains('failed') ? 'failed' : 'error'));
+	const expanded = oExpanded[type] = !oExpanded[type];
+	eContent.querySelectorAll('.item-header').forEach(eItemHeader => {
+		const itemType = eItemHeader.querySelector('.status').innerText;
+		if (itemType === type) {
+			const eItemDetails = eItemHeader.parentNode.querySelector('.item-details');
+			if (expanded) {
+				if (eItemDetails.style.display === 'none') eItemHeader.click();
+			} else {
+				if (eItemDetails.style.display !== 'none') eItemHeader.click();
+			}
+		}
 	});
 }
 
@@ -109,17 +150,7 @@ document.onClickShowCode = function(eButton) {
 	}
 	const code = eSection && eSection.__testsGroup && eSection.__testsGroup.code;
 	if (code) {
-		/*let lines = String(code).split('\n').slice(1, -1);
-		while (lines.length && lines[0] === '') {
-			lines = lines.slice(1);
-		}
-		if (lines.at(-1).includes('prepareTests')) lines = lines.slice(0, -1);
-		const processedLines = lines.map(line => {
-			if (line.startsWith('\t')) return line.substring(1);
-			if (line.startsWith('  ')) return line.substring(2);
-			return line;
-		});*/
-		ePre.innerHTML = code;//processedLines.join('\n');
+		ePre.innerHTML = code;
 		ePre.style.display = 'block';
 		eButton.textContent = 'Скрыть код';
 		eButton.classList.add('active');
