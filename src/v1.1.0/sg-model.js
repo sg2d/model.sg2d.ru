@@ -3,7 +3,7 @@
 /**
  * SGModel - Библиотека-класс для структурирования веб-приложений с помощью биндинг-моделей. Это упрощенный аналог Backbone.js! Библиотека хорошо адаптирована для наследования классов. Может использоваться как в браузере, так и на Node.js.
  * @english A library class for structuring web applications using binding models. This is a simplified version of Backbone.js! The library is well adapted for inheritance classes. Can be used both in the browser and on Node.js.
- * @version 1.0.10
+ * @version 1.1.0
  * @requires ES2024+ (ES15+)
  * @link https://github.com/sg2d/model.sg2d.ru
  * @license SGModel may be freely distributed under the MIT license
@@ -16,7 +16,7 @@ class SGModel {
  	 * @readonly
 	 * @type {string}
 	 */
-	static version = (typeof __SGMODEL_VERSION__ !== 'undefined' ? __SGMODEL_VERSION__ : '1.0.10'); // eslint-disable-line no-undef
+	static version = (typeof __SGMODEL_VERSION__ !== 'undefined' ? __SGMODEL_VERSION__ : '1.1.0'); // eslint-disable-line no-undef
 
 	/**
 	 * @readonly
@@ -97,13 +97,13 @@ class SGModel {
 
 	/**
 	 * Allow implicit property declaration (the type of these properties is determined automatically based on how these properties are applied in the view)
-	 * @announcement v1.1+
+	 * @announcement v1.2?
 	 */
-	//static allowUndeclaredProperties = false; // override
+	//static allowUndeclaredProperties = true; // override
 
 	/**
 	 * Аutomatically detected properties (to allow implicit declaration of properties, the static property allowUndeclaredProperty must be set to true)
-	 * @announcement v1.1+
+	 * @announcement v1.2?
 	 * @protected
 	 */
 	//static __autoDetectedProperties = {};
@@ -140,7 +140,7 @@ class SGModel {
 	//static data;
 
 	/**
-	 * Объект и методы промиса, отвечающие за инициализацию (результат this.initialize())
+	 * Объект promise и функции resolve() и reject() промиса, отвечающие за инициализацию
 	 * @public
 	 * @type {object}
 	 */
@@ -151,8 +151,7 @@ class SGModel {
 	 * @type {boolean}
 	 */
 	initialized = (
-		this.initialization.promise.__sg_instance = this,
-		this.initialization.promise.then(() => (this.initialized = true)),
+		//this.initialization.promise.__sg_instance = this, // @debug
 		false
 	);
 
@@ -160,6 +159,7 @@ class SGModel {
 	 * Вызывается сразу после создания экземпляра. Переопределяется в классах потомках.
 	 * @overriding
 	 * @public
+	 * @returns {undefined|boolean}
 	 */
 	async initialize() {
 		// no code
@@ -176,92 +176,6 @@ class SGModel {
 	 */
 	destroyed = false;
 
-	static #nextUID() {
-		return ++SGModel.#uid;
-	}
-
-	/**
-	 * @private
-	 */
-	#onChangeCallbacks = {};
-
-	static #vcResult = { // @aos (for acceleration and optimization, but synchronously)
-		value: null,
-		previous: null,
-		changed: false,
-		isComplexType: false,
-	};
-
-	/** @private */
-	#on(name, func, context = void 0, data = void 0, flags = 0) {
-		let callbacks = this.#onChangeCallbacks[name];
-		if (!callbacks) callbacks = this.#onChangeCallbacks[name] = [];
-		callbacks.push({f: func, c: context, d: data});
-		if (flags & SGModel.FLAG_IMMEDIATELY) {
-			func.call(context ? context : this, data ? data : this.#data[name], this.#data[name], name);
-		}
-	}
-	
-	/** @private */
-	#off(name, func) {
-		const callbacks = this.#onChangeCallbacks[name];
-		if (callbacks) {
-			if (func) {
-				for (let i = 0; i < callbacks.length; i++) {
-					if (callbacks[i].f === func) {
-						callbacks.splice(i, 1);
-						i--;
-					}
-				}
-			} else {
-				callbacks.length = 0;
-			}
-		}
-	}
-
-	/**
-	 * @private
-	 * @param {boolean} changed 
-	 * @returns {boolean|Promise} 
-	 */
-	#changedAndCallbacks(changed, name, valueOrCollection, previous, options = SGModel.OBJECT_EMPTY, flags = 0) {
-		if (changed) {
-			this.changed = true;
-		}
-		if (changed || (flags & SGModel.FLAG_FORCE_CALLBACKS)) {
-			if ((flags & SGModel.FLAG_NO_CALLBACKS) === 0) {
-				let callbacks = this.#onChangeCallbacks[name];
-				if (callbacks) {
-					previous = (options.previous_value !== void 0 ? options.previous_value : previous);
-					if (flags & SGModel.FLAG_OFF_MAY_BE) {
-						callbacks = SGModel.clone(callbacks);
-					}
-					let _val = void 0, i;
-					for (i in callbacks) {
-						const callback = callbacks[i];
-						_val = callback.f.call(
-							callback.c ? callback.c : this,
-							callback.d ? callback.d : valueOrCollection,
-							previous,
-							name,
-						);
-						if (_val !== void 0) {
-							previous = _val;
-						}
-					}
-				}
-				if (this.onAllCallback) {
-					this.onAllCallback();
-				}
-			}
-			if (this.constructor.autoSave === true) {
-				return this.save();
-			}
-			return true;
-		}
-		return false;
-	}
-	
 	/**
 	 * SGModel constructor
 	 * @param {object} [properties={}] Properties
@@ -364,8 +278,11 @@ class SGModel {
 				throw new Error(`Error! Properties "${prop}" doen't exists! (may not be registered in defaultProperties)`);
 			},
 			deleteProperty(properties, prop) {
-				self.#off(prop);
-				delete properties[prop];
+				if (prop in properties) {
+					self.#off(prop);
+					delete properties[prop];
+				}
+				return true;
 			},
 		});
 
@@ -373,30 +290,30 @@ class SGModel {
 			this.constructor.data = this.data;
 		}
 		
-		// Дёргаем initialize() экземпляра после выполнения конструктора, что бы инициализировались приватные свойства, и базовой инициализации (для SGModelView актуально)! См. также #deferredProperties в SGModelView.
+		// Дёргаем __initialize() и initialize() экземпляра после выполнения конструктора, что бы инициализировались приватные свойства (для SGModelView актуально)! См. также #deferredProperties в SGModelView.
 		setTimeout(async () => {
-			await this.__initialize();
-			this.initialize();
-		}, 0);
+			this.__initialize(() => {
+				const result = this.initialize();
+				if (result instanceof Promise) {
+					result.then((result) => (this.initialized = (typeof result === 'boolean' ? result : true)));
+				} else {
+					this.initialized = (typeof result === 'boolean' ? result : true);
+				}
+			});
+		});
 	}
 	
 	/**
 	 * Called when an instance is created.
 	 * @protected
 	 * @overriding Переопределяется в SGModelView
+	 * @param {function} callback
 	 * @return {Promise}
 	 */
-	async __initialize() {
+	async __initialize(callback) {
+		callback();
 		return this.initialization.resolve(true);
 	}
-
-	/**
-	 * @overriding
-	 * @returns {boolean}
-	 */
-	/*async initialize() {
-		return true;
-	}*/
 
 	/**
 	 * Sets the default property values. Overriden
@@ -405,6 +322,61 @@ class SGModel {
 	defaults() {
 		return SGModel.clone(this.constructor.defaultProperties);
 	}
+
+	/**
+	 * @private
+	 */
+	#onChangeCallbacks = {};
+
+	/**
+	 * @private
+	 * @param {boolean} changed 
+	 * @returns {boolean|Promise} 
+	 */
+	#changedAndCallbacks(changed, name, valueOrCollection, previous, options = SGModel.OBJECT_EMPTY, flags = 0) {
+		if (changed) {
+			this.changed = true;
+		}
+		if (changed || (flags & SGModel.FLAG_FORCE_CALLBACKS)) {
+			if ((flags & SGModel.FLAG_NO_CALLBACKS) === 0) {
+				let callbacks = this.#onChangeCallbacks[name];
+				if (callbacks) {
+					previous = (options.previous_value !== void 0 ? options.previous_value : previous);
+					if (flags & SGModel.FLAG_OFF_MAY_BE) {
+						callbacks = SGModel.clone(callbacks);
+					}
+					let _val = void 0, i;
+					for (i in callbacks) {
+						const callback = callbacks[i];
+						_val = callback.f.call(
+							callback.c ? callback.c : this,
+							callback.d ? callback.d : valueOrCollection,
+							previous,
+							name,
+						);
+						if (_val !== void 0) {
+							previous = _val;
+						}
+					}
+				}
+				if (this.onAllCallback) {
+					this.onAllCallback();
+				}
+			}
+			if (this.constructor.autoSave === true) {
+				return this.save();
+			}
+			return true;
+		}
+		return false;
+	}
+
+	static #vcResult = { // @aos (for acceleration and optimization, but synchronously)
+		value: null,
+		previous: null,
+		changed: false,
+		isComplexType: false,
+	};
 
 	/**
 	 * Принимает имя свойства, новое и предыдущее значения, проверяет/модифицирует значение и возвращает откорректированное значение +признак изменения
@@ -897,6 +869,16 @@ class SGModel {
 		return SGModel.TYPE_ANY;
 	}
 
+	/** @private */
+	#on(name, func, context = void 0, data = void 0, flags = 0) {
+		let callbacks = this.#onChangeCallbacks[name];
+		if (!callbacks) callbacks = this.#onChangeCallbacks[name] = [];
+		callbacks.push({f: func, c: context, d: data});
+		if (flags & SGModel.FLAG_IMMEDIATELY) {
+			func.call(context ? context : this, data ? data : this.#data[name], this.#data[name], name);
+		}
+	}
+
 	/**
 	 * Set trigger for property change
 	 * @param {string|array} name
@@ -922,11 +904,6 @@ class SGModel {
 		}
 	}
 	
-	/** Check if there is a property in the model */
-	has(name) {
-		return Object.hasOwn(this.#data, name);
-	}
-	
 	/**
 	 * Set trigger to change any property
 	 * @param {function} func
@@ -937,6 +914,23 @@ class SGModel {
 		this.onAllCallback = func;
 		if (flags & SGModel.FLAG_IMMEDIATELY) {
 			this.onAllCallback();
+		}
+	}
+
+	/** @private */
+	#off(name, func) {
+		const callbacks = this.#onChangeCallbacks[name];
+		if (callbacks) {
+			if (func) {
+				for (let i = 0; i < callbacks.length; i++) {
+					if (callbacks[i].f === func) {
+						callbacks.splice(i, 1);
+						i--;
+					}
+				}
+			} else {
+				callbacks.length = 0;
+			}
 		}
 	}
 
@@ -959,6 +953,11 @@ class SGModel {
 				this.#onChangeCallbacks[f].length = 0;
 			}
 		}
+	}
+
+	/** Check if there is a property in the model */
+	has(name) {
+		return Object.hasOwn(this.#data, name);
 	}
 	
 	/**
@@ -1445,6 +1444,10 @@ class SGModel {
 	static off = function(...args) {
 		return this.__instance && this.__instance.off(...args);
 	};
+
+	static #nextUID() {
+		return ++SGModel.#uid;
+	}
 }
 
 if (typeof globalThis === 'object') globalThis.SGModel = SGModel;

@@ -66,23 +66,36 @@ pre .warn {
 }
 
 /* Items */
-ul {
+section.tests-group h6 a {
+	padding-left: 0.5rem;
+	padding-right: 0.5rem;
+	text-decoration: none;
+	color: inherit;
+}
+section.tests-group h6:hover a {
+	display: inline !important;
+}
+section.tests-group h6 a:hover {
+	color: red;
+}
+section.tests-group ul {
 	list-style-type: none;
 	padding-left: 1rem;
 }
-ul > li {
+section.tests-group ul > li {
 	border: 1px solid transparent;
 }
-ul > li:hover {
+section.tests-group ul > li:hover {
 	filter: brightness(0.95);
 }
-ul > li.expanded {
+section.tests-group ul > li.expanded {
 	border: 1px dotted gray;
 	border-radius: 10px;
 	background-color: #fff;
 }
 
 button.show-code, button.show-description {
+	margin-left: 0.25rem;
 	border-radius: 5px;
 	font-size: 0.7rem;
 }
@@ -104,10 +117,25 @@ pre.code, pre.description {
 ul > li .item-details .verify-fact pre.in-out {
 	max-height: 400px;
 }
-ul > li .item-header { cursor: pointer; font-weight: bold; }
-ul > li .item-header:hover { filter: drop-shadow(0 0 5px #0ff) drop-shadow(0 0 10px #0ff); }
-/*ul > li .item-header:hover { animation: pulse 2s infinite; }*/
-/*ul > li .item-header:hover { animation: glitch 0.5s infinite; }*/
+ul > li .item-header {
+	cursor: pointer;
+	font-weight: bold;
+}
+ul > li .item-header:hover {
+	filter: drop-shadow(0 0 5px #0ff) drop-shadow(0 0 10px #0ff); /*ul > li .item-header:hover { animation: pulse 2s infinite; }*/ /*ul > li .item-header:hover { animation: glitch 0.5s infinite; }*/
+}
+ul > li .item-header a {
+	padding-left: 0.5rem;
+	padding-right: 0.5rem;
+	text-decoration: none;
+	color: inherit;
+}
+ul > li .item-header:hover a {
+	display: inline !important;
+}
+ul > li .item-header a:hover {
+	color: red;
+}
 ul > li .item-header span.close {
 	float: right;
 	padding-right: 5px;

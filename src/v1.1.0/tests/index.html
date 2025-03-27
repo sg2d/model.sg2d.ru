@@ -1,17 +1,17 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title>SG2D Model - Тесты</title>
+    <title>SGModel & SGModelView - Автотесты</title>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-		<script type="module" charset="utf-8" src="tests.js" defer></script>
+		<script type="module" charset="utf-8" src="main.js" defer></script>
 		<link rel="icon" type="image/x-icon" href="/favicon.ico">
 		<link type="text/css" href="/res/bootstrap/bootstrap.min.css" rel="stylesheet">
 		<link type="text/css" href="main.css" rel="stylesheet">
   </head>
   <body style="padding: 10px;">
 		<div class="header">
-			<div><h5>Автотесты для SGModel & SGModelView v1.0.10</h5></div>
+			<div><h5>Автотесты для SGModel & SGModelView <u>v0.0.0</u></h5></div>
 			<div class="global-controls">
 				<span class="statistics">
 					<span class="btn-collapse-expand passed no-items" onclick="onClickExpandCollapse(this);">passed: 0% (0 из 0)</span>
@@ -24,17 +24,19 @@
 		<!--<button onclick="onClickStartButton(this);">Запустить!</button>-->
 		<div id="content"></div>
 		<template id="tmp_tests_group">
-			<h6>$TITLE$
-				<button class="show-code" style="display: none;" onclick="onClickShowCode(this);">Показать код</button>
-				<button class="show-description" style="display: none;" onclick="onClickShowDescription(this);">Показать описание</button>
+			<!--<section class="tests-group" hint="этот тег создаётся в main.js">-->
+			<h6>$TITLE$ <a href="#" style="display: none">&para;</a>
+				<button class="show-code" style="display: none; float: right" onclick="onClickShowCode(this);">Показать код</button>
+				<button class="show-description" style="display: none; float: right" onclick="onClickShowDescription(this);">Показать описание</button>
 			</h6>
 			<pre class="code" style="display: none"></pre>
 			<pre class="description" style="display: none"></pre>
 			<ul></ul>
+			<!--</section>-->
 		</template>
 		<template id="tmp_tests_item">
 			<li>
-				<div class="item-header" onclick="onClickItemHeader(this);"><span class="ordnum"></span> <span><span class="status">loading...</span> <span class="title"></span></span><span class="close" style="display: none;">x</span></div>
+				<div class="item-header" onclick="onClickItemHeader(this);"><span class="ordnum"></span> <span><span class="status">loading...</span> <span class="title"></span></span><span class="close" style="display: none;">x</span> <a href="#" style="display: none">&para;</a></div>
 				<div class="item-details" style="display: none">
 					&nbsp;Входные данные: <code class="input-data"></code><br/>
 					&nbsp;Раннер: <code class="runner"></code><br/>

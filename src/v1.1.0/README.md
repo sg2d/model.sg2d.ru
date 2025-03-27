@@ -8,10 +8,10 @@
 
 *Пример использования: [Перейти на страницу примера](/example/)*
 
-#### Исходники (версия 1.0.10):
+#### Исходники (версия 1.1):
 
-* [sg-model.js (43 KB)](https://raw.githubusercontent.com/sg2d/model.sg2d.ru/master/src/sg-model.js)
-* [sg-model-view.js (49 KB)](https://raw.githubusercontent.com/sg2d/model.sg2d.ru/master/src/sg-model-view.js)
+* [sg-model.js (48 KB)](https://model.sg2d.ru/src/v1.1.0/sg-model.js)
+* [sg-model-view.js (58 KB)](https://model.sg2d.ru/src/v1.1.0/sg-model-view.js)
 
 ## Описание API
 
@@ -38,7 +38,7 @@
 	* [on(name, func, context = void 0, data = void 0, flags = 0)](#onname-func-context--void-0-data--void-0-flags--0)
 	* [off(name, func)](#offname-func)
 	* [trigger(name, value = void 0, flags = 0)](#triggername-value--void-0-flags--0)
-	* [cleartodefault()](#cleartodefault)
+	* [clearToDefaults()](#cleartodefaults)
 	* [clear()](#clear)
 	* [save()](#save)
 	* [getData(bDeleteEmpties = false)](#getdatabdeleteempties--false)
@@ -216,6 +216,7 @@ model.data.title = 'Title 1';
 ### async initialize()
 
 Вызывается сразу после создания экземпляра. Переопределяется в классах потомках.
+Обычно ничего не возвращает, но можно вернуть boolean-значение, причём как в промисе (`async initialize() {...}`), так и без него (`initialize() {...}`), тогда это переопределит присваивание `this.initialized` в конструкторе, откуда вызывается метод. По умолчанию, если выбросов ошибок не было, `this.initialized` присваивается в `true`.
 
 ### changed = false
 

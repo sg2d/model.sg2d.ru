@@ -1,5 +1,8 @@
+import SGModel from './../sg-model.js';
 import simpleModelWithBasicTests from './modules/simple-model-with-basic-tests.js';
 import parsePgStrArrayTests from './modules/parse-pg-str-array-tests.js';
+import simpleModelViewWithBasicTests from './modules/simple-modelview-with-basic-tests.js';
+import deferredPropertiesTests from './modules/deferred-properties-tests.js';
 
 window.sleep = function(ms = 33) {
 	return new Promise(resolve => setTimeout(resolve, ms));
@@ -14,10 +17,20 @@ const eStatFailed = eStatistics.querySelector('.failed');
 const eStatError = eStatistics.querySelector('.error');
 let globalCounter = 0;
 
+document.title = `SGModel & SGModelView - Автотесты для v${SGModel.version}`;
+document.querySelector('.header h5 > u').innerText = `v${SGModel.version}`;
+
+// Очищаем комментарии на первом уровне
+eTemplateTestsGroup.content.childNodes.forEach(e => {
+	if (e.nodeType === Node.COMMENT_NODE) e.remove();
+});
+
 async function run() {
 	const testsGroups = [
 		await simpleModelWithBasicTests(),
 		await parsePgStrArrayTests(),
+		await simpleModelViewWithBasicTests(),
+		await deferredPropertiesTests(),
 	];
 
 	const stats = {
@@ -31,12 +44,14 @@ async function run() {
 		globalCounter++;
 		const eSection = document.createElement('SECTION');
 		eSection.__testsGroup = testsGroup;
+		eSection.classList.add('tests-group');
 		const eBlock =  eTemplateTestsGroup.content.cloneNode(true);
 		eSection.append(eBlock);
 		eContent.append(eSection);
 		const eHeader = eSection.querySelector('h6');
-		eHeader.childNodes[0].textContent = `${globalCounter}. ${testsGroup.title} `;
-		if (testsGroup.code) {
+		eHeader.childNodes[0].textContent = `${globalCounter}. ${testsGroup.title}`;
+		eHeader.querySelector('a').setAttribute('href', `#${testsGroup.code}`);
+		if (testsGroup.sourceCode) {
 			eHeader.querySelector('button.show-code').style.display = 'inline-block';
 		}
 		if (testsGroup.description) {
@@ -47,10 +62,13 @@ async function run() {
 		for (let testIndex = 0; testIndex < testsGroup.items.length; testIndex++) {
 			const item = testsGroup.items[testIndex];
 			const eItem =  eTemplateTestsItem.content.cloneNode(true);
-			const eStatus = eItem.querySelector('.status');
+			const eItemHeader = eItem.querySelector('.item-header');
+			const eStatus = eItemHeader.querySelector('.status');
 			const eDetails = eItem.querySelector('.item-details');
-			eItem.querySelector('.ordnum').innerText = `${globalCounter}.${++localCounter}.`;
-			eItem.querySelector('.title').innerHTML = (item.title ? ` &ndash; ${item.title}` : '');
+			eItemHeader.querySelector('a').setAttribute('href', `#${item.code}`);
+			eItemHeader.querySelector('a').onclick = stopPropagation;
+			eItemHeader.querySelector('.ordnum').innerText = `${globalCounter}.${++localCounter}.`;
+			eItemHeader.querySelector('.title').innerHTML = (item.title ? ` &ndash; ${item.title}` : '');
 			item.testsGroup = testsGroup;
 			const inData = item.input;
 			let status = '';
@@ -148,7 +166,7 @@ document.onClickShowCode = function(eButton) {
 		eButton.classList.remove('active');
 		return;
 	}
-	const code = eSection && eSection.__testsGroup && eSection.__testsGroup.code;
+	const code = eSection && eSection.__testsGroup && eSection.__testsGroup.sourceCode;
 	if (code) {
 		ePre.innerHTML = code;
 		ePre.style.display = 'block';
@@ -180,6 +198,10 @@ document.onClickShowDescription = function(eButton) {
 			eSection.querySelector('button.show-code').click();
 		}
 	}
+}
+
+function stopPropagation(evt) {
+	evt.stopPropagation();
 }
 
 run();

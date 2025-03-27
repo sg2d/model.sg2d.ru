@@ -5,7 +5,7 @@ import SGModel from './sg-model.js';
 /**
  * SGModelView - Микрофреймворк для создания MVVM-приложений. Надстройка над SGModel которая позволяет связать данные в инстансе с визуальными элементами HTML-документа (MVVM паттерн).
  * @english Microframework for creating MVVM applications. An add-on for SGModel that allows you to associate data in an instance with visual elements of an HTML document (MVVM pattern).
- * @version 1.0.10
+ * @version 1.1.0
  * @requires ES2024+ (ES15+)
  * @link https://github.com/sg2d/model.sg2d.ru
  * @license SGModelView may be freely distributed under the MIT license
@@ -48,6 +48,13 @@ class SGModelView extends SGModel {
 	 * @english Enable output of UUID, class name and __uid in the sg-uuid attribute of the root DOM element of view.
 	 */
 	static enablePrintingUUIDClass = true;
+
+	/**
+	 * Переменная создаётся для каждого класа-потомка (this.constructor.initialized)
+	 * @type {boolean}
+	 * @readonly
+	 */
+	/*static initialized = false;*/
 
 	/**
 	 * Для вывода экземпляров представлений всех классов, унаследованных от SGModelView, в том порядке, в котором вызывались конструкторы.
@@ -189,25 +196,25 @@ class SGModelView extends SGModel {
 	 * @see {string} [static autoLoadBind.templateId]
 	 * @see {string} [static autoLoadBind.viewId] or [static autoLoadBind.containerId]
 	 * @see {object} [static templates]
+	 * @param {function} callback
 	 * @return {Promise}
 	 */
-	async __initialize() {
+	async __initialize(callback) {
 
 		// Сюда приходим после полного выполнения конструктора в SGModel
 		// @english: We come here after complete execution of the constructor in SGModel
 
-		// Свойства в #propertyElementLinks должны быть добавлены в той же последовательности, в какой они объявлены! Т.о. при первоначальном рефреше контролов можно, например, решить проблему dropdown-спискоа, в которых при задании текущего select-значения в момент инициализации (например, из localStorage) не обновляется innerHTML контрола (<button>) innerHTML'ом пункта (<li>).
+		// Свойства в #propertyElementLinks должны быть добавлены в той же последовательности, в какой они объявлены! Т.о. при первоначальном рефреше контролов можно, например, решить проблему dropdown-списков, в которой при задании текущего select-значения в момент инициализации (например, из localStorage) innerHTML контрола (<button>) должен обновиться innerHTML'ом пункта (<li>).
 		for (let propName in this.data) {
 			this.#propertyElementLinks[propName] = [];
 		}
 
-		this.constructor.initialized = 0;
 		if (!this.constructor.__pInitialize) {
 			this.constructor.__pInitialize = this.constructor.initialize(this).then((result) => {
-				this.constructor.initialized = 1;
+				this.constructor.initialized = true;
 				return result;
 			}, (err) => {
-				this.constructor.initialized = -1;
+				this.constructor.initialized = false;
 				return err;
 			});
 		}
@@ -244,7 +251,7 @@ class SGModelView extends SGModel {
 						}
 					} else {
 						eContent = document.createElement('DIV');
-						if (this.constructor.initialized === 1) {
+						if (this.constructor.initialized === true) {
 							eContent.innerText = `Error! Template with autoLoadBind.templateId = "${autoLoadBind.templateId}" not found! View class: ${this.constructor.name}`;
 						} else {
 							eContent.innerText = `Еrror occurred while initializing the view of ${this.constructor.name}!`;
@@ -265,8 +272,8 @@ class SGModelView extends SGModel {
 							eTarget.append(eContent);
 						}
 					}
-					if (this.constructor.initialized === 1) {
-						this.bindHTML(this.eView, true);
+					if (this.constructor.initialized === true) {
+						this.bindHTML(this.eView);
 					} else {
 						console.error(`Binding was not completed because initialization failed! View class: ${this.constructor.name}`);
 					}
@@ -279,8 +286,8 @@ class SGModelView extends SGModel {
 				const eView = this.#findElementBySGClass(this.constructor.name);
 				if (eView) {
 					this.eView = eView;
-					if (this.constructor.initialized === 1) {
-						this.bindHTML(this.eView, true);
+					if (this.constructor.initialized === true) {
+						this.bindHTML(this.eView);
 					} else {
 						console.error(`Binding was not completed because initialization failed! View class: ${this.constructor.name}`);
 					}
@@ -292,7 +299,10 @@ class SGModelView extends SGModel {
 				}
 			}
 			return true;
-		}).then(this.initialization.resolve);
+		}).then(() => {
+			callback();
+			this.initialization.resolve();
+		});
 
 		if (isFirstPWR) {
 			this.constructor.__pInitialize.then(this.#prrSeqConstructor.resolve);
@@ -358,12 +368,12 @@ class SGModelView extends SGModel {
 	 * Data and view binding (MVVM)
 	 * @param {string|HTMLElement} [root] Example "#my_div_id" or HTMLElement object
 	 */
-	bindHTML(root = void 0, isAutoLoadBind = false) {
+	bindHTML(root = void 0) {
 		if (document.readyState === 'loading') {
 			throw new Error('Error in this.bindHTML()! document.readyState = loading!');
 		}
-		if (!isAutoLoadBind && !this.initialized) {
-			throw new Error(`Error in this.bindHTML()! Manual binding must be done after the view is initialized, example: return super.initialize().then(() => { this.bindHTML("body"); });`);
+		if (!this.constructor.initialized) {
+			throw new Error('Error in this.bindHTML()! Manual binding must be done inside the initialize() method');
 		}
 		this.#bindHTML(root);
 	}
@@ -1199,8 +1209,17 @@ class SGModelView extends SGModel {
 	 * Overriding the **SGModel->on()** method
 	 */
 	on(name, func, context = void 0, data = void 0, flags = 0) {
-		if (this.#deferredProperties.has(name)) {
-			flags = flags | SGModel.FLAG_IMMEDIATELY;
+		if (Array.isArray(name)) {
+			for (let index = 0; index < name.length; index++) {
+				if (this.#deferredProperties.has(name[index])) {
+					flags = flags | SGModel.FLAG_IMMEDIATELY;
+					break;
+				}
+			}
+		} else {
+			if (this.#deferredProperties.has(name)) {
+				flags = flags | SGModel.FLAG_IMMEDIATELY;
+			}
 		}
 		return super.on.call(this, name, func, context, data, flags);
 	}
