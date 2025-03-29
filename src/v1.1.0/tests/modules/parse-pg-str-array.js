@@ -1,11 +1,13 @@
 import SGModel from './../../sg-model.js';
 
-function runner() {
+function creator() {
 	return prepareTests();
 }
 
 function prepareTests() {
 	return {
+		class: null,
+		instance: null,
 		code: 'sgmodel-static-parsepgstrarray',
 		title: 'SGModel: static parsePgStrArray(line)',
 		sourceCode: SGModel.parsePgStrArray,
@@ -54,4 +56,4 @@ INSERT INTO wob_tasks (id, code, description, wiki_links, doc_links) OVERRIDING 
 	};
 };
 
-export default runner;
+export default creator;

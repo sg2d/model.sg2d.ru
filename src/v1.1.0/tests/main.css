@@ -78,6 +78,14 @@ section.tests-group h6:hover a {
 section.tests-group h6 a:hover {
 	color: red;
 }
+section.tests-group .view {
+	padding: 5px;
+	border: 1px outset #aaa;
+	border-radius: 5px;
+	background-color: #eee;
+	min-height: 1rem;
+	min-width: 1rem;
+}
 section.tests-group ul {
 	list-style-type: none;
 	padding-left: 1rem;
@@ -94,15 +102,15 @@ section.tests-group ul > li.expanded {
 	background-color: #fff;
 }
 
-button.show-code, button.show-description {
+button.show-view, button.show-code, button.show-description {
 	margin-left: 0.25rem;
 	border-radius: 5px;
 	font-size: 0.7rem;
 }
-button.show-code.active, button.show-description.active {
+button.show-view.active, button.show-code.active, button.show-description.active {
 	background-color: #ffa;
 }
-button.show-code:hover, button.show-description:hover {
+button.show-view:hover, button.show-code:hover, button.show-description:hover {
 	filter: brightness(1.1);
 	color: green;
 	border-color: #999;
@@ -119,7 +127,6 @@ ul > li .item-details .verify-fact pre.in-out {
 }
 ul > li .item-header {
 	cursor: pointer;
-	font-weight: bold;
 }
 ul > li .item-header:hover {
 	filter: drop-shadow(0 0 5px #0ff) drop-shadow(0 0 10px #0ff); /*ul > li .item-header:hover { animation: pulse 2s infinite; }*/ /*ul > li .item-header:hover { animation: glitch 0.5s infinite; }*/

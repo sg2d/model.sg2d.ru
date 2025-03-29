@@ -1,6 +1,6 @@
 import SGModelView from './../../sg-model-view.js';
 
-async function runner() {
+async function creator() {
 	class CustomView extends SGModelView {
 		static defaultProperties = {
 			rate: 0,
@@ -13,24 +13,25 @@ async function runner() {
 		}
 	}
 	const view = new CustomView({ uuid: '00000000-0000-0000-0000-7bc5a6105853' });
-	// Делаем синхронное присваивание (сразу после вызова конструктора new CustomView())
-	view.data.rate = 3000;
+	view.data.rate = 3000; // синхронное присваивание (сразу после вызова конструктора new CustomView())
 	view.data.hours = 8 * 20;
-	const beforeValue = view.data.salary; // Здесь д.б. пока ещё 0
-	await view.initialization.promise;
-	const afterValue = view.data.salary;
+	const beforeValue = view.data.salary; // здесь д.б. пока ещё 0
+	await view.initialization.promise; // ждём инициализацию
+	const afterValue = view.data.salary; // проверяем
 	return prepareTests(CustomView, view, beforeValue, afterValue);
 }
 
 function prepareTests(CustomView, view, beforeValue, afterValue) {
 	return {
+		class: CustomView,
+		instance: view,
 		code: 'sgmodelview-deferred-properties-checkers',
 		title: 'SGModelView: проверка отложенной обработки изменения значения свойств при инициализации инстанса',
-		sourceCode: runner,
+		sourceCode: creator,
 		items: [
 			{
 				code: 'sgmodelview-deferred-properties__basic',
-				title: 'подписчик this.on() выполнит отложенный расчёт this.data.salary',
+				title: 'подписчик this.on() выполнится сразу при его регистрации (создании)',
 				input: view,
 				runner: async () => ({ beforeValue: beforeValue, afterValue: afterValue }),
 				verify: { beforeValue: 0, afterValue: 480000 },
@@ -39,4 +40,4 @@ function prepareTests(CustomView, view, beforeValue, afterValue) {
 	};
 };
 
-export default runner;
+export default creator;

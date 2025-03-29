@@ -61,7 +61,7 @@
 		* [static templates = {...}](#static-templates--)
 		* [static autoLoadBind = {...}](#static-autoloadbind--)
 	* [Свойства экземпляра SGModelView](#свойства-экземпляра-sgmodelview)
-		* [eView](#eview)
+		* [this.$view](#thisview)
 	* [Методы экземпляра SGModelView](#методы-экземпляра-sgmodelview)
 		* [bindHTML(root=void 0)](#bindhtmlrootvoid-0)
 	* [Атрибуты в HTML-документе](#атрибуты-в-html-документе)
@@ -505,24 +505,29 @@ for (let i = 0; i < 10; i++) {
 
 Есть следующие способы инициализации вьюхи:
 
-* const myView = new MyModelView(); ...;  myView.bindHTML('#my_view_id'); // Ручная инициализация и связывание с данными (без template-шаблонов)
+* const view = new CustomView(); ...; view.bindHTML('#my_view_id'); // Ручная инициализация и связывание с данными (без template-шаблонов)
+* static autoLoadBind = { srcHTML }; ...; view.bindHTML('#my_view_id', true); // Ручная инициализация и связывание с данными (используется template-шаблон по умолчанию, который создаётся т.к. задан `srcHTML`)
+* static autoLoadBind = { srcHTML }; ...; view.bindHTML('#my_view_id', 'tmp_filters'); // Ручная инициализация и связывание с данными (используется определённый template-шаблон, который создаётся т.к. задан `srcHTML`)
 * static autoLoadBind = { srcHTML, templateId, containerId|viewId }; // Автоматическая загрузка контента вьюхи и связывание
+* static autoLoadBind = { templateId, containerId|viewId }; // Автоматическая загрузка контента вьюхи и связывание, при этом template-шаблон уже должен существовать на странице (`srcHTML` не задан)
 * new MyModeView(); <div sg-model="MyModeView">...<span>Content...</span>...</div> // Использование атрибута **sg-model** на корневом элементе вьюхи, контент непосредственно в корневом элементе вьюхи (например, всё одном html-файле)
-* Атрибут **sg-model** на корневом элементе вьюхи, контент в отдельном html-файле в виде template-шаблона: class MyModeView extends SGModeView { autoLoadBind = { srcHTML: './templates/my-template1.html' } }
+* Атрибут **sg-model** на корневом элементе вьюхи, контент в отдельном html-файле в виде template-шаблона: class CustomView extends SGModeView { autoLoadBind = { srcHTML: './templates/my-template1.html' } }
 
 ## Свойства экземпляра SGModelView
 
 Свойства экземпляра SGModelView помимо свойств экземпляра SGModel:
 
-### eView
+### this.$view
 
 Корневой DOM-элемент вьюхи инстанса SGModelView.
 
 ## Методы экземпляра SGModelView
 
-### bindHTML(root=void 0)
+### bindHTML(root = void 0, mTemplate = void 0)
 
-Связать вручную (если не указываются статические свойства htmlContainerId и htmlViewId) модель данных (экземпляр класса `SGModel->SGModelView`) с HTML-документом (его частью, например, с формой). При изменении значений в HTML-элементах автоматически обновляются данные в экземпляре модели и наоборот.
+Ручное связвание данных (свойств в `this.data`) с HTML-документом (его частью, например, с формой) - теперь при изменении значений в HTML-элементах автоматически обновляются данные в экземпляре модели и наоборот.
+Если одновременно заданы статические свойства `autoLoadBind.templateId` и (`autoLoadBind.viewId` || `autoLoadBind.$container` || `autoLoadBind.containerId`), то `bindHTML()` выполняется автоматически.
+Параметр `mTemplate` позволяет сразу же вывести содержимое шаблона, загруженного, например, с указанием пути к шаблону (или сразу контента шаблона) `autoLoadBind.srcHTML`, но без других заданных директив в объекте `autoLoadBind`.
 
 ```js
 initialize()

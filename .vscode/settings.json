@@ -4,5 +4,6 @@
   "editor.detectIndentation": false,
   "files.eol": "\n",
   "files.encoding": "utf8",
-  "search.useIgnoreFiles": true
+  "search.useIgnoreFiles": true,
+	"css.validate": false
 }

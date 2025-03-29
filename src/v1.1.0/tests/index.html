@@ -26,11 +26,13 @@
 		<template id="tmp_tests_group">
 			<!--<section class="tests-group" hint="этот тег создаётся в main.js">-->
 			<h6>$TITLE$ <a href="#" style="display: none">&para;</a>
+				<button class="show-view" style="display: none; float: right" onclick="onClickShowView(this);">Показать представление</button>
 				<button class="show-code" style="display: none; float: right" onclick="onClickShowCode(this);">Показать код</button>
 				<button class="show-description" style="display: none; float: right" onclick="onClickShowDescription(this);">Показать описание</button>
 			</h6>
 			<pre class="code" style="display: none"></pre>
 			<pre class="description" style="display: none"></pre>
+			<div class="view" style="display: none"></div>
 			<ul></ul>
 			<!--</section>-->
 		</template>

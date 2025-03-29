@@ -1,8 +1,9 @@
 import SGModel from './../sg-model.js';
-import simpleModelWithBasicTests from './modules/simple-model-with-basic-tests.js';
-import parsePgStrArrayTests from './modules/parse-pg-str-array-tests.js';
-import simpleModelViewWithBasicTests from './modules/simple-modelview-with-basic-tests.js';
-import deferredPropertiesTests from './modules/deferred-properties-tests.js';
+import SGModelView from './../sg-model-view.js';
+import simpleModelWithBasicTests from './modules/simple-model-with-basic.js';
+import parsePgStrArrayTests from './modules/parse-pg-str-array.js';
+import simpleModelViewWithBasicTests from './modules/simple-modelview-with-basic.js';
+import deferredPropertiesTests from './modules/deferred-properties.js';
 
 window.sleep = function(ms = 33) {
 	return new Promise(resolve => setTimeout(resolve, ms));
@@ -26,7 +27,7 @@ eTemplateTestsGroup.content.childNodes.forEach(e => {
 });
 
 async function run() {
-	const testsGroups = [
+	const testsGroups = window.testsGroups = [ // [{ class, instance, list }]
 		await simpleModelWithBasicTests(),
 		await parsePgStrArrayTests(),
 		await simpleModelViewWithBasicTests(),
@@ -57,6 +58,8 @@ async function run() {
 		if (testsGroup.description) {
 			eHeader.querySelector('button.show-description').style.display = 'inline-block';
 		}
+		const eShowViewButton = eSection.querySelector('button.show-view');
+		const eView = eSection.querySelector('.view');
 		const eList = eSection.querySelector('ul');
 		let localCounter = 0;
 		for (let testIndex = 0; testIndex < testsGroup.items.length; testIndex++) {
@@ -74,28 +77,45 @@ async function run() {
 			let status = '';
 			const runner = item.runner || item.testsGroup.runner;
 			try {
-				item.fact = await runner(item.input);
-				item.passed = (JSON.stringify(item.fact) === JSON.stringify(item.verify));
+				item.fact = await runner(item.input, eView);
+				item.passed = (JSON.stringify(item.fact, jsonStringifyReplacer) === JSON.stringify(item.verify, jsonStringifyReplacer));
 				status = (item.passed ? 'passed' : 'failed');
 				stats[status]++; 
 			} catch (err) {
 				status = 'error';
 				stats.error++;
-				if (!item.fact) {
-					item.fact = JSON.stringify(err, Object.getOwnPropertyNames(err));
-				}
+				item.fact = JSON.stringify(err, Object.getOwnPropertyNames(err));
+			}
+			if ((testsGroup.instance instanceof SGModelView) && (testsGroup.instance.$view) && (eShowViewButton.style.display === 'none')) {
+				eShowViewButton.style.display = 'block';
 			}
 			eStatus.innerText = status;
 			eStatus.classList.add(status);
-			eDetails.querySelector('.input-data').innerHTML = (inData instanceof Object && inData.constructor ? `instance of ${inData.constructor.name}` : JSON.stringify(inData));
+			try {
+				eDetails.querySelector('.input-data').innerHTML = (inData instanceof Object && inData.constructor ? `instance of ${inData.constructor.name}` : JSON.stringify(inData, jsonStringifyReplacer));
+			} catch (err) {
+				eDetails.querySelector('.input-data').innerHTML = `<b style="color: red">${err.message}</b>`;
+			}
 			eDetails.querySelector('.runner').innerHTML = String(runner);
-			let verify = JSON.stringify(item.verify, null, 2);
+			let verify;
+			try {
+				verify = JSON.stringify(item.verify, jsonStringifyReplacer, 2);
+			} catch (err) {
+				console.error(err);
+				verify = err.message;
+			}
 			if (status === 'passed') {
 				eDetails.querySelector('.passed').style.display = 'block';
 			} else {
 				// Выделяем отличающиеся строки цветом
 				let processedLines1 = verify.split('\n');
-				let processedLines2 = JSON.stringify(item.fact, null, 2).split('\n');
+				let processedLines2;
+				try {
+					processedLines2 = JSON.stringify(item.fact || '', jsonStringifyReplacer, 2).split('\n');
+				} catch (err) {
+					console.error(err);
+					processedLines2 = [err.message, ...err.stack.split('\n')];
+				}
 				const len = Math.max(processedLines1.length, processedLines2.length);
 				for (let index = 0; index < len; index++) {
 					if (index >= processedLines1.length || index >= processedLines2.length || processedLines1[index] !== processedLines2[index]) {
@@ -119,6 +139,10 @@ async function run() {
 		if (stats.failed) eStatFailed.classList.remove('no-items'); else eStatFailed.classList.add('no-items');
 		if (stats.error) eStatError.classList.remove('no-items'); else eStatError.classList.add('no-items');
 	}
+}
+
+function jsonStringifyReplacer(_, value) {
+	return (typeof value === 'bigint' ? `${value.toString()}n`: value);
 }
 
 let oExpanded = {
@@ -153,6 +177,20 @@ document.onClickItemHeader = function(e) {
 		} else {
 			eLi.classList.remove('expanded');
 		}
+	}
+}
+
+document.onClickShowView = function(eButton) {
+	const eSection = eButton.closest('SECTION');
+	const eView = eSection.querySelector('div.view');
+	if (eView.style.display !== 'none') {
+		eView.style.display = 'none';
+		eButton.textContent = 'Показать представление';
+		eButton.classList.remove('active');
+	} else {
+		eView.style.display = 'block';
+		eButton.textContent = 'Скрыть представление';
+		eButton.classList.add('active');
 	}
 }
 

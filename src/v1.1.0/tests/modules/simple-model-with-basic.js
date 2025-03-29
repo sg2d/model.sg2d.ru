@@ -2,7 +2,7 @@ import SGModel from './../../sg-model.js';
 
 let temp;
 
-async function runner() {
+async function creator() {
 
 	class CustomModel extends SGModel {
 		static defaultProperties = {
@@ -67,9 +67,11 @@ async function runner() {
 
 function prepareTests(CustomModel, model) {
 	return {
+		class: CustomModel,
+		instance: model,
 		code: 'sgmodel-basic-checkers',
 		title: 'SGModel: базовые проверки',
-		sourceCode: runner,
+		sourceCode: creator,
 		items: [
 			{
 				code: 'sgmodel-basic-checkers__auto-type-properties',
@@ -84,7 +86,7 @@ function prepareTests(CustomModel, model) {
 				input: model,
 				runner: async (srcObject) => srcObject.toJSON(),
 				verify: ( // @minify https://www.toptal.com/developers/javascript-minifier
-					temp = {data:{nullProperty2:null,numberProperty2:65536,stringProperty:"text (overridding!)",stringProperty2:"loading...",booleanProperty2:!0,xyProperty2:{x:192,y:64},objectProperty2:{},arrayProperty2:[],setProperty2:{},mapProperty2:{},_noSaveToStorageProperty2:"54321",nullProperty:null,numberProperty:3.141592654,booleanProperty:!1,xyProperty:{x:128,y:256},objectProperty:{},arrayProperty:[],setProperty:{},mapProperty:{},_noSaveToStorageProperty:12345},__class:{name:"CustomModel",__prototype:{name:"SGModel",version:"0.0.0",isNode:!1,isBrowser:!0}},__uid:1,initialized:!0,changed:!1,destroyed:!1,thisData1:"2024-12-31T21:00:00.000Z",thisData2:[1024,512,256,128,64,32,16,8,4,2],uuid:"00000000-0000-0000-0000-3066eb5090f6",options:{}},
+					temp = {data:{nullProperty2:null,numberProperty2:65536,stringProperty:"text (overridding!)",stringProperty2:"loading...",booleanProperty2:!0,xyProperty2:{x:192,y:64},objectProperty2:{},arrayProperty2:[],setProperty2:{},mapProperty2:{},_noSaveToStorageProperty2:"54321",nullProperty:null,numberProperty:3.141592654,booleanProperty:!1,xyProperty:{x:128,y:256},objectProperty:{},arrayProperty:[],setProperty:{},mapProperty:{},_noSaveToStorageProperty:12345},__class:{name:"CustomModel",__hash:"e3cfa7e6337aa573269b14acf6c5b15967e0712091483b950ec7a33f09b3231e",__prototype:{name:"SGModel",version:"0.0.0",isNode:!1,isBrowser:!0}},__uid:1,initialized:!0,changed:!1,destroyed:!1,thisData1:"2024-12-31T21:00:00.000Z",thisData2:[1024,512,256,128,64,32,16,8,4,2],uuid:"00000000-0000-0000-0000-3066eb5090f6",options:{}},
 					temp.__class.__prototype.version = SGModel.version,
 					temp
 				),
@@ -107,4 +109,4 @@ function prepareTests(CustomModel, model) {
 	};
 };
 
-export default runner;
+export default creator;
