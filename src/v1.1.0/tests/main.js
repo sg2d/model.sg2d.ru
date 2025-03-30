@@ -82,6 +82,7 @@ async function run() {
 				status = (item.passed ? 'passed' : 'failed');
 				stats[status]++; 
 			} catch (err) {
+				console.error(err);
 				status = 'error';
 				stats.error++;
 				item.fact = JSON.stringify(err, Object.getOwnPropertyNames(err));
@@ -94,6 +95,7 @@ async function run() {
 			try {
 				eDetails.querySelector('.input-data').innerHTML = (inData instanceof Object && inData.constructor ? `instance of ${inData.constructor.name}` : JSON.stringify(inData, jsonStringifyReplacer));
 			} catch (err) {
+				console.error(err);
 				eDetails.querySelector('.input-data').innerHTML = `<b style="color: red">${err.message}</b>`;
 			}
 			eDetails.querySelector('.runner').innerHTML = String(runner);

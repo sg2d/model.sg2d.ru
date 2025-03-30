@@ -880,7 +880,12 @@ class SGModel {
 				if (Array.isArray(value)) return SGModel.TYPE_ARRAY;
 				if (value instanceof Set) return SGModel.TYPE_SET;
 				if (value instanceof Map) return SGModel.TYPE_MAP;
-				if (value instanceof Object) return SGModel.TYPE_OBJECT;
+				if (value instanceof Object) {
+					if (Object.keys(value).every(k => ['x', 'y'].includes(k)) && Object.keys(value).length === 2) {
+						return SGModel.TYPE_XY;
+					}
+					return SGModel.TYPE_OBJECT;
+				}
 				return SGModel.TYPE_ANY;
 			}
 		}

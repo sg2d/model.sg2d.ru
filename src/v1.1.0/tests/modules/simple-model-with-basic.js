@@ -17,6 +17,8 @@ async function creator() {
 			xyProperty: { x: 128, y: 256 },
 			objectProperty: {},
 			arrayProperty: [],
+			objectNumbersProperty: { a: 1, b: 2, c: 3 },
+			arrayNumbersProperty: [1, 22, 333],
 			setProperty: new Set(),
 			mapProperty: new Map(),
 			_noSaveToStorageProperty: 12345,
@@ -78,16 +80,17 @@ function prepareTests(CustomModel, model) {
 				title: 'автоматическая типизация свойств модели на основе: <code>static defaultProperties = {...}</code>',
 				input: model,
 				runner: async () => ({ typeProperties: CustomModel.typeProperties }),
-				verify: { typeProperties: { 'voidProperty': 0, 'nullProperty': 0, 'numberProperty': 1, 'stringProperty': 2, 'booleanProperty': 3, 'functionProperty': 4, 'xyProperty': 6, 'objectProperty': 6, 'arrayProperty': 7, 'setProperty': 10, 'mapProperty': 11, '_noSaveToStorageProperty': 1 }},
+				verify: { typeProperties: { 'voidProperty': 0, 'nullProperty': 0, 'numberProperty': 1, 'stringProperty': 2, 'booleanProperty': 3, 'functionProperty': 4, 'xyProperty': 5, 'objectProperty': 6, 'arrayProperty': 7, 'objectNumbersProperty': 6, 'arrayNumbersProperty': 7, 'setProperty': 10, 'mapProperty': 11, '_noSaveToStorageProperty': 1 }},
 			},
 			{
 				code: 'sgmodel-basic-checkers__tojson',
 				title: 'получение корректного объекта для сериализации: <code>const obj = this.toJSON()</code>',
 				input: model,
 				runner: async (srcObject) => srcObject.toJSON(),
-				verify: ( // @minify https://www.toptal.com/developers/javascript-minifier
-					temp = {data:{nullProperty2:null,numberProperty2:65536,stringProperty:"text (overridding!)",stringProperty2:"loading...",booleanProperty2:!0,xyProperty2:{x:192,y:64},objectProperty2:{},arrayProperty2:[],setProperty2:{},mapProperty2:{},_noSaveToStorageProperty2:"54321",nullProperty:null,numberProperty:3.141592654,booleanProperty:!1,xyProperty:{x:128,y:256},objectProperty:{},arrayProperty:[],setProperty:{},mapProperty:{},_noSaveToStorageProperty:12345},__class:{name:"CustomModel",__hash:"e3cfa7e6337aa573269b14acf6c5b15967e0712091483b950ec7a33f09b3231e",__prototype:{name:"SGModel",version:"0.0.0",isNode:!1,isBrowser:!0}},__uid:1,initialized:!0,changed:!1,destroyed:!1,thisData1:"2024-12-31T21:00:00.000Z",thisData2:[1024,512,256,128,64,32,16,8,4,2],uuid:"00000000-0000-0000-0000-3066eb5090f6",options:{}},
+				verify: (
+					temp = {data:{nullProperty2:null,numberProperty2:65536,stringProperty:"text (overridding!)",stringProperty2:"loading...",booleanProperty2:!0,xyProperty2:{x:192,y:64},objectProperty2:{},arrayProperty2:[],setProperty2:{},mapProperty2:{},_noSaveToStorageProperty2:"54321",nullProperty:null,numberProperty:3.141592654,booleanProperty:!1,xyProperty:{x:128,y:256},objectProperty:{},arrayProperty:[],objectNumbersProperty:{a:1,b:2,c:3},arrayNumbersProperty:[1,22,333],setProperty:{},mapProperty:{},_noSaveToStorageProperty:12345},__class:{name:"CustomModel",__hash:"1e386f74826ce82c679da32e5267e0ad480ffd62a571b2fdd355f64035951bde",__prototype:{name:"SGModel",version:"1.1.0",isNode:!1,isBrowser:!0}},__uid:1,initialized:!0,changed:!1,destroyed:!1,thisData1:"2024-12-31T21:00:00.000Z",thisData2:[1024,512,256,128,64,32,16,8,4,2],uuid:"00000000-0000-0000-0000-3066eb5090f6",options:{}},
 					temp.__class.__prototype.version = SGModel.version,
+					temp.__uid = model.__uid,
 					temp
 				),
 			},
@@ -103,7 +106,7 @@ function prepareTests(CustomModel, model) {
 				title: 'получение данных для сохранения в localStorage или БД: <code>const data = this.getData()</code>',
 				input: model,
 				runner: async (srcObject) => srcObject.getData(),
-				verify: {numberProperty2:1798.3525713812421,stringProperty:"text (overridding!)",stringProperty2:"numberProperty2 changed to 1798.3525713812421",booleanProperty2:!0,xyProperty2:{x:192,y:64},objectProperty2:{},arrayProperty2:[],setProperty2:{},mapProperty2:{},numberProperty:3.141592654,xyProperty:{x:128,y:256},objectProperty:{},arrayProperty:[],setProperty:{},mapProperty:{}},
+				verify: {numberProperty2:1798.3525713812421,stringProperty:"text (overridding!)",stringProperty2:"numberProperty2 changed to 1798.3525713812421",booleanProperty2:!0,xyProperty2:{x:192,y:64},objectProperty2:{},arrayProperty2:[],setProperty2:{},mapProperty2:{},numberProperty:3.141592654,xyProperty:{x:128,y:256},objectProperty:{},arrayProperty:[],objectNumbersProperty:{a:1,b:2,c:3},arrayNumbersProperty:[1,22,333],setProperty:{},mapProperty:{}},
 			}
 		]
 	};

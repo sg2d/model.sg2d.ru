@@ -4,12 +4,11 @@
 	.modelview-basic-tests .border-red { border-color: red; }
 	.modelview-basic-tests input, .modelview-basic-tests button { border-radius: 5px; }
 	.modelview-basic-tests .no-wrap { white-space: nowrap; }
+	.modelview-basic-tests button.btn-contract { color: black; background-color: #ccc; border-color: #aaa; }
 	.modelview-basic-tests input.input-rate { width: 100px; }
 	.modelview-basic-tests input.input-range { vertical-align: middle; }
 	.modelview-basic-tests table th { text-align: center; }
 	.modelview-basic-tests table td { padding-left: 5px; padding-right: 5px; }
-	/*.modelview-basic-tests table td:nth-of-type(2) { text-align: center; }*/
-	/*.modelview-basic-tests table td:nth-of-type(4) { text-align: right; }*/
 	.modelview-basic-tests table tbody tr:hover { cursor: pointer; background-color: #ffa; }
 </style>
 <header>
@@ -18,6 +17,16 @@
 <main class="modelview-basic-tests">
 	<section>
 		<div>Укажите данные для нового сотрудника:</div>
+		<div>
+			Форма сотрудничества: 
+			<button id="modelview-basic-tests_contract" sg-property="contract" sg-type="dropdown" class="btn dropdown-toggle bg-gradient btn-contract mt-1 mb-1" type="button" data-bs-toggle="dropdown" aria-expanded="false"></button>
+			<ul class="dropdown-menu" aria-labelledby="modelview-basic-tests_contract"
+					sg-for="contracts"
+					sg-template="tmp_contracts_item"
+					sg-item-variables="{ $property: 'contract' }">
+				<li class="dropdown-item" role="button" sg-option="$key" sg-dropdown="$property">$title <sup sg-value="discount" sg-css="cssDangerOrSuccess" sg-format="formatDiscount"></sup></li>
+			</ul>
+		</div>
 		<div>
 			<label>Ранг и должность: <select class="js-rang" sg-property="rang" sg-options="rangs"></select> <span sg-property="position_info"></span></label>
 		</div>
@@ -48,7 +57,7 @@
 		<tbody sg-for="positions" sg-template="tmp_position_tr" sg-item-variables="{ $inputType: _input_type, $tdOrdNumClass: 'text-center', $tdMidleRateStyle: 'text-align: right;' }" sg-click="onClickTablePositions">
 			<tr onclick="this.closest('tr').querySelector('input[type=radio]').checked = true;">
 				<td><input type="radio" name="positions" sg-property="checked"/></td>
-				<td class="$tdOrdNumClass">#</td>
+				<td class="$tdOrdNumClass" sg-property="$index"></td>
 				<td sg-property="name"></td>
 				<td sg-property="middleRate" style="$tdMidleRateStyle"></td>
 			</tr>

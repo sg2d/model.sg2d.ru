@@ -471,7 +471,7 @@ class SGModelView extends SGModel {
 		this.#bindElements([this.$view], true);
 
 		for (const name in this.#propertyElementLinks) {
-			if (this.#propertyElementLinks[name]) {
+			if (this.#propertyElementLinks[name].length) {
 				this.#refreshElement(name);
 			}
 		}
@@ -702,7 +702,7 @@ class SGModelView extends SGModel {
 		}
 		const sgItemValue = this.#getItemHash(property, keyOrIndex, valueOrItem);
 		eItem.setAttribute(SGModelView.#ATTRIBUTES.SG_ITEM, sgItemValue);
-		this.#scanItemContentAndSetValues(property, eItem, valueOrItem, sgInNode.item_variables);
+		this.#scanItemContentAndSetValues(property, eItem, keyOrIndex, valueOrItem, sgInNode.item_variables);
 	}
 	
 	/** @private */
@@ -834,7 +834,7 @@ class SGModelView extends SGModel {
 	 * @param {DOMElement} element
 	 * @param {mixed} valueOrItem
 	 */
-	#scanItemContentAndSetValues(property, element, valueOrItem, sgItemVariables) {
+	#scanItemContentAndSetValues(property, element, keyOrIndex, valueOrItem, sgItemVariables) {
 
 		// @aos
 		if (!(valueOrItem instanceof Object)) {
@@ -873,40 +873,61 @@ class SGModelView extends SGModel {
 				}
 			}
 
-			let attrValue, value;
+			let attrValue;
 
 			attrValue = String(sgAttrs[SGModelView.#ATTRIBUTES.SG_PROPERTY] || '');
 			if (attrValue) {
-				value = valueOrItem[attrValue];
+				let value = this.#extractAttrValue(attrValue, keyOrIndex, valueOrItem);
+				const sgFormat = sgAttrs[SGModelView.#ATTRIBUTES.SG_FORMAT];
+				if (sgFormat) {
+					value = (this[sgFormat] instanceof Function ? this[sgFormat].call(this, value) : value);
+				}
 				switch (element.tagName) {
 					case 'INPUT':
 						if (element.type === 'checkbox' || element.type === 'radio') {
 							element.checked = value;
 						} else {
-							element.value = value; // TODO: sg-format
+							element.value = value;
 						}
 						break;
 					case 'SELECT': case 'TEXTAREA': case 'BUTTON':
-						element.value = value; // TODO: sg-format
+						element.value = value;
 						break;
 					default:
-						element.innerHTML = value; // TODO: sg-format
+						element.innerHTML = value;
 				}
 			}
 
 			attrValue = String(sgAttrs[SGModelView.#ATTRIBUTES.SG_VALUE] || '');
 			if (attrValue) {
-				element.innerHTML = valueOrItem[attrValue]; // TODO: sg-format
+				let value = this.#extractAttrValue(attrValue, keyOrIndex, valueOrItem);
+				const sgFormat = sgAttrs[SGModelView.#ATTRIBUTES.SG_FORMAT];
+				if (sgFormat) {
+					value = (this[sgFormat] instanceof Function ? this[sgFormat].call(this, value) : value);
+				}
+				element.innerHTML = value;
 			}
 
 			attrValue = String(sgAttrs[SGModelView.#ATTRIBUTES.SG_OPTION] || '');
 			if (attrValue) {
-				element.setAttribute(SGModelView.#ATTRIBUTES.SG_OPTION, valueOrItem[attrValue]);
+				element.setAttribute(SGModelView.#ATTRIBUTES.SG_OPTION, this.#extractAttrValue(attrValue, keyOrIndex, valueOrItem));
+			}
+
+			attrValue = String(sgAttrs[SGModelView.#ATTRIBUTES.SG_CSS] || '');
+			if (attrValue) {
+				const propName = sgAttrs[SGModelView.#ATTRIBUTES.SG_PROPERTY] || sgAttrs[SGModelView.#ATTRIBUTES.SG_VALUE];
+				if (this[attrValue] instanceof Function && propName) {
+					const result = this[attrValue].call(this, valueOrItem[propName]);
+					if (result) {
+						element.classList.add(result);
+					}
+				}
 			}
 		}
+
 		for (const childNode of element.childNodes) {
 			if (childNode.nodeType === Node.ELEMENT_NODE) {
-				this.#scanItemContentAndSetValues(property, childNode, valueOrItem, sgItemVariables);
+				this.#scanItemContentAndSetValues(property, childNode, keyOrIndex, valueOrItem, sgItemVariables);
 			} else if (childNode.nodeType === Node.TEXT_NODE) {
 				if (childNode.textContent.trim() === '') continue; // @aos
 				for (const subProperty in valueOrItem) {
@@ -917,6 +938,17 @@ class SGModelView extends SGModel {
 				}
 			}
 		}		
+	}
+
+	#extractAttrValue(attrValue, keyOrIndex, valueOrItem) {
+		if (attrValue === '$index') {
+			return Number(keyOrIndex) + 1;
+		} else if (attrValue === '$key') {
+			return keyOrIndex;
+		} else if (Object.hasOwn(valueOrItem, attrValue)) {
+			return valueOrItem[attrValue];
+		}
+		return void 0;
 	}
 	
 	/** @private */

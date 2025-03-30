@@ -754,7 +754,8 @@ class MyForm extends SGModelView {
 На данный момент это простая реализация вывода коллекций, см. пример ниже.
 Для каждого пункта (записи) коллекции автоматически формируется атрибут **sg-item**, значение которого состоит из уникального хеша + имя ключа записи (имя свойства объекта/ключа Map-коллекции или индекс элемента массива/множества Set).
 Для простой коллекции, состоящей из примитивных элементов, например, текст или число, в представлении в простых атрибутах (не sg-*) или в текстовом узле используется ключевое слово `$value`, которое заменяется на примитивное значение.
-Для коллекции, элементы которой - объекты, подстановка свойств объекта в sg-атрибуты выполняется как обычно (например: `sg-property="itemprop1"`), а в стандартные элементы - с добавлением префикса "$" (например: `href="$url"`).
+
+Для коллекции, элементы которой - объекты, подстановка свойств объекта в sg-атрибуты выполняется как обычно (например: `sg-property="itemprop1"`), а в стандартные элементы - с добавлением префикса "$" (например: `href="$url"`). Есть специальные субсвойства: `$index` для коллекций-массивов (начинается с 1, 2, 3, ...) и `$key` для коллекций-объектов. Поддерживаются sg-атрибуты `sg-option` (для sg-dropdown списков), `sg-property`, `sg-value`, `sg-format` и `sg-css`.
 
 В корневом теге списка можно задать статические и динамические переменные, используя атрибут **sg-item-variables**, например, заведём две переменные - $tagClass и $inputType:
 
@@ -784,7 +785,7 @@ class MyForm extends SGModelView {
 ```html
 <template id="tmp_filters_item_selected">
 	<span class="badge bg-gradient wob-tag $tagClass">
-		<input type="$inputType" sg-property="checked"/><span sg-property="code" title="ИД=$id"></span><button type="button" class="btn-close" title="Удалить тег"></button>
+		<input type="$inputType" sg-property="checked"/><span sg-property="code" title="ИД=$id"></span><sup sg-property="reference" sg-css="cssRedOrGreenOrHide" sg-format="formatReference"></sup><button type="button" class="btn-close" title="Удалить тег"></button>
 	</span>
 </template>
 ```

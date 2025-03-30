@@ -128,6 +128,9 @@ ul > li .item-details .verify-fact pre.in-out {
 ul > li .item-header {
 	cursor: pointer;
 }
+ul > li.expanded .item-header {
+	font-weight: bold;
+}
 ul > li .item-header:hover {
 	filter: drop-shadow(0 0 5px #0ff) drop-shadow(0 0 10px #0ff); /*ul > li .item-header:hover { animation: pulse 2s infinite; }*/ /*ul > li .item-header:hover { animation: glitch 0.5s infinite; }*/
 }
