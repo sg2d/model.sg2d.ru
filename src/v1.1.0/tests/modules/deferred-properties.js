@@ -1,7 +1,7 @@
 import SGModelView from './../../sg-model-view.js';
 
 async function creator() {
-	class CustomView extends SGModelView {
+	class CustomDeferredView extends SGModelView {
 		static defaultProperties = {
 			rate: 0,
 			hours: 0,
@@ -12,18 +12,18 @@ async function creator() {
 			this.on(['rate', 'hours'], () => (this.data.salary = this.data.rate * this.data.hours));
 		}
 	}
-	const view = new CustomView({ uuid: '00000000-0000-0000-0000-7bc5a6105853' });
-	view.data.rate = 3000; // синхронное присваивание (сразу после вызова конструктора new CustomView())
+	const view = new CustomDeferredView({ uuid: '00000000-0000-0000-0000-7bc5a6105853' });
+	view.data.rate = 3000; // синхронное присваивание (сразу после вызова конструктора new CustomDeferredView())
 	view.data.hours = 8 * 20;
 	const beforeValue = view.data.salary; // здесь д.б. пока ещё 0
 	await view.initialization.promise; // ждём инициализацию
 	const afterValue = view.data.salary; // проверяем
-	return prepareTests(CustomView, view, beforeValue, afterValue);
+	return prepareTests(CustomDeferredView, view, beforeValue, afterValue);
 }
 
-function prepareTests(CustomView, view, beforeValue, afterValue) {
+function prepareTests(CustomDeferredView, view, beforeValue, afterValue) {
 	return {
-		class: CustomView,
+		class: CustomDeferredView,
 		instance: view,
 		code: 'sgmodelview-deferred-properties-checkers',
 		title: 'SGModelView: проверка отложенной обработки изменения значения свойств при инициализации инстанса',

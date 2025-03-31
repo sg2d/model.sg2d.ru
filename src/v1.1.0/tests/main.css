@@ -72,6 +72,9 @@ section.tests-group h6 a {
 	text-decoration: none;
 	color: inherit;
 }
+section.tests-group h6.error {
+	color: red;
+}
 section.tests-group h6:hover a {
 	display: inline !important;
 }

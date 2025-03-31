@@ -1,17 +1,20 @@
 # SGModel & SGModelView
 
 *Ссылка на GitHub-страницу: [https://github.com/sg2d/model.sg2d.ru](https://github.com/sg2d/model.sg2d.ru)*
+*Ссылка на Gitverse-страницу: [https://gitverse.ru/sg2d/model.sg2d.ru](https://gitverse.ru/sg2d/model.sg2d.ru)*
 
 **SGModelView** - Микрофреймворк для создания MVVM-приложений.
 
 **SGModel** - Библиотека-класс в основе SGModelView для работы с данными (биндинг-модели). Библиотека хорошо адаптирована для наследования классов. Может использоваться как в браузере, так и на Node.js.
 
-*Пример использования: [Перейти на страницу примера](/example/)*
-
 #### Исходники (версия 1.1):
 
-* [sg-model.js (48 KB)](https://model.sg2d.ru/src/v1.1.0/sg-model.js)
-* [sg-model-view.js (58 KB)](https://model.sg2d.ru/src/v1.1.0/sg-model-view.js)
+* [sg-model.js (58 KB)](https://model.sg2d.ru/src/v1.1.0/sg-model.js)
+* [sg-model-view.js (53 KB)](https://model.sg2d.ru/src/v1.1.0/sg-model-view.js)
+
+#### Страница автотестов:
+
+* [https://model.sg2d.ru/src/tests](https://model.sg2d.ru/src/v1.1.0/tests)
 
 ## Описание API
 
@@ -557,13 +560,16 @@ initialize()
 
 ### sg-value
 
-Для задания первоначального innerHTML элемента можно использовать атрибут `sg-value`. В текущей версии фреймворка реализована только инициализация innerHTML. Пример HTML и Javascript-кода:
+Для задания первоначального innerHTML элемента можно использовать атрибут `sg-value`. Также с помощью `sg-value` можно получить доступ к любым публичным статическим свойствам любого класса-потомка, унаследованного от SGModel или SGModelView!
+В текущей версии фреймворка реализована только инициализация innerHTML. Пример HTML и Javascript-кода:
 
 ```html
-<div sg-value="getSomeValue()">loading...</div>
+<div sg-value="getSomeValue()">loading...</div> <!-- вызов метода без параметров -->
 <div sg-value="getSomeValue('ggg')">loading...</div>
 <div sg-value="getSomeValue('ggg', 'ggg2')">loading...</div>
-<div sg-value="MyForm.STAT_PROP_NAME1">loading...</div>
+<div sg-value="versionCore">loading...</div> <!-- обычное свойства в this.data (значение должно быть задано при инициализации, например, в static defaultProperties = {...}) -->
+<div sg-value="MyForm.STAT_PROP_NAME1">loading...</div> <!-- статическое свойство текущего класса -->
+<div sg-value="OtherCustomView.PROP_NAME5">loading...</div> <!-- статическое свойство другого класса -->
 ```
 
 ```js

@@ -561,13 +561,20 @@ class SGModelView extends SGModel {
 			if (sgValue) {
 				const fFormat = this[sgFormat] || SGModel.fStub;
 				const method = sgValue.replace(/(\w+)(.*)/, '$1');
-				const args = Array.from(sgValue.matchAll(/'(.*?)'/g));
-				if (typeof this[method] === 'function') {
+				if (this[method] instanceof Function) {
+					const args = Array.from(sgValue.matchAll(/'(.*?)'/g));
 					elementDOM.innerHTML = fFormat.call(this, this[method].apply(this, args.map((o)=>o[1])));
 				} else {
 					const props = sgValue.split('.');
-					if (props.length === 2 && props[0] === this.constructor.name) {
-						elementDOM.innerHTML = fFormat.call(this, this.constructor[props[1]]);
+					if (props.length === 2) {
+						const pClass = SGModelView.__classes[props[0]];
+						if (pClass) {
+							elementDOM.innerHTML = fFormat.call(this, pClass[props[1]]);
+						}
+					} else if (props.length === 1) {
+						if (this.has(props[0])) {
+							elementDOM.innerHTML = fFormat.call(this, this.data[props[0]]);
+						}
 					}
 				}
 			}

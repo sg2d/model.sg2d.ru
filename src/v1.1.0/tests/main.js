@@ -5,6 +5,13 @@ import parsePgStrArrayTests from './modules/parse-pg-str-array.js';
 import simpleModelViewWithBasicTests from './modules/simple-modelview-with-basic.js';
 import deferredPropertiesTests from './modules/deferred-properties.js';
 
+const creators = [
+	simpleModelWithBasicTests,
+	parsePgStrArrayTests,
+	simpleModelViewWithBasicTests,
+	deferredPropertiesTests,
+];
+
 window.sleep = function(ms = 33) {
 	return new Promise(resolve => setTimeout(resolve, ms));
 }
@@ -27,13 +34,15 @@ eTemplateTestsGroup.content.childNodes.forEach(e => {
 });
 
 async function run() {
-	const testsGroups = window.testsGroups = [ // [{ class, instance, list }]
-		await simpleModelWithBasicTests(),
-		await parsePgStrArrayTests(),
-		await simpleModelViewWithBasicTests(),
-		await deferredPropertiesTests(),
-	];
-
+	const testsGroups = window.testsGroups = []; // [{ class, instance, list }, ...]
+	for (const creator of creators) {
+		try {
+			testsGroups.push(await creator());
+		} catch (err) {
+			console.error(err);
+			testsGroups.push({ title: err.message, sourceCode: err.stack, error: true, items: [] });
+		}
+	}
 	const stats = {
 		passed: 0,
 		failed: 0,
@@ -49,14 +58,15 @@ async function run() {
 		const eBlock =  eTemplateTestsGroup.content.cloneNode(true);
 		eSection.append(eBlock);
 		eContent.append(eSection);
-		const eHeader = eSection.querySelector('h6');
-		eHeader.childNodes[0].textContent = `${globalCounter}. ${testsGroup.title}`;
-		eHeader.querySelector('a').setAttribute('href', `#${testsGroup.code}`);
+		const eHeader6 = eSection.querySelector('h6');
+		const eShowCodeBtn = eHeader6.querySelector('button.show-code');
+		eHeader6.childNodes[0].textContent = `${globalCounter}. ${testsGroup.title}`;
+		eHeader6.querySelector('a').setAttribute('href', `#${testsGroup.code}`);
 		if (testsGroup.sourceCode) {
-			eHeader.querySelector('button.show-code').style.display = 'inline-block';
+			eShowCodeBtn.style.display = 'inline-block';
 		}
 		if (testsGroup.description) {
-			eHeader.querySelector('button.show-description').style.display = 'inline-block';
+			eHeader6.querySelector('button.show-description').style.display = 'inline-block';
 		}
 		const eShowViewButton = eSection.querySelector('button.show-view');
 		const eView = eSection.querySelector('.view');
@@ -132,6 +142,11 @@ async function run() {
 			}
 			eDetails.querySelector('.verify').innerHTML = verify;
 			eList.append(eItem);
+		}
+		if (testsGroup.error === true) {
+			eHeader6.classList.add('error');
+			eShowCodeBtn.click();
+			stats.error++;
 		}
 		const total = stats.passed + stats.failed + stats.error;
 		eStatPassed.innerHTML = `passed: ${Number(stats.passed / total * 100).toFixed(1)}% (${stats.passed} из ${total})`;

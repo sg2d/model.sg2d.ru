@@ -72,16 +72,30 @@ class SGModel {
 	static singleInstance = false;
 
 	/**
-	 * @private
+	 * Ссылка на единственный экземпляр класса при singleInstance = true
+	 * @protected
+	 * @overridden
 	 * @type {object}
 	 */
 	static __instance = null;
 
-	/** @protected */
+	/**
+	 * Все инстансы классов-потомков от SGModel и SGModelView
+	 * @protected
+	 */
 	static __instances = {};
 
-	/** @protected */
+	/**
+	 * Все инстансы классов-потомков от SGModel и SGModelView в разрезе имён классов-потомков
+	 * @protected
+	 */
 	static __instancesByClass = {};
+
+	/**
+	 * Все классы-потомки от SGModel и SGModelView
+	 * @protected
+	 */
+	static __classes = {};
 
 	/**
 	 * Формируется для всех классов-потомков от SGModel (SGModelView)
@@ -228,6 +242,11 @@ class SGModel {
 
 		this.__uid = SGModel.#nextUID();
 
+		const __classes = SGModel.__classes[this.constructor.name];
+		if (__classes && __classes.__hash !== this.constructor.__hash) {
+			throw new Error(`Error in ${this.constructor.name}! Class ${this.constructor.name} has already been defined earlier (__hash "${__classes.__hash}" repeated)!`);
+		}
+		SGModel.__classes[this.constructor.name] = this.constructor;
 		if (SGModel.__instances[this.uuid]) {
 			throw new Error(`Error in ${this.constructor.name}! uuid "${this.uuid}" already exists!`);
 		}
