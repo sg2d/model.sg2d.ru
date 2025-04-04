@@ -78,7 +78,8 @@ async function creator() {
 					};
 					return result;
 				}, {});
-				this.trigger('contract');
+				this.trigger('contract'); // TODO?: при обновлении sg-dropdown-элементов обновить связанный контрол с sg-dropdown? м.б. тогда и не нужно делать this.trigger('contract')
+				// TODO?: А зачем вообще в пунтах li атрибут sg-dropdown="contract", м.б. onclick вытащить на уровень UL ?
 				resolve();
 			}, 100); // Имитируем асинхронную загрузку данных с сервера
 		}
@@ -119,16 +120,17 @@ async function creator() {
 
 	const view = new CustomView({ uuid: '00000000-0000-0000-0000-8240f6f432cb' });
 	await view.initialization.promise;
-	return prepareTests(CustomView, view);
+	return prepareTests({CustomView, view});
 }
 
-function prepareTests(CustomView, view) {
+function prepareTests({CustomView, view}) {
 	return {
 		class: CustomView,
 		instance: view,
 		code: 'sgmodelview-basic-checkers',
 		title: 'SGModelView: базовые проверки',
 		sourceCode: creator,
+		//showView: true, // TODO: off
 		items: [
 			{
 				code: 'sgmodelview-basic-checkers__bind-html',
@@ -152,6 +154,7 @@ function prepareTests(CustomView, view) {
 					};
 				},
 				verify: {contracts:{l:{discount:-15,shortCode:"labor",title:"Трудовой договор, в т.ч. по совм.",discountText:"-15%"},g:{discount:-10,shortCode:"gph",title:"Договор ГПХ с физ.лицом",discountText:"-10%"},s:{discount:0,shortCode:"self",title:"Самозанятый (договор услуг)",discountText:""},i:{discount:15,shortCode:"ip",title:"Индивидуальный предприниматель",discountText:"+15%"},c:{discount:50,shortCode:"crypta",title:"Оплата криптовалютой",discountText:"+50%"},f:{discount:100,shortCode:"freelance",title:"Фриланс + Безопасная сделка",discountText:"+100%"}},ULHash:"1d811e4872acf621b5d5c4f9f296a6db06759199f101f213aebca480279f462f"},
+				//break: true // TODO: off
 			},
 			{
 				code: 'sgmodelview-basic-checkers__sg-dropdown-item-click',
@@ -167,6 +170,7 @@ function prepareTests(CustomView, view) {
 					"beforeBtnText": "Самозанятый (договор услуг) <sup sg-value=\"discount\" sg-css=\"cssDangerOrSuccess\" sg-format=\"formatDiscount\" class=\"d-none\"></sup>",
 					"afterBtnText": "Договор ГПХ с физ.лицом <sup sg-value=\"discount\" sg-css=\"cssDangerOrSuccess\" sg-format=\"formatDiscount\" class=\"text-success\">-10%</sup>"
 				},
+				//break: true // TODO: off
 			},
 			{
 				code: 'sgmodelview-basic-checkers__sg-for',
@@ -246,7 +250,7 @@ function prepareTests(CustomView, view) {
 				runner: async (srcObject) => srcObject.toJSON(),
 				verify: (
 					() => {
-						const obj = {data:{contract:"g",contracts:{l:{discount:-15,shortCode:"labor",title:"Трудовой договор, в т.ч. по совм.",discountText:"-15%"},g:{discount:-10,shortCode:"gph",title:"Договор ГПХ с физ.лицом",discountText:"-10%"},s:{discount:0,shortCode:"self",title:"Самозанятый (договор услуг)",discountText:""},i:{discount:15,shortCode:"ip",title:"Индивидуальный предприниматель",discountText:"+15%"},c:{discount:50,shortCode:"crypta",title:"Оплата криптовалютой",discountText:"+50%"},f:{discount:100,shortCode:"freelance",title:"Фриланс + Безопасная сделка",discountText:"+100%"}},rate:2e3,rate_with_discount_with_rang:2070,hours:80,discountPer:15,salary:165600,position_id:0,position_info:"Fullstack-developer",rang:2,employment:1,employment_info:"4 часа/день",employments:[{hours:40,title:"2 часа/день"},{hours:80,title:"4 часа/день"},{hours:100,title:"5 часов/день"},{hours:120,title:"6 часов/день"},{hours:140,title:"7 часов/день"},{hours:160,title:"фуллтайм"}],rangs:[{value:0,title:"Trainee (-50%)",koef:-.5,hint:"Стажёр"},{value:1,title:"Junior (-25%)",koef:-.25},{value:2,title:"Middle",koef:0},{value:3,title:"Senior (+25%)",koef:.25},{value:4,title:"TechLead (+50%)",koef:.5}],positions:[{id:1,name:"Frontend-developer",middleRate:1e3,checked:!1},{id:2,name:"Backend-developer",middleRate:1500,checked:!1},{id:3,name:"Fullstack-developer",middleRate:2e3,checked:!0},{id:4,name:"Devops",middleRate:2e3,checked:!1},{id:5,name:"TeamLead",middleRate:3e3,checked:!1}],_input_type:"radio"},$view:"[object HTMLDivElement]",__class:{name:"CustomView",templates:{"00000000-0000-0000-0000-8240f6f432cb":"[object HTMLTemplateElement]",tmp_contracts_item:"[object HTMLTemplateElement]",tmp_position_tr:"[object HTMLTemplateElement]"},__prototype:{name:"SGModelView",version:"1.1.0",isNode:!1,isBrowser:!0},autoLoadBind:{srcHTML:"modules/templates/simple-modelview-with-basic.html",templateId:"00000000-0000-0000-0000-8240f6f432cb"},CONTRACTS:[["l",-15,"labor","Трудовой договор, в т.ч. по совм."],["g",-10,"gph","Договор ГПХ с физ.лицом"],["s",0,"self","Самозанятый (договор услуг)"],["i",15,"ip","Индивидуальный предприниматель"],["c",50,"crypta","Оплата криптовалютой"],["f",100,"freelance","Фриланс + Безопасная сделка"]],__hash:"02cd5926b11417b9f0cbd651ccee12c0ac58c56e910edd1018f3a4a010d94f14",initialized:!0},__uid:1,initialized:!0,changed:!0,destroyed:!1,uuid:"00000000-0000-0000-0000-8240f6f432cb",options:{},prrContracts:{promise:{}}};
+						const obj = {data:{contract:"g",contracts:{l:{discount:-15,shortCode:"labor",title:"Трудовой договор, в т.ч. по совм.",discountText:"-15%"},g:{discount:-10,shortCode:"gph",title:"Договор ГПХ с физ.лицом",discountText:"-10%"},s:{discount:0,shortCode:"self",title:"Самозанятый (договор услуг)",discountText:""},i:{discount:15,shortCode:"ip",title:"Индивидуальный предприниматель",discountText:"+15%"},c:{discount:50,shortCode:"crypta",title:"Оплата криптовалютой",discountText:"+50%"},f:{discount:100,shortCode:"freelance",title:"Фриланс + Безопасная сделка",discountText:"+100%"}},rate:2e3,rate_with_discount_with_rang:2070,hours:80,discountPer:15,salary:165600,position_id:0,position_info:"Fullstack-developer",rang:2,employment:1,employment_info:"4 часа/день",employments:[{hours:40,title:"2 часа/день"},{hours:80,title:"4 часа/день"},{hours:100,title:"5 часов/день"},{hours:120,title:"6 часов/день"},{hours:140,title:"7 часов/день"},{hours:160,title:"фуллтайм"}],rangs:[{value:0,title:"Trainee (-50%)",koef:-.5,hint:"Стажёр"},{value:1,title:"Junior (-25%)",koef:-.25},{value:2,title:"Middle",koef:0},{value:3,title:"Senior (+25%)",koef:.25},{value:4,title:"TechLead (+50%)",koef:.5}],positions:[{id:1,name:"Frontend-developer",middleRate:1e3,checked:!1},{id:2,name:"Backend-developer",middleRate:1500,checked:!1},{id:3,name:"Fullstack-developer",middleRate:2e3,checked:!0},{id:4,name:"Devops",middleRate:2e3,checked:!1},{id:5,name:"TeamLead",middleRate:3e3,checked:!1}],_input_type:"radio"},$view:"[object HTMLDivElement]",__class:{name:"CustomView",templates:{"00000000-0000-0000-0000-8240f6f432cb":"[object HTMLTemplateElement]",tmp_contracts_item:"[object HTMLTemplateElement]",tmp_position_tr:"[object HTMLTemplateElement]"},__prototype:{name:"SGModelView",version:"1.1.0",isNode:!1,isBrowser:!0},autoLoadBind:{srcHTML:"modules/templates/simple-modelview-with-basic.html",templateId:"00000000-0000-0000-0000-8240f6f432cb"},CONTRACTS:[["l",-15,"labor","Трудовой договор, в т.ч. по совм."],["g",-10,"gph","Договор ГПХ с физ.лицом"],["s",0,"self","Самозанятый (договор услуг)"],["i",15,"ip","Индивидуальный предприниматель"],["c",50,"crypta","Оплата криптовалютой"],["f",100,"freelance","Фриланс + Безопасная сделка"]],__hash:"e1cbfaa0f12a1fcf08ac0f068982f3d4f84cff317c3bbec8b43987babd57c491",initialized:!0},__uid:1,initialized:!0,changed:!0,destroyed:!1,uuid:"00000000-0000-0000-0000-8240f6f432cb",options:{},prrContracts:{promise:{}}};
 						obj.__class.__prototype.version = SGModelView.version;
 						obj.__uid = view.__uid;
 						return obj;

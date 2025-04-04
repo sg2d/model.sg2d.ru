@@ -10,6 +10,7 @@
 		<link type="text/css" href="main.css" rel="stylesheet">
   </head>
   <body style="padding: 10px;">
+
 		<div class="header">
 			<div><h5>Автотесты для SGModel & SGModelView <u>v0.0.0</u></h5></div>
 			<div class="global-controls">
@@ -21,14 +22,14 @@
 			</div>
 		</div>
 
-		<!--<button onclick="onClickStartButton(this);">Запустить!</button>-->
 		<div id="content"></div>
+
 		<template id="tmp_tests_group">
 			<!--<section class="tests-group" hint="этот тег создаётся в main.js">-->
 			<h6>$TITLE$ <a href="#" style="display: none">&para;</a>
-				<button class="show-view" style="display: none; float: right" onclick="onClickShowView(this);">Показать представление</button>
-				<button class="show-code" style="display: none; float: right" onclick="onClickShowCode(this);">Показать код</button>
-				<button class="show-description" style="display: none; float: right" onclick="onClickShowDescription(this);">Показать описание</button>
+				<button class="show-view" style="display: none" onclick="onClickShowView(this);">Показать представление</button>
+				<button class="show-code" style="display: none" onclick="onClickShowCode(this);">Показать код</button>
+				<button class="show-description" style="display: none" onclick="onClickShowDescription(this);">Показать описание</button>
 			</h6>
 			<pre class="code" style="display: none"></pre>
 			<pre class="description" style="display: none"></pre>
@@ -36,9 +37,18 @@
 			<ul></ul>
 			<!--</section>-->
 		</template>
+
 		<template id="tmp_tests_item">
 			<li>
-				<div class="item-header" onclick="onClickItemHeader(this);"><span class="ordnum"></span> <span><span class="status">loading...</span> <span class="title"></span></span><span class="close" style="display: none;">x</span> <a href="#" style="display: none">&para;</a></div>
+				<div class="item-header" onclick="onClickItemHeader(this);">
+					<span class="ordnum"></span>
+					<span>
+						<span class="status">loading...</span>
+						<span class="title"></span>
+					</span>
+					<span class="close" style="display: none;">x</span>
+					<a href="#" style="display: none">&para;</a>
+				</div>
 				<div class="item-details" style="display: none">
 					&nbsp;Входные данные: <code class="input-data"></code><br/>
 					&nbsp;Раннер: <code class="runner"></code><br/>
@@ -56,6 +66,7 @@
 				</div>
 			</li>
 		</template>
+		
 		<script charset="utf-8" src="/res/bootstrap/bootstrap.bundle.min.js"></script>
 	</body>
 </html>

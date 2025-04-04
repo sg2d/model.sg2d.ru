@@ -1,6 +1,7 @@
 # SGModel & SGModelView
 
 *Ссылка на GitHub-страницу: [https://github.com/sg2d/model.sg2d.ru](https://github.com/sg2d/model.sg2d.ru)*
+
 *Ссылка на Gitverse-страницу: [https://gitverse.ru/sg2d/model.sg2d.ru](https://gitverse.ru/sg2d/model.sg2d.ru)*
 
 **SGModelView** - Микрофреймворк для создания MVVM-приложений.
@@ -63,10 +64,12 @@
 	* [Статические свойства экземпляра SGModelView](#статические-свойства-экземпляра-sgmodelview)
 		* [static templates = {...}](#static-templates--)
 		* [static autoLoadBind = {...}](#static-autoloadbind--)
+		* [Способ инициализации вьюхи](#способ-инициализации-вьюхи)
 	* [Свойства экземпляра SGModelView](#свойства-экземпляра-sgmodelview)
 		* [this.$view](#thisview)
 	* [Методы экземпляра SGModelView](#методы-экземпляра-sgmodelview)
-		* [bindHTML(root=void 0)](#bindhtmlrootvoid-0)
+		* [bindHTML(root = void 0, mTemplate = void 0)](#bindhtmlroot--void-0-mtemplate--void-0)
+		* [destroy(noRemoveDOM = false)](#destroynoremovedom--false)
 	* [Атрибуты в HTML-документе](#атрибуты-в-html-документе)
 		* [sg-model](#sg-model)
 		* [sg-property](#sg-property)
@@ -122,11 +125,12 @@ class Tank extends PlayerBase {
 - `SGModel.TYPE_NUMBER` - при установке `null` или пустой строки (`""`) сохраняется значение `null` (как в СУБД)
 - `SGModel.TYPE_STRING`
 - `SGModel.TYPE_BOOLEAN`
+- `SGModel.TYPE_FUNCTION`
+- `SGModel.TYPE_XY` - либо число, например, 1234.5, либо объект, например: {x: 1234.5, y: 1234.5}. Этот тип удобен для работы с графическими движками
 - `SGModel.TYPE_OBJECT` - при изменении хотя бы одного свойства объекта выполняются колбэки заданные методом `.on()`
 - `SGModel.TYPE_ARRAY` - при изменении хотя бы одного элемента массива выполняются колбэки заданные методом `.on()`
 - `SGModel.TYPE_ARRAY_NUMBERS` - то же что и `SGModel.TYPE_ARRAY`, но значения приводятся к числовому типу
 - `SGModel.TYPE_OBJECT_NUMBERS` - то же что и `SGModel.TYPE_OBJECT`, но значения приводятся к числовому типу
-- `SGModel.TYPE_NUMBER_OR_XY` - либо число, например, 1234.5, либо объект, например: {x: 1234.5, y: 1234.5}. Этот тип удобен для работы с графическими движками
 - `SGModel.TYPE_SET`
 - `SGModel.TYPE_MAP`
 
@@ -540,6 +544,11 @@ initialize()
 	return promise;
 }
 ```
+
+### destroy(noRemoveDOM = false)
+
+Удалить представление вместе с его элементами в DOM (по умолчанию). Если `noRemoveDOM` true, элементы в DOM не удаляются, но очищаются от днамически генерируемых sg-атрибутов (sg-uuid, sg-item), свойств (__sg, __sgModelUUID) и подписчиков на события change и input.
+После выполнения метода `this.destroyed` инстанса будет `true`.
 
 ## Атрибуты в HTML-документе
 

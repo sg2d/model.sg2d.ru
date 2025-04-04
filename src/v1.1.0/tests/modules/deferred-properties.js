@@ -18,10 +18,10 @@ async function creator() {
 	const beforeValue = view.data.salary; // здесь д.б. пока ещё 0
 	await view.initialization.promise; // ждём инициализацию
 	const afterValue = view.data.salary; // проверяем
-	return prepareTests(CustomDeferredView, view, beforeValue, afterValue);
+	return prepareTests({CustomDeferredView, view, beforeValue, afterValue});
 }
 
-function prepareTests(CustomDeferredView, view, beforeValue, afterValue) {
+function prepareTests({CustomDeferredView, view, beforeValue, afterValue}) {
 	return {
 		class: CustomDeferredView,
 		instance: view,

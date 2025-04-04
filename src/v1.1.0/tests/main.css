@@ -109,6 +109,7 @@ button.show-view, button.show-code, button.show-description {
 	margin-left: 0.25rem;
 	border-radius: 5px;
 	font-size: 0.7rem;
+	float: right;
 }
 button.show-view.active, button.show-code.active, button.show-description.active {
 	background-color: #ffa;
@@ -153,6 +154,7 @@ ul > li .item-header span.close {
 	float: right;
 	padding-right: 5px;
 }
+ul > li .item-header .status { font-weight: bold; }
 ul > li .item-header .status.passed { color: green; }
 ul > li .item-details .verify-fact {
 	display: flex; /* Делаем контейнер flex-контейнером */

@@ -5,6 +5,7 @@ import parsePgStrArrayTests from './modules/parse-pg-str-array.js';
 import simpleModelViewWithBasicTests from './modules/simple-modelview-with-basic.js';
 import deferredPropertiesTests from './modules/deferred-properties.js';
 
+// Модули групп тестов
 const creators = [
 	simpleModelWithBasicTests,
 	parsePgStrArrayTests,
@@ -12,10 +13,7 @@ const creators = [
 	deferredPropertiesTests,
 ];
 
-window.sleep = function(ms = 33) {
-	return new Promise(resolve => setTimeout(resolve, ms));
-}
-
+// Глобальные элементы и переменные
 const eContent = document.querySelector('#content');
 const eTemplateTestsGroup = document.querySelector('#tmp_tests_group');
 const eTemplateTestsItem = document.querySelector('#tmp_tests_item');
@@ -28,28 +26,28 @@ let globalCounter = 0;
 document.title = `SGModel & SGModelView - Автотесты для v${SGModel.version}`;
 document.querySelector('.header h5 > u').innerText = `v${SGModel.version}`;
 
-// Очищаем комментарии на первом уровне
-eTemplateTestsGroup.content.childNodes.forEach(e => {
-	if (e.nodeType === Node.COMMENT_NODE) e.remove();
-});
+// Утилиты
+window.sleep = function(ms = 33) {
+	return new Promise(resolve => setTimeout(resolve, ms));
+}
 
 async function run() {
 	const testsGroups = window.testsGroups = []; // [{ class, instance, list }, ...]
+	const stats = { passed: 0, failed: 0, error: 0 };
 	for (const creator of creators) {
 		try {
 			testsGroups.push(await creator());
 		} catch (err) {
 			console.error(err);
-			testsGroups.push({ title: err.message, sourceCode: err.stack, error: true, items: [] });
+			testsGroups.push({
+				title: err.message,
+				sourceCode: err.stack,
+				error: true,
+				items: []
+			});
 		}
 	}
-	const stats = {
-		passed: 0,
-		failed: 0,
-		error: 0,
-	};
-	for (let testIndex = 0; testIndex < testsGroups.length; testIndex++) {
-		const testsGroup = testsGroups[testIndex];
+	for (const testsGroup of testsGroups) {
 		if (!testsGroup.title) return;
 		globalCounter++;
 		const eSection = document.createElement('SECTION');
@@ -70,10 +68,10 @@ async function run() {
 		}
 		const eShowViewButton = eSection.querySelector('button.show-view');
 		const eView = eSection.querySelector('.view');
+		if (testsGroup.showView === true) eShowViewButton.click();
 		const eList = eSection.querySelector('ul');
 		let localCounter = 0;
-		for (let testIndex = 0; testIndex < testsGroup.items.length; testIndex++) {
-			const item = testsGroup.items[testIndex];
+		for (const item of testsGroup.items) {
 			const eItem =  eTemplateTestsItem.content.cloneNode(true);
 			const eItemHeader = eItem.querySelector('.item-header');
 			const eStatus = eItemHeader.querySelector('.status');
@@ -142,6 +140,7 @@ async function run() {
 			}
 			eDetails.querySelector('.verify').innerHTML = verify;
 			eList.append(eItem);
+			if (item.break === true) break;
 		}
 		if (testsGroup.error === true) {
 			eHeader6.classList.add('error');
@@ -198,8 +197,7 @@ document.onClickItemHeader = function(e) {
 }
 
 document.onClickShowView = function(eButton) {
-	const eSection = eButton.closest('SECTION');
-	const eView = eSection.querySelector('div.view');
+	const eView = eButton.closest('SECTION').querySelector('div.view');
 	if (eView.style.display !== 'none') {
 		eView.style.display = 'none';
 		eButton.textContent = 'Показать представление';
@@ -258,5 +256,10 @@ document.onClickShowDescription = function(eButton) {
 function stopPropagation(evt) {
 	evt.stopPropagation();
 }
+
+// Очистка комментариев в шаблоне (на первом уровне вложенности)
+eTemplateTestsGroup.content.childNodes.forEach(e => {
+	if (e.nodeType === Node.COMMENT_NODE) e.remove();
+});
 
 run();

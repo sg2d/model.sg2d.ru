@@ -214,7 +214,7 @@ class SGModel {
 			Object.assign(this, thisProperties); // add internal properties to the object, accessible through this.*
 		}
 		if (!this.constructor.__hash) {
-			this.constructor.__hash = SGModel.sha256(String(this.constructor));
+			this.constructor.__hash = SGModel.sha256(String(this.constructor).split('\n').map(line => line.trim()).join('\n'));
 		}
 		if (this.constructor.singleInstance) {
 			if (this.constructor.__instance) {
@@ -242,9 +242,9 @@ class SGModel {
 
 		this.__uid = SGModel.#nextUID();
 
-		const __classes = SGModel.__classes[this.constructor.name];
-		if (__classes && __classes.__hash !== this.constructor.__hash) {
-			throw new Error(`Error in ${this.constructor.name}! Class ${this.constructor.name} has already been defined earlier (__hash "${__classes.__hash}" repeated)!`);
+		const __class = SGModel.__classes[this.constructor.name];
+		if (__class && __class.__hash !== this.constructor.__hash) {
+			throw new Error(`Error in ${this.constructor.name}! Class ${this.constructor.name} has already been defined earlier (__hash "${__class.__hash}" repeated)!`);
 		}
 		SGModel.__classes[this.constructor.name] = this.constructor;
 		if (SGModel.__instances[this.uuid]) {

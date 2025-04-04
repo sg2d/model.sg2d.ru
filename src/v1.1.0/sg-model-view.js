@@ -294,6 +294,13 @@ class SGModelView extends SGModel {
 				if (eView) {
 					this.$view = eView;
 					if (this.constructor.initialized === true) {
+						if (autoLoadBind.templateId) {
+							if (this.$view.childElementCount === 0) {
+								this.$view.append(this.constructor.templates[autoLoadBind.templateId].content.cloneNode(true));
+							} else {
+								console.error(`Error when inserting template content at templateId="${autoLoadBind.templateId}"! There are already elements in the view! View class: ${this.constructor.name}`);
+							}
+						}
 						this.bindHTML(this.$view);
 					} else {
 						console.error(`Binding was not completed because initialization failed! View class: ${this.constructor.name}`);
@@ -390,6 +397,10 @@ class SGModelView extends SGModel {
 	 * @private
 	 */
 	#bindHTML(root = void 0, mTemplate = false) {
+		this.$view = (typeof root === 'string' ? document.querySelector(root) : (root ? root : document.body));
+		if (!this.$view) {
+			throw new Error(`Error in ${this.constructor.name}->bindHTML()! Container "${root}" does not exist!`);
+		}
 		if (!this.#binderInitialized) {
 			if (typeof document === 'undefined') {
 				throw new Error('Error! window.document is undefined!');
@@ -398,24 +409,9 @@ class SGModelView extends SGModel {
 			this.#eventsCounter = -1;
 			this.#binderInitialized = true;
 		} else {
-			let name, item;
-			for (name in this.#propertyElementLinks) {
-				const link = this.#propertyElementLinks[name];
-				if (link.linkType === SGModelView.#LINKTYPE_VALUE) {
-					link.element.removeEventListener('change', this.onChangeDOMElementValue);
-					link.element.removeEventListener('input', this.onChangeDOMElementValue);
-				}
-				delete this.#propertyElementLinks[name];
-			}
-			while (item = this.#elementsEvents.pop()) { // eslint-disable-line no-cond-assign
-				item.element.removeEventListener(item.event, item.callback);
-			}
+			this.#clearSGinDOM(this.$view);
 		}
 		
-		this.$view = (typeof root === 'string' ? document.querySelector(root) : (root ? root : document.body));
-		if (!this.$view) {
-			throw new Error(`Error in ${this.constructor.name}->bindHTML()! Container "${root}" does not exist!`);
-		}
 		this.$view.__sgModelUUID = this.uuid;
 		if (this.constructor.enablePrintingUUIDClass === true) {
 			this.$view.setAttribute(SGModelView.#ATTRIBUTES.SG_UUID, `${this.constructor.name}:${this.__uid}:${this.uuid}`);
@@ -626,7 +622,7 @@ class SGModelView extends SGModel {
 				if (typeof callback === 'function') {
 					callback = callback.bind(this);
 					elementDOM.addEventListener('click', callback);
-					const index = this.#eventsCounter++;
+					const index = ++this.#eventsCounter;
 					this.#elementsEvents[index] = {
 						callback: callback,
 						element: elementDOM,
@@ -1332,6 +1328,52 @@ class SGModelView extends SGModel {
 			}
 		}
 		return result;
+	}
+
+	/**
+	 * Очистить DOM-элементы представления от __sg, sg-uuid и sg-item. Удалить подписчики на события.
+	 * @private
+	 */
+	#clearSGinDOM(root) {
+		let name, item;
+		for (name in this.#propertyElementLinks) {
+			const link = this.#propertyElementLinks[name];
+			if (link.linkType === SGModelView.#LINKTYPE_VALUE) {
+				link.element.removeEventListener('change', this.onChangeDOMElementValue);
+				link.element.removeEventListener('input', this.onChangeDOMElementValue);
+			}
+			delete this.#propertyElementLinks[name];
+		}
+		while (item = this.#elementsEvents.pop()) { // eslint-disable-line no-cond-assign
+			item.element.removeEventListener(item.event, item.callback);
+		}
+		if (root instanceof HTMLElement) {
+			delete root[SGModelView.#sgPrefixInNode];
+			delete root.__sgModelUUID;
+			root.removeAttribute('sg-uuid');
+			root.removeAttribute('sg-item');
+		}
+		for (const childNode of root.childNodes) {
+			if (childNode.nodeType === Node.ELEMENT_NODE) {
+				this.#clearSGinDOM(childNode);
+			}
+		}		
+	}
+
+	/**
+	 * Destroy the view and instance
+	 * @param {boolean} [noRemoveDOM=false]
+	 */
+	destroy(noRemoveDOM = false) {
+		super.destroy();
+		if (this.$view) {
+			if (noRemoveDOM) {
+				// TODO: очистить DOM-элементы от __sg, и от sg-uuid, sg-item
+				this.#clearSGinDOM(this.$view);
+			} else {
+				this.$view.remove();
+			}
+		}
 	}
 }
 

@@ -64,10 +64,10 @@ async function creator() {
 	});
 
 	await model.initialization.promise;
-	return prepareTests(CustomModel, model);
+	return prepareTests({CustomModel, model});
 }
 
-function prepareTests(CustomModel, model) {
+function prepareTests({CustomModel, model}) {
 	return {
 		class: CustomModel,
 		instance: model,
@@ -88,7 +88,7 @@ function prepareTests(CustomModel, model) {
 				input: model,
 				runner: async (srcObject) => srcObject.toJSON(),
 				verify: (
-					temp = {data:{nullProperty2:null,numberProperty2:65536,stringProperty:"text (overridding!)",stringProperty2:"loading...",booleanProperty2:!0,xyProperty2:{x:192,y:64},objectProperty2:{},arrayProperty2:[],setProperty2:{},mapProperty2:{},_noSaveToStorageProperty2:"54321",nullProperty:null,numberProperty:3.141592654,booleanProperty:!1,xyProperty:{x:128,y:256},objectProperty:{},arrayProperty:[],objectNumbersProperty:{a:1,b:2,c:3},arrayNumbersProperty:[1,22,333],setProperty:{},mapProperty:{},_noSaveToStorageProperty:12345},__class:{name:"CustomModel",__hash:"1e386f74826ce82c679da32e5267e0ad480ffd62a571b2fdd355f64035951bde",__prototype:{name:"SGModel",version:"1.1.0",isNode:!1,isBrowser:!0}},__uid:1,initialized:!0,changed:!1,destroyed:!1,thisData1:"2024-12-31T21:00:00.000Z",thisData2:[1024,512,256,128,64,32,16,8,4,2],uuid:"00000000-0000-0000-0000-3066eb5090f6",options:{}},
+					temp = {data:{nullProperty2:null,numberProperty2:65536,stringProperty:"text (overridding!)",stringProperty2:"loading...",booleanProperty2:!0,xyProperty2:{x:192,y:64},objectProperty2:{},arrayProperty2:[],setProperty2:{},mapProperty2:{},_noSaveToStorageProperty2:"54321",nullProperty:null,numberProperty:3.141592654,booleanProperty:!1,xyProperty:{x:128,y:256},objectProperty:{},arrayProperty:[],objectNumbersProperty:{a:1,b:2,c:3},arrayNumbersProperty:[1,22,333],setProperty:{},mapProperty:{},_noSaveToStorageProperty:12345},__class:{name:"CustomModel",__hash:"075d0271b8a0dd907100ec06201448123e7bd34d7a4ad26015db31d7ae3da7da",__prototype:{name:"SGModel",version:"1.1.0",isNode:!1,isBrowser:!0}},__uid:1,initialized:!0,changed:!1,destroyed:!1,thisData1:"2024-12-31T21:00:00.000Z",thisData2:[1024,512,256,128,64,32,16,8,4,2],uuid:"00000000-0000-0000-0000-3066eb5090f6",options:{}},
 					temp.__class.__prototype.version = SGModel.version,
 					temp.__uid = model.__uid,
 					temp
