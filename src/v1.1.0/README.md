@@ -11,7 +11,7 @@
 #### Исходники (версия 1.1):
 
 * [sg-model.js (58 KB)](https://model.sg2d.ru/src/v1.1.0/sg-model.js)
-* [sg-model-view.js (53 KB)](https://model.sg2d.ru/src/v1.1.0/sg-model-view.js)
+* [sg-model-view.js (54 KB)](https://model.sg2d.ru/src/v1.1.0/sg-model-view.js)
 
 #### Страница автотестов:
 
