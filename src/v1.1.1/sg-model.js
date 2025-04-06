@@ -3,7 +3,7 @@
 /**
  * SGModel - Библиотека-класс для структурирования веб-приложений с помощью биндинг-моделей. Это упрощенный аналог Backbone.js! Библиотека хорошо адаптирована для наследования классов. Может использоваться как в браузере, так и на Node.js.
  * @english A library class for structuring web applications using binding models. This is a simplified version of Backbone.js! The library is well adapted for inheritance classes. Can be used both in the browser and on Node.js.
- * @version 1.1.0
+ * @version 1.1.1
  * @requires ES2024+ (ES15+)
  * @link https://github.com/sg2d/model.sg2d.ru
  * @license SGModel may be freely distributed under the MIT license
@@ -16,7 +16,7 @@ class SGModel {
  	 * @readonly
 	 * @type {string}
 	 */
-	static version = (typeof __SGMODEL_VERSION__ !== 'undefined' ? __SGMODEL_VERSION__ : '1.1.0'); // eslint-disable-line no-undef
+	static version = (typeof __SGMODEL_VERSION__ !== 'undefined' ? __SGMODEL_VERSION__ : '1.1.1'); // eslint-disable-line no-undef
 
 	/**
 	 * @readonly
@@ -177,7 +177,7 @@ class SGModel {
 	 * @type {boolean}
 	 */
 	initialized = (
-		//this.initialization.promise.__sg_instance = this, // @debug
+		this.initialization.promise.__sg_instance = this, // @debug
 		false
 	);
 

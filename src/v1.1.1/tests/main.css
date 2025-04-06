@@ -1,0 +1,170 @@
+/* Common styles */
+.text-center { text-align: center; }
+pre {
+	background-color: #eee;
+	padding: 3px;
+	overflow: auto;
+}
+pre .warn {
+	background-color: #ffa;
+	color: red;
+}
+@keyframes pulse {
+	0% { filter: drop-shadow(0 0 2px #0f0); }
+	50% { filter: drop-shadow(0 0 10px #0f0); }
+	100% { filter: drop-shadow(0 0 2px #0f0); }
+}
+@keyframes glitch {
+	0% { filter: hue-rotate(0deg); }
+	20% { filter: hue-rotate(90deg) blur(0.5px); }
+	40% { filter: hue-rotate(180deg); }
+	60% { filter: hue-rotate(270deg) blur(1px); }
+	80% { filter: hue-rotate(360deg); }
+	100% { filter: hue-rotate(0deg); }
+}
+.passed { color: green; }
+.failed { color: red; }
+.error { color: red; }
+
+/* Header */
+.header {
+	display: flex;
+	width: 100%;
+	padding: 3px;
+}
+.header > div {
+	flex: 1;
+	min-width: 0;
+	box-sizing: border-box;
+	overflow: auto;
+	padding: 3px;
+}
+.header h5 {
+	line-height: normal;
+}
+.header .statistics {
+	font-size: 0.9rem;
+	font-family: sans-serif, Tahoma;
+}
+.header .statistics .btn-collapse-expand {
+	border-radius: 5px;
+	padding: 3px;
+	border: 1px outset #aaa;
+}
+.header .statistics .btn-collapse-expand:not(.no-items) {
+	cursor: pointer;
+}
+.header .statistics .btn-collapse-expand:not(.no-items):hover {
+	filter: drop-shadow(0 0 5px #aaa) drop-shadow(0 0 5px #ff0);
+	border: 1px outset #333;	
+}
+.header .statistics .btn-collapse-expand.no-items {
+	color: initial;
+}
+.header .global-controls {
+	text-align: right;
+}
+
+/* Items */
+section.tests-group h6 a {
+	padding-left: 0.5rem;
+	padding-right: 0.5rem;
+	text-decoration: none;
+	color: inherit;
+}
+section.tests-group h6.error {
+	color: red;
+}
+section.tests-group h6:hover a {
+	display: inline !important;
+}
+section.tests-group h6 a:hover {
+	color: red;
+}
+section.tests-group .view {
+	padding: 5px;
+	border: 1px outset #aaa;
+	border-radius: 5px;
+	background-color: #eee;
+	min-height: 1rem;
+	min-width: 1rem;
+}
+section.tests-group ul {
+	list-style-type: none;
+	padding-left: 1rem;
+}
+section.tests-group ul > li {
+	border: 1px solid transparent;
+}
+section.tests-group ul > li:hover {
+	filter: brightness(0.95);
+}
+section.tests-group ul > li.expanded {
+	border: 1px dotted gray;
+	border-radius: 10px;
+	background-color: #fff;
+}
+
+button.show-view, button.show-code, button.show-description {
+	margin-left: 0.25rem;
+	border-radius: 5px;
+	font-size: 0.7rem;
+	float: right;
+}
+button.show-view.active, button.show-code.active, button.show-description.active {
+	background-color: #ffa;
+}
+button.show-view:hover, button.show-code:hover, button.show-description:hover {
+	filter: brightness(1.1);
+	color: green;
+	border-color: #999;
+}
+
+pre.code, pre.description {
+	border: 1px outset #999;
+	tab-size: 0.95rem;
+	max-height: 500px;
+}
+
+ul > li .item-details .verify-fact pre.in-out {
+	max-height: 400px;
+}
+ul > li .item-header {
+	cursor: pointer;
+}
+ul > li.expanded .item-header {
+	font-weight: bold;
+}
+ul > li .item-header:hover {
+	filter: drop-shadow(0 0 5px #0ff) drop-shadow(0 0 10px #0ff); /*ul > li .item-header:hover { animation: pulse 2s infinite; }*/ /*ul > li .item-header:hover { animation: glitch 0.5s infinite; }*/
+}
+ul > li .item-header a {
+	padding-left: 0.5rem;
+	padding-right: 0.5rem;
+	text-decoration: none;
+	color: inherit;
+}
+ul > li .item-header:hover a {
+	display: inline !important;
+}
+ul > li .item-header a:hover {
+	color: red;
+}
+ul > li .item-header span.close {
+	float: right;
+	padding-right: 5px;
+}
+ul > li .item-header .status { font-weight: bold; }
+ul > li .item-header .status.passed { color: green; }
+ul > li .item-details .verify-fact {
+	display: flex; /* Делаем контейнер flex-контейнером */
+	width: 100%; /* Ширина контейнера (можно задать конкретное значение) */
+	padding: 3px;
+}
+ul > li .item-details .verify-fact > div {
+	flex: 1; /* Каждый дочерний div займет равное пространство */
+	min-width: 0; /* Для корректного сжатия содержимого */
+	box-sizing: border-box; /* Чтобы padding и border не влияли на ширину */
+	overflow: auto;
+	padding: 3px;
+}
