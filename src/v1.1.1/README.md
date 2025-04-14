@@ -50,7 +50,7 @@
 	* [destroy()](#destroy)
 * [Поддержка Singleton паттерна в наследуемых классах](#поддержка-singleton-паттерна-в-наследуемых-классах)
 	* [static singleInstance = false](#static-singleinstance--false)
-	* [static getOrCreateInstance()](#static-getorcreateinstance)
+	* [static getInstance(createIfMissing = true)](#static-getinstancecreateifmissing--true)
 	* [Статические методы для работы с данными](#статические-методы-для-работы-с-данными)
 	* [static data](#static-data)
 * [Утилиты используемые в SGModel](#утилиты-используемые-в-sgmodel)
@@ -376,9 +376,9 @@ class Application extends SGModel {
 new Application();
 ```
 
-### static getOrCreateInstance()
+### static getInstance(createIfMissing = true)
 
-Получить указатель на одиночный экземляр класса. Если экземпляр ещё не существует, то он будет создан.
+Получить указатель на одиночный (singleton) экземляр класса. Для `createIfMissing` = false если экземпляр ещё не существует, то будет выброшено исключение.
 
 ### Статические методы для работы с данными
 

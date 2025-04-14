@@ -330,12 +330,10 @@ class SGModel {
 		// Дёргаем __initialize() и initialize() экземпляра после выполнения конструктора, что бы инициализировались приватные свойства (для SGModelView актуально)! См. также #deferredProperties в SGModelView.
 		setTimeout(async () => {
 			this.__initialize(() => {
-				const result = this.initialize();
-				if (result instanceof Promise) {
-					result.then((result) => (this.initialized = (typeof result === 'boolean' ? result : true)));
-				} else {
-					this.initialized = (typeof result === 'boolean' ? result : true);
-				}
+				Promise.all([
+					this.initialize(),
+					this.initialization.promise
+				]).then((result) => (this.initialized = (typeof result === 'boolean' ? result : true)));
 			});
 		});
 	}

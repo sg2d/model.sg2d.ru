@@ -177,7 +177,7 @@ class SGModel {
 	 * @type {boolean}
 	 */
 	initialized = (
-		this.initialization.promise.__sg_instance = this, // @debug
+		//this.initialization.promise.__sg_instance = this, // @debug
 		false
 	);
 
@@ -268,7 +268,7 @@ class SGModel {
 		if (this.constructor.localStorageKey) {
 			const data = JSON.parse(localStorage.getItem(this.constructor.localStorageKey + (this.constructor.singleInstance ? '' : ':' + this.uuid)));
 			if (typeof data === 'object' && data !== null) {
-				SGModel.initObjectByObject(defaults, data);
+				SGModel.initObjectByObject(defaults, data, void 0, `Instance of ${this.constructor.name} with uuid ${this.uuid} (uid=${this.__uid})`);
 			}
 		}
 		
@@ -305,14 +305,14 @@ class SGModel {
 				if (prop in properties) {
 					return properties[prop];
 				}
-				throw new Error(`Error! Properties "${prop}" doen't exists! (may not be registered in defaultProperties)`);
+				throw new Error(`Error! Properties "${prop}" doen't exists! May not be registered in defaultProperties (instance of ${self.constructor.name})`);
 			},
 			set(properties, prop, value, receiver) { // eslint-disable-line no-unused-vars
 				if (prop in properties) {
 					self.set(prop, value);
 					return true;
 				}
-				throw new Error(`Error! Properties "${prop}" doen't exists! (may not be registered in defaultProperties)`);
+				throw new Error(`Error! Properties "${prop}" doen't exists! May not be registered in defaultProperties (instance of ${self.constructor.name})`);
 			},
 			deleteProperty(properties, prop) {
 				if (prop in properties) {
@@ -1188,16 +1188,22 @@ class SGModel {
 		return result;
 	}
 
-	/** @public */
-	static getOrCreateInstance = function() {
+	/**
+   * Returns the singleton instance. By default, creates it if necessary.
+   * @public
+	 * @param {boolean} [createIfMissing=true] If true, creates the instance if it doesn't exist.
+ 	 *                                         If false, throws an error instead of creating.
+	 * @throws {Error} If the singleton is not properly configured (when `singleInstance` is falsy).
+   * @returns {object}
+   */
+	static getInstance = function(createIfMissing = true) {
 		if (!this.singleInstance) {
-			throw new Error('Error in getOrCreateInstance()! static singleInstance is false!');
+			throw new Error('Error in getInstance()! Singleton not configured (singleInstance=false)!');
 		}
-		if (this.__instance) {
-			return this.__instance;
+		if (!this.__instance && !createIfMissing) {
+			throw new Error('Error in getInstance()! Singleton instance does not exist and creation is disabled!');
 		}
-		this.__instance = new this();
-		return this.__instance;
+		return this.__instance ?? (this.__instance = new this());
 	};
 
 	/**
@@ -1306,35 +1312,57 @@ class SGModel {
 
 	/**
 	 * Перезаписать рекурсивно значения всех свойств/элементов объекта/массива **dest** соответствующими значениями свойств/элементов объекта/массива **sources**.
-	 * @english Fill the values **dest** with the values from **source** (with recursion). If there is no property in **source**, then it is ignored for **dest**
+	 * @english Fill the values **dest** with the values from **source** (with recursion).
 	 * @param {object|array} dest
 	 * @param {object|array} source
-	 * @returns {dest}
+	 * @param {number} [flags=0b0011]	Флаги: 0001 (1) - добавлять незнакомые свойства, т.е. свойства, которые есть в source, но нет в dest - будут копироваться; 0010 (2) - режим форса (перезаписывает свойство даже если типы разные)
+	 * @param {string} [comments]			Комментарий для отладки ошибок
+	 * @param {string} [_path]				Приватный параметр для внутреннего использования при рекурсивных вызовах
+	 * @param {object} [_seen]				Для защиты от циклических ссылок
+	 * @returns {dest}								Модифицированный dest
 	 */
-	static initObjectByObject = function(dest, source) {
-		if (Array.isArray(dest)) {
-			for (let index = 0; index < source.length; index++) {
-				if (typeof dest[index] === 'object') {
-					this.initObjectByObject(dest[index], source[index]);
-				} else {
-					dest[index] = source[index];
-				}
-			}
-		} else if (dest instanceof Object) {
-			for (const propName in dest) {
-				if (Object.hasOwn(source, propName)) {
-					if (typeof dest[propName] === 'object') {
-						this.initObjectByObject(dest[propName], source[propName]);
+	static initObjectByObject = function(dest, source, flags = 0b0011, comments = '', _path = '{...}', _seen = new WeakSet()) {
+		if (!SGModel.isObject(dest)) {
+			console.warn(`SGModel->initObjectByObject(): "dest" is not an object at ${_path}! ${comments}`);
+			return dest;
+		}
+		if (!SGModel.isObject(source)) {
+			console.warn(`SGModel->initObjectByObject(): "source" is not an object at ${_path}! ${comments}`);
+			return dest;
+		}
+		if (_seen.has(source)) {
+			console.warn(`SGModel->initObjectByObject(): Circular reference detected at ${_path}! ${comments}`);
+			return dest;
+		}
+		_seen.add(source);
+		const allowAddNew = (flags & 1) === 1;
+		const forceReplace = (flags & 2) === 2;
+		for (const propName in source) {
+			const sourceVal = source[propName];
+			const destHasProp = Object.prototype.hasOwnProperty.call(dest, propName);	
+			if (destHasProp || allowAddNew) {
+				const destVal = dest[propName];
+				if (SGModel.isObject(sourceVal)) {
+					if (SGModel.isObject(destVal) || forceReplace) {
+						if (!SGModel.isObject(destVal)) {
+							dest[propName] = Array.isArray(sourceVal) ? [] : {};
+						}
+						this.initObjectByObject(dest[propName], sourceVal, flags, comments, `${_path}.${propName}`, _seen);
 					} else {
-						dest[propName] = source[propName];
+						console.warn(`Type mismatch at ${_path}["${propName}"] — skip copying nested object. ${comments}`);
 					}
+				} else {
+					dest[propName] = sourceVal;
 				}
+			} else {
+				console.warn(`Property missing in dest: ${_path}["${propName}"] will be ignored. ${comments}`);
 			}
-		} else {
-			dest = source;
 		}
 		return dest;
 	};
+
+	/** @public */
+	static isObject = (val) => val !== null && typeof val === 'object';
 
 	/** @public */
 	static upperFirstLetter = function(s) {

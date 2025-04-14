@@ -27,6 +27,14 @@ export default defineConfig([
         SwitchCase: 1 // Отступ для case внутри switch
 			}],
 			'no-tabs': 'off', // Отключаем правило, запрещающее табуляцию
+			'no-unused-vars': [
+				'error',
+				{ 
+					varsIgnorePattern: '^_$',  // Точное совпадение с "_"
+					argsIgnorePattern: '^_$',
+					caughtErrorsIgnorePattern: '^_$'
+				}
+			]
 		}
 	}
 ]);

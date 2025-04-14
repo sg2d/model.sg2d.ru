@@ -1,0 +1,19 @@
+[alias]
+		push-all = !git push origin && git push origin_github && git push origin_gitverse && git push origin_gitee
+    push-all-force = !git push -f origin && git push -f origin_github && git push -f origin_gitverse && git push -f origin_gitee
+		push-all-tags = !git push origin --tags && git push origin_github --tags && git push origin_gitverse --tags && git push origin_gitee --tags
+[remote "origin"]
+	url = https://kib@gitlab.core.sg2d.ru/sg2d/model.sg2d.ru.git
+	fetch = +refs/heads/*:refs/remotes/origin/*
+[remote "origin_github"]
+	url = https://sg2d@github.com/sg2d/model.sg2d.ru.git
+	fetch = +refs/heads/*:refs/remotes/origin_github/*
+[remote "origin_gitee"]
+	url = https://sg2d@gitee.com/sg2d/model.sg2d.ru.git
+	fetch = +refs/heads/*:refs/remotes/origin_gitee/*
+[remote "origin_gitverse"]
+	url = https://sg2d@gitverse.ru/sg2d/model.sg2d.ru.git
+	fetch = +refs/heads/*:refs/remotes/origin_gitverse/*
+[branch "master"]
+	remote = origin
+	merge = refs/heads/master

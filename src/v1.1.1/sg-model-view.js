@@ -540,16 +540,20 @@ class SGModelView extends SGModel {
 			
 			// Now attributes are implemented only for static output (only at initialization)
 			if (sgAttributes) {
-				const attributes = JSON.parse(sgAttributes.replace(/(\w+):\s([\w]+)(\([^)]*\)){0,1}([,\s]{0,1})/g, '"$1": "$2$3"$4'));
-				for (let a in attributes) {
-					const valueOrProperty = attributes[a];
-					const method = valueOrProperty.replace(/(\w+)(.*)/, '$1');
-					if (typeof this[method] === 'function') {
-						const args = Array.from(valueOrProperty.matchAll(/'(.*?)'/g));
-						elementDOM.setAttribute(a, this[method].apply(this, args.map((o)=>o[1])));
-					} else if (Object.hasOwn(this.data, valueOrProperty)) {
-						elementDOM.setAttribute(a, this.data[valueOrProperty]);
+				try {
+					const attributes = JSON.parse(sgAttributes.replace(/(\w+):\s([\w]+)(\([^)]*\)){0,1}([,\s]{0,1})/g, '"$1": "$2$3"$4'));
+					for (let a in attributes) {
+						const valueOrProperty = attributes[a];
+						const method = valueOrProperty.replace(/(\w+)(.*)/, '$1');
+						if (typeof this[method] === 'function') {
+							const args = Array.from(valueOrProperty.matchAll(/'(.*?)'/g));
+							elementDOM.setAttribute(a, this[method].apply(this, args.map((o)=>o[1])));
+						} else if (Object.hasOwn(this.data, valueOrProperty)) {
+							elementDOM.setAttribute(a, this.data[valueOrProperty]);
+						}
 					}
+				} catch (err) {
+					console.error(`Error in sg-attributes (instance of ${this.constructor.name})! sgAttributes="${sgAttributes}"\n`, err);
 				}
 			}
 			
@@ -736,11 +740,27 @@ class SGModelView extends SGModel {
 						default: {
 							if (elementDOM.type) {
 								switch (elementDOM.type) {
-									case 'radio': case 'checkbox': elementDOM.checked = value; break;
-									case 'range': case 'select-one': elementDOM.value = value; break;
-									case 'date': elementDOM.value = String(value).replace(/\s.*/, ''); break; // YYYY-MM-DD
-									case 'datetime-local': elementDOM.value = String(value).replace(/[+-]\d+$/, ''); break; // YYYY-MM-DD HH:MM:SS
-									case 'time': elementDOM.value = value.match(/\d\d:\d\d:\d\d/)?.[0]; break; // YYYY-MM-DD HH:MM:SS+PP
+									case 'radio': case 'checkbox': { elementDOM.checked = value; break; }
+									case 'range': case 'select-one': { elementDOM.value = value; break; }
+									case 'date': {
+										const dtm = String(value).match(/(\d{4})[-./](\d{2})[-./](\d{2})/); // YYYY-MM-DD* or YYYY.MM.DD* or YYYY/MM/DD
+										elementDOM.value = (dtm ? `${dtm[1]}-${dtm[2]}-${dtm[3]}` : '');
+										break;
+									}
+									case 'datetime-local': {
+										const dtm = String(value).match(/(\d{4})[-./](\d{2})[-./](\d{2})[T\s](\d{2}):(\d{2})(?::(\d{2}))?/);
+										if (dtm) {
+											const [_, year, month, day, hours, mins, secs] = dtm;
+											elementDOM.value = `${year}-${month}-${day}T${hours}:${mins}${secs ? `:${secs}` : ''}`; // YYYY-MM-DD HH:MM:SS
+										} else {
+											elementDOM.value = '';
+										}
+										break;
+									}
+									case 'time': {
+										elementDOM.value = String(value).match(/(?:^|\s|T)(\d{2}:\d{2})(?::\d+)?/)?.[1]; // *HH:MM:SS* or *HH:MM* (example: 2025-01-15 12:05:30+03, 2025-01-15T12:05:30.123Z)
+										break;
+									}
 									case 'text': case 'textarea': case 'button': {
 										const v = (sgInNode.format ? sgInNode.format.call(this, value) : value);
 										elementDOM.value = v;
