@@ -1,0 +1,130 @@
+{
+  "numberProperty": 3.141592654,
+  "stringProperty": "text0 (overridding!)",
+  "booleanProperty": true,
+  "instanceCustomClass": {
+    "instanceProp1": "ggg",
+    "options": {
+      "option1": "optionValue1"
+    }
+  },
+  "xyProperty0": {
+    "x": 0,
+    "y": 0
+  },
+  "xyProperty": {
+    "x": 128,
+    "y": 256
+  },
+  "objectPropertyEmpty": {},
+  "objectProperty": {
+    "a": "a1",
+    "b": "bb22"
+  },
+  "arrayPropertyEmpty": [],
+  "arrayProperty": [
+    "999",
+    666,
+    "repeat_text",
+    333,
+    666,
+    "repeat_text"
+  ],
+  "arrayNumbersPropertyEmpty": [],
+  "arrayNumbersProperty": [
+    1,
+    22,
+    333,
+    4444.44,
+    555.55,
+    -6666.66,
+    "NaN"
+  ],
+  "setPropertyEmpty": [],
+  "setProperty": [
+    400,
+    303
+  ],
+  "mapPropertyEmpty": {},
+  "mapProperty": {
+    "id": 333,
+    "code": "code1"
+  },
+  "arrayModelPropertyEmpty": [],
+  "arrayModelProperty": [
+    {}
+  ],
+  "modelProperty": {
+    "index": 1
+  },
+  "uuid": "00000000-0000-0000-0000-3066eb5090f4",
+  "numberProperty2": 1798.3525713812421,
+  "stringProperty2": "numberProperty2 changed to 1798.3525713812421",
+  "booleanProperty2": true,
+  "instanceClassProperty2": {
+    "instanceProp1": "ggg",
+    "options": {
+      "option1": "optionValue1"
+    }
+  },
+  "xyProperty2": {
+    "x": 192,
+    "y": 64
+  },
+  "objectProperty2": {
+    "prop1": 5,
+    "prop2": "33",
+    "prop3": {
+      "subprop1": 10
+    },
+    "prop4": [
+      66,
+      40
+    ]
+  },
+  "arrayProperty2": [
+    70,
+    "text1",
+    70,
+    "text1",
+    50
+  ],
+  "arrayNumbersProperty2": [
+    256,
+    "NaN",
+    "NaN"
+  ],
+  "setProperty2": [
+    22,
+    "text2",
+    {
+      "prop1": 500,
+      "prop2": "200"
+    }
+  ],
+  "mapProperty2": {
+    "30": "text3",
+    "user25": {
+      "name": "Ilya"
+    }
+  },
+  "mapPropertyEmpty2": {},
+  "modelProperty2": {
+    "index": 2
+  },
+  "arrayModelProperty2": [
+    {
+      "index": 3
+    },
+    {
+      "property2": "text3",
+      "subPropModel1": {
+        "index": 2
+      },
+      "subPropModel2": "[[Circular reference]]"
+    },
+    {
+      "index": 2
+    }
+  ]
+}

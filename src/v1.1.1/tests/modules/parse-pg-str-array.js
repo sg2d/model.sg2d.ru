@@ -10,7 +10,7 @@ function prepareTests() {
 		instance: null,
 		code: 'sgmodel-static-parsepgstrarray',
 		title: 'SGModel: static parsePgStrArray(line)',
-		sourceCode: SGModel.parsePgStrArray,
+		sourceCode: SGModel.utils.parsePgStrArray,
 		description: `
 -- Пример структуры БД и данных для тестирования типичного массива объектов и наличия специальных символов:
 CREATE TYPE wob_url_type AS (
@@ -32,7 +32,7 @@ INSERT INTO wob_tasks (id, code, description, wiki_links, doc_links) OVERRIDING 
 	ARRAY[('SGModel & SGModelView - Binding models and MVVM pattern','https://model.sg2d.ru/'),('Special symbols: '', ", \\, /, (, ), |, -, _, +, =, {, }, \`, !, ?, @, #, $, %, ^, &, *, ~, . end!','https://ggg.ggg')]::wob_url_type[]
 );
 `,
-		runner: async (inData) => SGModel.parsePgStrArray(inData),
+		runner: async (inData) => SGModel.utils.parsePgStrArray(inData),
 		items: [
 			{
 				code: 'sgmodel-static-parsepgstrarray__simple',

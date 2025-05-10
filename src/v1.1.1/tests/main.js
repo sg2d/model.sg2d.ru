@@ -3,7 +3,7 @@ import SGModelView from './../sg-model-view.js';
 import simpleModelWithBasicTests from './modules/simple-model-with-basic.js';
 import parsePgStrArrayTests from './modules/parse-pg-str-array.js';
 import simpleModelViewWithBasicTests from './modules/simple-modelview-with-basic.js';
-import deferredPropertiesTests from './modules/deferred-properties.js';
+import deferredPropertiesTests from './modules/model-deferred-properties.js';
 
 // Модули групп тестов
 const creators = [
@@ -48,7 +48,7 @@ async function run() {
 		const eSection = document.createElement('SECTION');
 		eSection.__testsGroup = testsGroup;
 		eSection.classList.add('tests-group');
-		const eBlock =  eTemplateTestsGroup.content.cloneNode(true);
+		const eBlock =	eTemplateTestsGroup.content.cloneNode(true);
 		eSection.append(eBlock);
 		eContent.append(eSection);
 		const eHeader6 = eSection.querySelector('h6');
@@ -66,29 +66,34 @@ async function run() {
 		if (testsGroup.showView === true) eShowViewButton.click();
 		const eList = eSection.querySelector('ul');
 		let localCounter = 0;
-		for (const item of testsGroup.items) {
-			const eItem =  eTemplateTestsItem.content.cloneNode(true);
+		for (const test of testsGroup.items) {
+			if (test.skip === true) continue;
+			const eItem =	eTemplateTestsItem.content.cloneNode(true);
 			const eItemHeader = eItem.querySelector('.item-header');
 			const eStatus = eItemHeader.querySelector('.status');
 			const eDetails = eItem.querySelector('.item-details');
-			eItemHeader.querySelector('a').setAttribute('href', `#${item.code}`);
+			eItemHeader.querySelector('a').setAttribute('href', `#${test.code}`);
 			eItemHeader.querySelector('a').onclick = stopPropagation;
 			eItemHeader.querySelector('.ordnum').innerText = `${globalCounter}.${++localCounter}.`;
-			eItemHeader.querySelector('.title').innerHTML = (item.title ? ` &ndash; ${item.title}` : '');
-			item.testsGroup = testsGroup;
-			const inData = item.input;
+			eItemHeader.querySelector('.title').innerHTML = (test.title ? ` &ndash; ${test.title}` : '');
+			const eIconCopyVerify = eDetails.querySelector('.icon-copy.js-verify');
+			const eIconCopyFailedOrError = eDetails.querySelector('.icon-copy.js-failed-or-error');
+			eIconCopyVerify.addEventListener('click', copyResult);
+			eIconCopyFailedOrError.addEventListener('click', copyResult);
+			test.testsGroup = testsGroup;
+			const inData = test.input;
 			let status = '';
-			const runner = item.runner || item.testsGroup.runner;
+			const runner = test.runner || test.testsGroup.runner;
 			try {
-				item.fact = await runner(item.input, eView);
-				item.passed = (JSON.stringify(item.fact, jsonStringifyReplacer) === JSON.stringify(item.verify, jsonStringifyReplacer));
-				status = (item.passed ? 'passed' : 'failed');
+				test.fact = await runner(test.input, eView);
+				test.passed = (JSON.stringify(test.fact, jsonStringifyReplacer) === JSON.stringify(test.verify, jsonStringifyReplacer));
+				status = (test.passed ? 'passed' : 'failed');
 				stats[status]++; 
 			} catch (err) {
 				console.error(err);
 				status = 'error';
 				stats.error++;
-				item.fact = JSON.stringify(err, Object.getOwnPropertyNames(err));
+				test.fact = JSON.stringify(err, Object.getOwnPropertyNames(err));
 			}
 			if ((testsGroup.instance instanceof SGModelView) && (testsGroup.instance.$view) && (eShowViewButton.style.display === 'none')) {
 				eShowViewButton.style.display = 'block';
@@ -102,13 +107,15 @@ async function run() {
 				eDetails.querySelector('.input-data').innerHTML = `<b style="color: red">${err.message}</b>`;
 			}
 			eDetails.querySelector('.runner').innerHTML = String(runner);
-			let verify;
+			let verify, comparedLines1;
 			try {
-				verify = JSON.stringify(item.verify, jsonStringifyReplacer, 2);
+				verify = JSON.stringify(test.verify, jsonStringifyReplacer, 2);
 			} catch (err) {
 				console.error(err);
 				verify = err.message;
 			}
+			const ePre1 = eDetails.querySelector('.verify')
+			comparedLines1 = verify;
 			if (status === 'passed') {
 				eDetails.querySelector('.passed').style.display = 'block';
 			} else {
@@ -116,26 +123,22 @@ async function run() {
 				let processedLines1 = verify.split('\n');
 				let processedLines2;
 				try {
-					processedLines2 = JSON.stringify(item.fact || '', jsonStringifyReplacer, 2).split('\n');
+					processedLines2 = JSON.stringify(test.fact || '', jsonStringifyReplacer, 2).split('\n');
 				} catch (err) {
 					console.error(err);
 					processedLines2 = [err.message, ...err.stack.split('\n')];
 				}
-				const len = Math.max(processedLines1.length, processedLines2.length);
-				for (let index = 0; index < len; index++) {
-					if (index >= processedLines1.length || index >= processedLines2.length || processedLines1[index] !== processedLines2[index]) {
-						if (index < processedLines1.length) processedLines1[index] = `<b class="warn">${processedLines1[index]}</b>`;
-						if (index < processedLines2.length) processedLines2[index] = `<b class="warn">${processedLines2[index]}</b>`;
-					}
-				}
-				verify = processedLines1.join('\n')
-				const eSpan = eDetails.querySelector('.failed-or-error');
-				eSpan.style.display = 'block';
-				eSpan.innerHTML = processedLines2.join('\n');
+				const { result1, result2: comparedLines2 } = compareTextBlocks(processedLines1, processedLines2);
+				const ePre2 = eDetails.querySelector('.failed-or-error');
+				ePre2.style.display = 'block';
+				ePre2.innerHTML = comparedLines2;
+				comparedLines1 = result1;
+				new ScrollSync(ePre1, ePre2);
+  			new ScrollSync(ePre2, ePre1);
 			}
-			eDetails.querySelector('.verify').innerHTML = verify;
+			ePre1.innerHTML = comparedLines1;
 			eList.append(eItem);
-			if (item.break === true) break;
+			if (test.break === true) break;
 		}
 		if (testsGroup.error === true) {
 			eHeader6.classList.add('error');
@@ -250,6 +253,127 @@ document.onClickShowDescription = function(eButton) {
 
 function stopPropagation(evt) {
 	evt.stopPropagation();
+}
+
+window.loadJSON = function(moduleCode, testCode) {
+	const url = `modules/json/${moduleCode}/${testCode}.json`;
+	return fetch(url, { json: true }).then(async result => {
+		try {
+			if (result.ok) return await result.json();
+		} catch (err) {
+			err.message = err.message + `. Url="${url}"`;
+			console.error(err);
+			return err.message;
+		}
+		throw new Error(`File with url "${url}" does not exist!`);
+	});
+}
+
+function copyResult() {
+	this.classList.add('copied');
+	setTimeout(() => this.classList.remove('copied'), 2000);
+	const ePre = this.parentNode.querySelector('pre');
+	const text = ePre.textContent.replace(/\u00A0/g, ' ');
+	try {
+		navigator.clipboard.writeText(text);
+	} catch (err) { // eslint-disable-line no-unused-vars
+		const textarea = document.createElement('textarea');
+		textarea.value = text;
+		document.body.appendChild(textarea);
+		textarea.select();
+		try {
+			const success = document.execCommand('copy');
+			if (!success) throw new Error('Copy failed');
+			console.log('Текст скопирован!');
+		} catch (err) {
+			console.error('Ошибка копирования:', err);
+		} finally {
+			document.body.removeChild(textarea);
+		}
+	}
+}
+
+/**
+ * Сравнивает две версии текста построчно и помечает различия тегом <b class="warn">...</b>
+ * @ai used ChatGPT 2025.04.26
+ * @param {string[]} processedLines1 - Первая версия текста, разбитая на строки
+ * @param {string[]} processedLines2 - Вторая версия текста, разбитая на строки
+ * @returns {{ result1: string, result2: string }} - Объекты с доработанными строками текста
+ */
+function compareTextBlocks(processedLines1, processedLines2) {
+	const SEARCH_AREA = 10; // Зона поиска ближайших совпадений после расхождения
+	const result1 = [];
+	const result2 = [];
+	let i = 0, j = 0;
+	while (i < processedLines1.length || j < processedLines2.length) {
+		const line1 = processedLines1[i] ?? '';
+		const line2 = processedLines2[j] ?? '';
+		if (line1 === line2) {
+			result1.push(line1);
+			result2.push(line2);
+			i++;
+			j++;
+		} else {
+			// Попробуем найти ближайшее совпадение вперёд
+			let found = false;
+			for (let lookahead = 1; lookahead <= SEARCH_AREA; lookahead++) { // Ограничим зону поиска
+				if (processedLines1[i + lookahead] === line2) {
+					// Пропущены строки в первой версии
+					for (let k = 0; k < lookahead; k++) {
+						result1.push(`<b class="warn">${processedLines1[i + k]}</b>`);
+						result2.push('<b class="warn">&nbsp;</b>');
+					}
+					i += lookahead;
+					found = true;
+					break;
+				} else if (processedLines2[j + lookahead] === line1) {
+					// Пропущены строки во второй версии
+					for (let k = 0; k < lookahead; k++) {
+						result1.push('<b class="warn">&nbsp;</b>');
+						result2.push(`<b class="warn">${processedLines2[j + k]}</b>`);
+					}
+					j += lookahead;
+					found = true;
+					break;
+				}
+			}
+			if (!found) {
+				// Строки различаются, но соответствий рядом нет
+				result1.push(`<b class="warn">${line1}</b>`);
+				result2.push(`<b class="warn">${line2}</b>`);
+				i++;
+				j++;
+			}
+		}
+	}
+	return {
+		result1: result1.join('\n'),
+		result2: result2.join('\n'),
+	};
+}
+
+/**
+ * Для синхронизации скроллинга в PRE-тегах
+ * @ai used DeepSeek 2025.04.29
+ */
+class ScrollSync {
+	constructor(source, target) {
+		this.source = source;
+		this.target = target;
+		this.isSyncing = false;
+		this.source.addEventListener('scroll', this.syncScroll.bind(this));
+	}
+	syncScroll() {
+		if (this.isSyncing) return;
+		this.isSyncing = true;
+		// Синхронизация scrollTop
+		const scrollPercentage = this.source.scrollTop / (this.source.scrollHeight - this.source.clientHeight);
+		this.target.scrollTop = scrollPercentage * (this.target.scrollHeight - this.target.clientHeight);
+		// Синхронизация scrollLeft
+		const scrollLeftPercentage = this.source.scrollLeft / (this.source.scrollWidth - this.source.clientWidth);
+		this.target.scrollLeft = scrollLeftPercentage * (this.target.scrollWidth - this.target.clientWidth);
+		this.isSyncing = false;
+	}
 }
 
 // Очистка комментариев в шаблоне (на первом уровне вложенности)

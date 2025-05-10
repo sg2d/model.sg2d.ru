@@ -1,0 +1,268 @@
+{
+  "defTypes": {
+    "voidProperty": {
+      "type::SGBaseType": "[[function TYPE_ANY()]]"
+    },
+    "nullProperty": {
+      "value": null,
+      "type::SGBaseType": "[[function TYPE_ANY()]]"
+    },
+    "numberProperty0": {
+      "value": 0,
+      "type::SGBaseType": "[[function TYPE_NUMBER()]]"
+    },
+    "numberProperty": {
+      "value": 3.141592654,
+      "type::SGBaseType": "[[function TYPE_NUMBER()]]"
+    },
+    "stringPropertyEmpty": {
+      "value": "",
+      "type::SGBaseType": "[[function TYPE_STRING()]]"
+    },
+    "stringProperty": {
+      "value": "text",
+      "type::SGBaseType": "[[function TYPE_STRING()]]"
+    },
+    "booleanProperty0": {
+      "value": false,
+      "type::SGBaseType": "[[function TYPE_BOOLEAN()]]"
+    },
+    "booleanProperty": {
+      "value": true,
+      "type::SGBaseType": "[[function TYPE_BOOLEAN()]]"
+    },
+    "functionAnonProperty": {
+      "value": "[[function functionAnonProperty()]]",
+      "type::SGBaseType": "[[function TYPE_FUNCTION()]]"
+    },
+    "functionNameProperty": {
+      "value": "[[function fName(_)]]",
+      "type::SGBaseType": "[[function TYPE_FUNCTION()]]"
+    },
+    "classProperty": {
+      "value:::CustomClass": {
+        "staticProp1": 12
+      },
+      "type::SGBaseType": "[[function TYPE_FUNCTION()]]"
+    },
+    "instanceCustomClass": {
+      "value:CustomClass": {
+        "instanceProp1": "ggg",
+        "options": {
+          "option1": "optionValue1"
+        }
+      },
+      "type::SGBaseType": "[[function TYPE_OBJECT()]]"
+    },
+    "xyProperty0": {
+      "value": {
+        "x": 0,
+        "y": 0
+      },
+      "type::SGBaseType": "[[function TYPE_XY()]]"
+    },
+    "xyProperty": {
+      "value": {
+        "x": 128,
+        "y": 256
+      },
+      "type::SGBaseType": "[[function TYPE_XY()]]"
+    },
+    "objectPropertyEmpty": {
+      "value": {},
+      "type::SGBaseType": "[[function TYPE_OBJECT()]]"
+    },
+    "objectProperty": {
+      "value": {
+        "a": "a1",
+        "b": "bb22"
+      },
+      "type::SGBaseType": "[[function TYPE_OBJECT()]]"
+    },
+    "arrayPropertyEmpty": {
+      "value": [],
+      "type::SGBaseType": "[[function TYPE_ARRAY()]]"
+    },
+    "arrayProperty": {
+      "value": [
+        "999",
+        666,
+        "repeat_text",
+        333,
+        666,
+        "repeat_text"
+      ],
+      "type::SGBaseType": "[[function TYPE_ARRAY()]]"
+    },
+    "arrayNumbersPropertyEmpty": {
+      "value": [],
+      "type::SGBaseType": "[[function TYPE_ARRAY_NUMBERS()]]"
+    },
+    "arrayNumbersProperty": {
+      "value": [
+        1,
+        22,
+        333,
+        "+4444.44",
+        "555,55",
+        "-6 666,66",
+        "some text2..."
+      ],
+      "type::SGBaseType": "[[function TYPE_ARRAY_NUMBERS()]]"
+    },
+    "setPropertyEmpty": {
+      "value:Set": [],
+      "type::SGBaseType": "[[function TYPE_SET()]]"
+    },
+    "setProperty": {
+      "value:Set": [
+        400,
+        303
+      ],
+      "type::SGBaseType": "[[function TYPE_SET()]]"
+    },
+    "mapPropertyEmpty": {
+      "value:Map": {},
+      "type::SGBaseType": "[[function TYPE_MAP()]]"
+    },
+    "mapProperty": {
+      "value:Map": {
+        "id": 333,
+        "code": "code1"
+      },
+      "type::SGBaseType": "[[function TYPE_MAP()]]"
+    },
+    "arrayModelPropertyEmpty": {
+      "value": [],
+      "type::SGBaseType": "[[function TYPE_ARRAY_MODEL()]]"
+    },
+    "arrayModelProperty": {
+      "value": [
+        {
+          "__uid": 1,
+          "initialized": true,
+          "changed": false,
+          "destroyed": false,
+          "uuid": "00000000-0000-0000-0000-3066eb5090f1",
+          "options": {},
+          "defaults": {
+            "index": {
+              "value": 0,
+              "type::SGBaseType": "[[function TYPE_NUMBER()]]"
+            }
+          },
+          "[[Prototype.constructor]]": "[[class SubCustomModel]]"
+        }
+      ],
+      "type::SGBaseType": "[[function TYPE_ARRAY_MODEL()]]"
+    },
+    "modelPropertyEmpty": {
+      "value": null,
+      "type::SGBaseType": "[[function TYPE_MODEL()]]"
+    },
+    "modelProperty": {
+      "value:SubCustomModel": {
+        "__uid": 2,
+        "initialized": true,
+        "changed": false,
+        "destroyed": false,
+        "uuid": "00000000-0000-0000-0000-3066eb5090f2",
+        "options": {},
+        "defaults": {
+          "index": {
+            "value": 1,
+            "type::SGBaseType": "[[function TYPE_NUMBER()]]"
+          }
+        }
+      },
+      "type::SGBaseType": "[[function TYPE_MODEL()]]"
+    },
+    "_noSaveToStorageProperty": {
+      "value": 12345,
+      "type::SGBaseType": "[[function TYPE_NUMBER()]]"
+    },
+    "uuid": {
+      "value": "",
+      "type::SGBaseType": "[[function TYPE_STRING()]]"
+    },
+    "voidProperty2": {
+      "value": null,
+      "type::SGBaseType": "[[function TYPE_ANY()]]"
+    },
+    "nullProperty2": {
+      "value": null,
+      "type::SGBaseType": "[[function TYPE_ANY()]]"
+    },
+    "numberProperty2": {
+      "value": 0,
+      "type::SGBaseType": "[[function TYPE_NUMBER()]]"
+    },
+    "stringProperty2": {
+      "value": "",
+      "type::SGBaseType": "[[function TYPE_STRING()]]"
+    },
+    "booleanProperty2": {
+      "value": false,
+      "type::SGBaseType": "[[function TYPE_BOOLEAN()]]"
+    },
+    "functionAnonProperty2": {
+      "value": null,
+      "type::SGBaseType": "[[function TYPE_FUNCTION()]]"
+    },
+    "functionNameProperty2": {
+      "value": null,
+      "type::SGBaseType": "[[function TYPE_FUNCTION()]]"
+    },
+    "classProperty2": {
+      "value": null,
+      "type::SGBaseType": "[[function TYPE_FUNCTION()]]"
+    },
+    "instanceClassProperty2": {
+      "value": {},
+      "type::SGBaseType": "[[function TYPE_OBJECT()]]"
+    },
+    "xyProperty2": {
+      "value": {
+        "x": 0,
+        "y": 0
+      },
+      "type::SGBaseType": "[[function TYPE_XY()]]"
+    },
+    "objectProperty2": {
+      "value": {},
+      "type::SGBaseType": "[[function TYPE_OBJECT()]]"
+    },
+    "arrayProperty2": {
+      "value": [],
+      "type::SGBaseType": "[[function TYPE_ARRAY()]]"
+    },
+    "arrayNumbersProperty2": {
+      "value": [],
+      "type::SGBaseType": "[[function TYPE_ARRAY_NUMBERS()]]"
+    },
+    "setProperty2": {
+      "value:Set": [],
+      "type::SGBaseType": "[[function TYPE_SET()]]"
+    },
+    "mapProperty2": {
+      "value:Map": {},
+      "type::SGBaseType": "[[function TYPE_MAP()]]"
+    },
+    "mapPropertyEmpty2": {
+      "value:Map": {},
+      "type::SGBaseType": "[[function TYPE_MAP()]]"
+    },
+    "modelProperty2": {
+      "value": null,
+      "type::SGBaseType": "[[function TYPE_MODEL()]]"
+    },
+    "arrayModelProperty2": {
+      "value": [],
+      "type::SGBaseType": "[[function TYPE_ARRAY_MODEL()]]"
+    },
+    "_noSaveToStorageProperty2": {
+      "value": "",
+      "type::SGBaseType": "[[function TYPE_STRING()]]"
+    }
+  }
+}

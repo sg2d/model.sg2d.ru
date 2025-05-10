@@ -1,8 +1,12 @@
 "use strict";
 
+import Utils from './sg-utils.js';
+import SGTypes from './sg-types.js';
+import SGJson from './sg-json.js';
+
 /**
- * SGModel - Библиотека-класс для структурирования веб-приложений с помощью биндинг-моделей. Это упрощенный аналог Backbone.js! Библиотека хорошо адаптирована для наследования классов. Может использоваться как в браузере, так и на Node.js.
- * @english A library class for structuring web applications using binding models. This is a simplified version of Backbone.js! The library is well adapted for inheritance classes. Can be used both in the browser and on Node.js.
+ * SGModel - Библиотека-класс для структурирования веб-приложений с помощью биндинг-моделей. Библиотека хорошо адаптирована для наследования классов. Может использоваться как в браузере, так и на Node.js.
+ * @english A library class for structuring web applications using binding models. The library is well adapted for inheritance classes. Can be used both in the browser and on Node.js.
  * @version 1.1.1
  * @requires ES2024+ (ES15+)
  * @link https://github.com/sg2d/model.sg2d.ru
@@ -12,64 +16,88 @@
 class SGModel {
 
 	/**
-	 * Library version (fixed in minified version)
+	 * Версия библиотеки (фиксируется при сборке проекта)
  	 * @readonly
-	 * @type {string}
+	 * @constant {string}
 	 */
 	static version = (typeof __SGMODEL_VERSION__ !== 'undefined' ? __SGMODEL_VERSION__ : '1.1.1'); // eslint-disable-line no-undef
 
-	/**
-	 * @readonly
-	 * @type {boolean}
-	 */
-	static isNode = ((typeof process === 'object' && process !== null) && (process.versions instanceof Object) && process.versions.node !== undefined);
+	static utils = Utils;
+	static json = SGJson;
+	static TYPES = SGTypes.TYPES;
+	static BaseType = SGTypes.BaseType;
 
 	/**
-	 * @readonly
-	 * @type {boolean}
+	 * @constant {array}
 	 */
-	static isBrowser = (typeof window === 'object' && window !== null && window.document !== undefined);
-	
-	/**
-	 * SGModel types
-	 * @constant
-	 */
-	static TYPES = [
-		'ANY:mixed',
-		'NUMBER:simple',
-		//'INTEGER:simple', // @announcement v1.1+
-		//'DECIMAL:simple', // @announcement v1.1+
-		//'DECIMAL_PRECISION_1:simple', // @announcement v1.1+
-		//'DECIMAL_PRECISION_2:simple', // @announcement v1.1+
-		//'DECIMAL_PRECISION_3:simple', // @announcement v1.1+
-		//'DECIMAL_PRECISION_4:simple', // @announcement v1.1+
-		'STRING:simple',
-		'BOOLEAN:simple',
-		'FUNCTION:simple',
-		'XY:complex', // координата
-		'OBJECT:complex',
-		'ARRAY:complex',
-		'ARRAY_NUMBERS:complex', // @deprecated make? TODO
-		'OBJECT_NUMBERS:complex', // @deprecated make? TODO
-		'SET:complex', // коллекции new Set()
-		'MAP:complex', // коллекции new Map()
-		//'DATASET:complex', // @announcement v1.1+
-	];
-
-	static TYPES_COMPLEX = this.TYPES.reduce((results, typeDef, index) => {
-		const [typeCode, complex] = typeDef.split(':');
-		this[`TYPE_${typeCode}`] = index;
-		if (complex === 'complex') {
-			results[index] = true;
-			results[typeCode] = true;
-		}
-		return results;
-	}, {});
+	static standardKeys = ['id','code','uuid','uid','index','hash'];
 
 	/**
-	 * Enable singleton pattern for model
+	 * Выводить или нет объявления функций при вызове toJSON() или JSON.strigify()
+	 * @overridden
+	 */
+	static allowJSONFunctions = false;
+
+	/**
+	 * Выводить или нет тип объекта в имени свойства при вызове toJSON() или JSON.strigify()
+	 * @overridden
+	 */
+	static printPropertyType = false;
+
+	/**
+	 * Флаг, передаваемый в вызове **.on(...)** для выполнения колбэка сразу же
+	 * @constant {boolean}
+	 */
+	static FLAGS = Object.freeze({
+		NONE:												0b0000_0000,
+		IMMEDIATELY:								0b0000_0001,
+		OFF_MAY_BE:									0b0000_0010, // Если в процессе вызова колбэков может быть выполнен `this.off()`, нужно передать этот флаг
+		PREV_VALUE_CLONE:						0b0000_0100, // Клонировать предыдущее значение (тяжелое клонирование для объектов/массивов)
+		NO_CALLBACKS:								0b0000_1000, // Не выполнять колбэки
+		FORCE_CALLBACKS:						0b0001_0000, // Выполнить колбэки, даже если не было изменений
+		NO_DESTROY_INSTANCE_MODEL:	0b0010_0000, // не вызывать destroy() у инстансов на основе SGModel
+		INCLUDING_INSTANCE:					0b0100_0000, // системный флаг (При проверке значения свойства на тип SGModel будут учтены инстансы)
+		FIRST_VALIDATE:							0b1000_0000, // системный флаг
+	});
+
+	/**
+	 * Возможен только один инстанс класса (Singleton)
 	 */
 	static singleInstance = false;
+
+	/**
+	 * Возможно несколько инстансов класса
+	 */
+	static multipleInstances = false;
+
+	/**
+	 * Автоматическое сохранение в хранилище при изменении любого свойства
+	 */
+	static autoSave = false;
+
+	/**
+	 * Значения свойств по умолчанию и тип. Задаётся в классах потомках. Может быть либо объектом со свойствами, либо функцией, возвращающей объект со свойствами.
+	 * Есть несколько способов описать каждое свойство:
+	 * 	- значение (тип определяется автоматически)
+	 *  - тип (значение устанавливается пустое для данного типа)
+	 *  - значение и явное указание типа в формате массива `[value, type]` или в виде объекта `{ value, type }`
+	 * @overridden
+	 */
+	/*static defaults = { prop1: 12345, prop2: SGModel.TYPE.$TYPE, prop3: [[22,333,10], SGModel.TYPES.$TYPE], prop4: { value: {a: 1, b: 22}, type: SGModel.TYPES.$TYPE }};*/
+	/*static defaults = () => { return {...}; };*/
+
+	/**
+	 * Если указано непустое строковое значение, то данные синхронизируются с локальным хранилищем.
+	 * P.S: Поддерживается хранения данных как одного экземпляра класса (одиночного экземпляра), так и нескольких экземпляров: `localStorageKey + '_' + id`
+	 */
+	static localStorageKey = ''; // override
+
+	/**
+	 * Разрешить неявное объявление свойств (тип этих свойств определяется автоматически при первом получении значения свойства)
+	 * Явное объявление свойств - через defaults и properties в конструкторе, не явное - в других местах кода.
+	 * @overridden
+	 */
+	static allowUndeclaredProperties = true;
 
 	/**
 	 * Ссылка на единственный экземпляр класса при singleInstance = true
@@ -98,44 +126,12 @@ class SGModel {
 	static __classes = {};
 
 	/**
-	 * Формируется для всех классов-потомков от SGModel (SGModelView)
-	 * sha256 от String(this.constructor)
+	 * Хеш формируется для всех классов-потомков от SGModel (SGModelView) как sha256 от String(this.constructor)
 	 * @protected
 	 * @overridden
 	 * @type {string}
 	 */
 	/*static __hash = '';*/
-
-	/** Properties default values */
-	static defaultProperties = {}; // override
-
-	/** Property data types */
-	static typeProperties = {}; // override
-
-	/**
-	 * If a non-empty string value is specified, then the data is synchronized with the local storage.
-	 * Support for storing data as one instance of a class (single instance), and several instances: **localStorageKey + '_' + id**
-	 */
-	static localStorageKey = ''; // override
-
-	/**
-	 * Allow implicit property declaration (the type of these properties is determined automatically based on how these properties are applied in the view)
-	 * @announcement v1.2?
-	 */
-	//static allowUndeclaredProperties = true; // override
-
-	/**
-	 * Аutomatically detected properties (to allow implicit declaration of properties, the static property allowUndeclaredProperty must be set to true)
-	 * @announcement v1.2?
-	 * @protected
-	 */
-	//static __autoDetectedProperties = {};
-
-	/**
-	 * Значение сквозного счётчка текущего экземпляра класса унаследованного от SGModel
-	 * @protected
-	 */
-	__uid = 0;
 
 	/**
 	 * Инкриминирующее значение счётчика
@@ -143,12 +139,30 @@ class SGModel {
 	 */
 	static #uid = 0;
 
+	static {
+		console.debug('SGModel version:', this.version);
+		Object.defineProperties(this, // TODO: ES2026 использовать декоратор @enumerableFalse?
+			'__instance,__instances,__instancesByClass,__classes,\
+			standardKeys,singleInstance,multipleInstances,autoSave,localStorageKey,allowUndeclaredProperties,printPropertyType,allowJSONFunctions,\
+			json,utils,TYPES,BaseType,FLAGS'
+				.split(',').reduce((result, name) => (result[name.trim()] = Utils.__enumerableFalse, result), {})
+		);
+	}
+
+	/**
+	 * Значение сквозного счётчика текущего экземпляра класса унаследованного от SGModel
+	 * @protected
+	 */
+	__uid = 0;
+
 	/**
 	 * Главный объект экземпляров SGModel (свойства экземпляра).
 	 * Для доступа используйте Proxy-объект this.data или методы get(), set(), addTo(), removeFrom(), clearProperty()
 	 * @private
 	 */
 	#data = null;
+
+	#onChangeCallbacks = {};
 
 	/**
 	 * Proxy-объект для #data
@@ -158,26 +172,44 @@ class SGModel {
 	data = null;
 
 	/**
-	 * Данные singleton-экземляра (по умолчанию не задано)
+	 * Имена свойств, для которых принудительно выставляется флаг FLAGS.IMMEDIATELY в моменте, когда регистрируется подписчик, т.е. выполняется `this.on()`
+	 */
+	deferredProperties = new Set();
+
+	/**
+	 * Данные singleton-экземпляра (задаётся только в классах-потомках!)
 	 * @public
 	 * @overridden
 	 * @type {Proxy}
 	 */
 	/*static data;*/
 
+	#initializationResolve = null;
+	#initializationReject = null;
+
 	/**
-	 * Объект promise и функции resolve() и reject() промиса, отвечающие за инициализацию
+	 * Объект Promise, отвечающий за инициализацию (функции resolve() и reject() доступны внутри объекта)
 	 * @public
-	 * @type {object}
+	 * @type {Promise}
 	 */
-	initialization = Promise.withResolvers();
+	initialization = (() => {
+		const publicProm = Promise.withResolvers();
+		const privateProm = Promise.withResolvers();
+		this.#initializationResolve = publicProm.resolve;
+		this.#initializationReject = publicProm.reject;
+		publicProm.promise.reject = publicProm.reject;
+		publicProm.promise.__promise = privateProm.promise;	// @private
+		publicProm.promise.__resolve = privateProm.resolve;	// @private
+		publicProm.promise.__reject = privateProm.reject;		// @private
+		return publicProm.promise;
+	})();
 
 	/**
 	 * @public
 	 * @type {boolean}
 	 */
 	initialized = (
-		//this.initialization.promise.__sg_instance = this, // @debug
+		//this.initialization.__sg_instance = this, // @debug
 		false
 	);
 
@@ -203,143 +235,177 @@ class SGModel {
 	destroyed = false;
 
 	/**
-	 * SGModel constructor
-	 * @param {object} [properties={}] Properties
-	 * @param {object} [clonedOptions] Custom settings
-	 * @param {object} [thisProperties] Properties and methods passed to the **this** context of the created instance
+	 * SGModel конструктор
+	 * @param {object} [properties] - Свойства (атрибуты)
+	 * @param {object} [options] - Опции
+	 * @param {object} [thisProperties] - Свойства и методы, передаваемые в контекст **this** создаваемого инстанса
 	 */
-	constructor(properties = {}, clonedOptions = void 0, thisProperties = void 0) {
+	constructor(properties = {}, options = void 0, thisProperties = void 0) {
 		const self = this;
-		if (typeof thisProperties === 'object' && thisProperties !== null) {
-			Object.assign(this, thisProperties); // add internal properties to the object, accessible through this.*
+		if (!Utils.isObject(properties)) {
+			throw new Error('properties must be object!');
+		}
+		if (Utils.isObject(thisProperties)) {
+			Object.assign(this, thisProperties);
 		}
 		if (!this.constructor.__hash) {
-			this.constructor.__hash = SGModel.sha256(String(this.constructor).split('\n').map(line => line.trim()).join('\n'));
+			this.constructor.__hash = Utils.sha256(String(this.constructor).split('\n').map(line => line.trim()).join('\n'));
 		}
 		if (this.constructor.singleInstance) {
 			if (this.constructor.__instance) {
-				throw new Error('Error! this.constructor.__instance not is empty!');
+				throw new Error('this.constructor.__instance not is empty!');
 			}
 			this.constructor.__instance = this;
 		} else {
 			this.constructor.multipleInstances = true;
 		}
-		if (typeof properties !== 'object' || properties === null) {
-			throw new Error('Error! properties must be object!');
+
+		if (Utils.isObject(this.constructor.options)) {
+			this.options = Utils.clone(this.constructor.options);
+		} else {
+			this.options = {};
 		}
-		if (!Object.hasOwn(this.constructor, 'defaultProperties')) {
-			this.constructor.defaultProperties = {};
-		}
-		if (!Object.hasOwn(this.constructor, 'typeProperties')) {
-			this.constructor.typeProperties = {};
+		if (Utils.isObject(options)) {
+			Object.assign(this.options, options);
 		}
 
-		let defaults = this.defaults();
-
-		this.uuid = this.uuid || defaults.uuid || properties.uuid || SGModel.uuidLite();
+		const defaults = this.defaults = typeof (this.constructor.defaults ??= {}) === 'function'
+			? this.constructor.defaults()
+			: this.constructor.defaults;
+		
+		this.uuid ??= properties.uuid || (Utils.isPrimitive(defaults.uuid) ? defaults.uuid : void 0) || Utils.uuidLite();
 		delete defaults.uuid;
-		delete properties.uuid;
-
 		this.__uid = SGModel.#nextUID();
-
 		const __class = SGModel.__classes[this.constructor.name];
 		if (__class && __class.__hash !== this.constructor.__hash) {
-			throw new Error(`Error in ${this.constructor.name}! Class ${this.constructor.name} has already been defined earlier (__hash "${__class.__hash}" repeated)!`);
+			throw new Error(`Class ${this.constructor.name} has already been defined earlier (__hash "${__class.__hash}" repeated)!`);
 		}
 		SGModel.__classes[this.constructor.name] = this.constructor;
 		if (SGModel.__instances[this.uuid]) {
-			throw new Error(`Error in ${this.constructor.name}! uuid "${this.uuid}" already exists!`);
+			throw new Error(`uuid "${this.uuid}" already exists! See ${this.constructor.name}`);
 		}
 		SGModel.__instances[this.uuid] = this;
 		(SGModel.__instancesByClass[this.constructor.name] = SGModel.__instancesByClass[this.constructor.name] || {})[this.uuid] = this;
 		
-		// Check static options
-		if (typeof this.constructor.options === 'object' && this.constructor.options !== null) {
-			this.options = SGModel.clone(this.constructor.options);
-		} else {
-			this.options = {};
-		}
-		
-		if (typeof clonedOptions === 'object' && clonedOptions !== null) {
-			Object.assign(this.options, SGModel.clone(clonedOptions));
-		}
-		
-		// override defaults by localStorage data
+		let storage = Utils.OBJECT_EMPTY;
 		if (this.constructor.localStorageKey) {
-			const data = JSON.parse(localStorage.getItem(this.constructor.localStorageKey + (this.constructor.singleInstance ? '' : ':' + this.uuid)));
-			if (typeof data === 'object' && data !== null) {
-				SGModel.initObjectByObject(defaults, data, void 0, `Instance of ${this.constructor.name} with uuid ${this.uuid} (uid=${this.__uid})`);
+			try {
+				storage = JSON.parse( localStorage.getItem(
+					`${this.constructor.localStorageKey}${this.constructor.singleInstance ? '' : `:${this.uuid}`}`
+				) || {});
+				if (!Utils.isObject(storage)) storage = Utils.OBJECT_EMPTY;
+			} catch {true}
+		}
+		this.#data = {};
+		for (const name of new Set([...Object.keys(defaults), ...Object.keys(properties), ...Object.keys(storage)])) {
+			const isInDefault = Object.hasOwn(defaults, name);
+			const isInProperties = Object.hasOwn(properties, name);
+			const isInStorage = Object.hasOwn(storage, name);
+			if (isInDefault) {
+				const defaultValue = defaults[name];
+				if (Utils.isObject(defaultValue)) {
+					if (SGTypes.isPairValueType(defaultValue) && SGTypes.isBaseTypeProto(defaultValue[1])) {
+						defaults[name] = { value: defaultValue[0], type: defaultValue[1] };
+					} else if (SGTypes.isBaseTypeProto(defaultValue.type)) {
+						defaults[name] = { value: defaultValue.value, type: defaultValue.type };
+					} else {
+						defaults[name] = SGTypes.buildValueType(defaultValue);
+					}
+				} else if (typeof defaultValue === 'function') {
+					defaults[name] = SGTypes.isBaseTypeProto(defaultValue)
+						? { value: defaultValue(), type: defaultValue }
+						: SGTypes.buildValueType(defaultValue);
+				} else {
+					defaults[name] = SGTypes.buildValueType(defaultValue);
+				}
+			} else if (isInProperties) {
+				const value = properties[name];
+				if (Utils.isObject(value)) {
+					if (SGTypes.isPairValueType(value) && SGTypes.isBaseTypeProto(value[1])) {
+						defaults[name] = { value: value[1](), type: value[1] };
+						properties[name] = value[0];
+					} else if (SGTypes.isBaseTypeProto(value.type)) {
+						defaults[name] = SGTypes.buildDefaultValueType(void 0, value.type);
+						properties[name] = value.value;
+					} else {
+						defaults[name] = SGTypes.buildDefaultValueType(value);
+					}
+				} else if (typeof value === 'function') {
+					if (SGTypes.isBaseTypeProto(value)) {
+						defaults[name] = { value: value(), type: value };
+						properties[name] = Utils.clone(defaults[name].value);
+					} else {
+						defaults[name] = SGTypes.buildDefaultValueType(value, void 0);
+					}
+				} else {
+					defaults[name] = SGTypes.buildDefaultValueType(value);
+				}
 			}
+			if (!Object.hasOwn(defaults, name)) continue; // Устаревшие storage-свойства игнорируются
+			const valueOrig = isInStorage
+				? storage[name] // TODO?: Utils.initObjectByObject(this.#data, data, void 0, `Instance of ${this.constructor.name} with uuid ${this.uuid} (uid=${this.__uid})`);
+				: isInProperties
+					? properties[name]
+					: Utils.clone(defaults[name].value);
+			if (valueOrig === void 0) continue;
+			const { value } = this.validateProperty(name, valueOrig, valueOrig, void 0, SGModel.FLAGS.FIRST_VALIDATE);
+			if (value === void 0) continue;
+			this.#data[name] = value;
 		}
 		
-		if (Object.keys(properties).length) {
-			properties = SGModel.clone(properties);
-		}
-		
-		for (const propName in defaults) {
-			this.constructor.typeProperties[propName] = this.constructor.typeProperties[propName] || this.getType(defaults[propName]);
-			if (!Object.hasOwn(properties, propName)) {
-				properties[propName] = defaults[propName];
-			}
-		}
-
-		for (const propName in properties) {
-			const valueOrCollection = properties[propName];
-			if (valueOrCollection === void 0) {
-				delete properties[propName];
-			} else {
-				const { value } = this.validateProperty(
-					propName,
-					valueOrCollection,	// nextValue
-					defaults[propName],	// previousValue
-					void 0, // options
-					0, // flags
-				);
-				properties[propName] = value;
-			}
-		}
-
-		this.#data = SGModel.defaults({}, defaults, properties);
 		this.data = new Proxy(this.#data, {
-			get(properties, prop, receiver) { // eslint-disable-line no-unused-vars
-				if (prop in properties) {
-					return properties[prop];
+			get(_data, name, receiver) { // eslint-disable-line no-unused-vars
+				if (!self.constructor.allowUndeclaredProperties && (name in self.defaults === false)) {
+					throw new Error(`Properties "${name}" doesn't exists! May not be registered in defaults! ${self.getDebugInfo()}`);
 				}
-				throw new Error(`Error! Properties "${prop}" doen't exists! May not be registered in defaultProperties (instance of ${self.constructor.name})`);
+				return _data[name];
 			},
-			set(properties, prop, value, receiver) { // eslint-disable-line no-unused-vars
-				if (prop in properties) {
-					self.set(prop, value);
-					return true;
+			set(_data, name, value, receiver) { // eslint-disable-line no-unused-vars
+				if (name in self.defaults === false) {
+					throw new Error(`Properties "${name}" doesn't exists! May not be registered in defaults! ${self.getDebugInfo()}`);
 				}
-				throw new Error(`Error! Properties "${prop}" doen't exists! May not be registered in defaultProperties (instance of ${self.constructor.name})`);
+				self.set(name, value);
+				return true; // возвращаем всегда true, т.к. для false получим ошибку "Uncaught TypeError: 'set' on proxy: trap returned falsish for property 'filters'""
 			},
-			deleteProperty(properties, prop) {
-				if (prop in properties) {
-					self.#off(prop);
-					delete properties[prop];
+			deleteProperty(_data, name) {
+				if (name in self.defaults === false) {
+					return self.set(name, void 0);
 				}
-				return true;
+				return false; // возвращаем false (значение не было успешно удалено)
 			},
 		});
 
 		if (this.constructor.singleInstance) {
 			this.constructor.data = this.data;
+			Object.defineProperty(this.constructor, 'data', Utils.__enumerableFalse);
 		}
-		
-		// Дёргаем __initialize() и initialize() экземпляра после выполнения конструктора, что бы инициализировались приватные свойства (для SGModelView актуально)! См. также #deferredProperties в SGModelView.
+		Object.defineProperties(this, {
+			initialization: Utils.__enumerableFalse,
+			data: Utils.__enumerableFalse,
+			deferredProperties: Utils.__enumerableFalse,
+		});
+
+		// Дёргаем __initialize() и initialize() экземпляра после выполнения конструктора, что бы инициализировались приватные свойства (для SGModelView актуально)!
 		setTimeout(async () => {
 			this.__initialize(() => {
 				Promise.all([
 					this.initialize(),
-					this.initialization.promise
-				]).then((result) => (this.initialized = (typeof result === 'boolean' ? result : true)));
+					this.initialization.__promise
+				]).then((results) => {
+					const isError = results[0] === false || results[1] === false || results[0] instanceof Error || results[1] instanceof Error;
+					this.initialized = !isError;
+					if (isError) {
+						this.#initializationReject(results);
+					} else {
+						this.#initializationResolve(true);
+					}
+				});
 			});
 		});
 	}
 	
 	/**
-	 * Called when an instance is created.
+	 * Вызывается когда экземпляр создан
 	 * @protected
 	 * @overridden Переопределяется в SGModelView
 	 * @param {function} callback
@@ -347,38 +413,24 @@ class SGModel {
 	 */
 	async __initialize(callback) {
 		callback();
-		return this.initialization.resolve(true);
+		return this.initialization.__resolve(true);
 	}
 
 	/**
-	 * Sets the default property values. Can be overridden
-	 * @returns {object}
-	 */
-	defaults() {
-		return SGModel.clone(this.constructor.defaultProperties);
-	}
-
-	/**
-	 * @private
-	 */
-	#onChangeCallbacks = {};
-
-	/**
-	 * @private
 	 * @param {boolean} changed 
 	 * @returns {boolean|Promise} 
 	 */
-	#changedAndCallbacks(changed, name, valueOrCollection, previous, options = SGModel.OBJECT_EMPTY, flags = 0) {
+	#changedAndCallbacks(changed, name, valueOrCollection, previous, options = Utils.OBJECT_EMPTY, flags = 0) {
 		if (changed) {
 			this.changed = true;
 		}
-		if (changed || (flags & SGModel.FLAG_FORCE_CALLBACKS)) {
-			if ((flags & SGModel.FLAG_NO_CALLBACKS) === 0) {
+		if (changed || (flags & SGModel.FLAGS.FORCE_CALLBACKS)) {
+			if ((flags & SGModel.FLAGS.NO_CALLBACKS) === 0) {
 				let callbacks = this.#onChangeCallbacks[name];
 				if (callbacks) {
 					previous = (options.previous_value !== void 0 ? options.previous_value : previous);
-					if (flags & SGModel.FLAG_OFF_MAY_BE) {
-						callbacks = SGModel.clone(callbacks);
+					if (flags & SGModel.FLAGS.OFF_MAY_BE) {
+						callbacks = Utils.clone(callbacks);
 					}
 					let _val = void 0, i;
 					for (i in callbacks) {
@@ -406,54 +458,43 @@ class SGModel {
 		return false;
 	}
 
-	static #vcResult = { // @aos (for acceleration and optimization, but synchronously)
-		value: null,
-		previous: null,
-		changed: false,
-		isComplexType: false,
-	};
-
 	/**
 	 * Принимает имя свойства, новое и предыдущее значения, проверяет/модифицирует значение и возвращает откорректированное значение +признак изменения
 	 * @public
 	 * @param {string} name
 	 * @param {mixed} nextValue
-	 * @param {mixed} [previousValue] Для сложных объектов сами объекты сохраняются (не пересоздаются!), но очищаются! Для изменения элементов коллекции используйте методы addTo(), removeFrom() и др.
-	 * @param {object} [options=SGModel.OBJECT_EMPTY]
+	 * @param {mixed} [previous] Для сложных объектов сами объекты сохраняются (не пересоздаются!), но очищаются! Для изменения элементов коллекции используйте методы addTo(), removeFrom() и др.
+	 * @param {object} [options]
 	 * @param {function}	[options.format] - Функция для обработки элемента коллекции (item, index)=>{return...}. Например, можно элемент в виде массива ['http://test.ru', 'Title...'] превратить в объект { url: 'http://test.ru', title: 'Title...' }
-	 * @param {number} [flags=0]
-	 * @returns {object} SGModel.#vcResult = { value, previous, changed, isComplexType } Для сложных объектов - value - это сама коллекция!
+	 * @param {number} [flags]
+	 * @returns {object} { value, previous, changed } Для сложных объектов - value - это сама коллекция!
 	 */
-	validateProperty(name, nextValue, previous = void 0, options = SGModel.OBJECT_EMPTY, flags = 0) {
+	validateProperty(name, nextValue, previous = void 0, options = Utils.OBJECT_EMPTY, flags = 0) {
 		if (nextValue === void 0) {
-			throw new Error(`Error in this.validateProperty()! The "nextValue" parameter must have a value!`);
+			throw new Error(`The "nextValue" parameter must have a value (received undefined)! ${this.getDebugInfo()}`);
 		}
-		SGModel.#vcResult.changed = false;
-		SGModel.#vcResult.isComplexType = false;
-		SGModel.#vcResult.value = previous;
-		if (flags & SGModel.FLAG_PREV_VALUE_CLONE) {
-			SGModel.#vcResult.previous = SGModel.clone(previous);
-		} else {
-			SGModel.#vcResult.previous = previous;
-		}
-
-		const typeProperty = this.constructor.typeProperties[name] || 0;
-		switch (typeProperty) {
-			case SGModel.TYPE_ANY: case SGModel.TYPE_FUNCTION: break;
-			case SGModel.TYPE_NUMBER: nextValue = SGModel.toNumberOrNull(nextValue); break;
-			case SGModel.TYPE_STRING: nextValue = SGModel.toStringOrNull(nextValue); break;
-			case SGModel.TYPE_BOOLEAN: nextValue = SGModel.toBooleanOrNull(nextValue); break;
-			case SGModel.TYPE_XY: {
-				if (!(nextValue instanceof Object)) {
-					throw new Error(`Error in validateProperty()! Property "${name}" (${this.constructor.name}) must be based on Object (not null, not Object.create(null))!`);
+		const result = {
+			value: previous,
+			previous: (flags & SGModel.FLAGS._PREV_VALUE_CLONE) ? Utils.clone(previous) : previous,
+			changed: false,
+		};
+		const defType = (this.defaults[name] ??= SGTypes.buildDefaultValueType(nextValue));
+		switch (defType.type) {
+			case SGModel.TYPES.ANY: break;
+			case SGModel.TYPES.NUMBER: nextValue = Utils.toNumberOrNull(nextValue); break;
+			case SGModel.TYPES.STRING: nextValue = Utils.toStringOrNull(nextValue); break;
+			case SGModel.TYPES.BOOLEAN: nextValue = Utils.toBooleanOrNull(nextValue); break;
+			case SGModel.TYPES.XY: {
+				if (!Utils.isObject(nextValue)) nextValue = { x: Number(nextValue), y: Number(nextValue) };
+				if (Object.keys(nextValue).length !== 2 || !Object.hasOwn(nextValue, 'x') || !Object.hasOwn(nextValue, 'y')) {
+					throw new Error(`Property "${name}" must be in {x, y} object format! ${this.getDebugInfo()}`);
 				}
-				nextValue.x = SGModel.toNumberOrNull(nextValue.x);
-				nextValue.y = SGModel.toNumberOrNull(nextValue.y);
-				SGModel.#vcResult.isComplexType = true;
-				SGModel.#vcResult.changed = true;
-				if (typeof previous === 'object' && previous !== null) {
+				nextValue.x = Utils.toNumberOrNull(nextValue.x);
+				nextValue.y = Utils.toNumberOrNull(nextValue.y);
+				result.changed = true;
+				if (Utils.isObject(previous)) {
 					if (previous.x === nextValue.x && previous.y === nextValue.y) {
-						SGModel.#vcResult.changed = false;
+						result.changed = false;
 					} else {
 						previous.x = nextValue.x;
 						previous.y = nextValue.y;
@@ -462,137 +503,245 @@ class SGModel {
 				}
 				break;
 			}
-			case SGModel.TYPE_ARRAY: case SGModel.TYPE_ARRAY_NUMBERS: {
+			case SGModel.TYPES.ARRAY: case SGModel.TYPES.ARRAY_NUMBERS: {
 				if (typeof nextValue === 'string') {
-					nextValue = SGModel.parsePgStrArray(nextValue);
+					nextValue = Utils.parsePgStrArray(nextValue);
 				}
 				if (!Array.isArray(nextValue)) {
-					nextValue = [nextValue];
+					throw new Error(`Property "${name}" must be based on Array! ${this.getDebugInfo()}`);
 				}
-				if (typeProperty === SGModel.TYPE_ARRAY_NUMBERS) {
-					SGModel.toNumbers(nextValue); // TODO precision
-				}
-				SGModel.#vcResult.isComplexType = true;
-				SGModel.#vcResult.changed = true;
-				if (nextValue !== previous && (previous instanceof Array)) {
-					// TODO: сделать по элементное сравнение (с учётом JSON.stringify элементов-объектов) ?
-					previous.length = 0;
-					previous.push(...nextValue);
-					nextValue = previous;	
-				}
-				if (typeof options.format === 'function') {
-					for (let index = 0; index < nextValue.length; index++) {
-						nextValue[index] = options.format(nextValue[index], index);
+				if (nextValue !== previous) {
+					if (typeof options.format === 'function') {
+						nextValue.forEach((value, index) => (nextValue[index] = options.format(value, index)));
+					} else if (defType.type === SGModel.TYPES.ARRAY_NUMBERS) {
+						Utils.toNumbers(nextValue); // TODO precision
+					}
+					if (Array.isArray(previous)) {
+						const len = nextValue.length;
+						if (nextValue.length === previous.length) {
+							for (let index = 0; index < len; index++) {
+								if (previous[index] !== nextValue[index]) {
+									previous[index] = nextValue[index];
+									result.changed = true;
+								}
+							}
+						} else {
+							result.changed = true;
+							previous.length = len;
+							for (let index = 0; index < len; index++) {
+								previous[index] = nextValue[index];
+							}
+						}
+						nextValue = previous;
+					} else {
+						result.changed = true;
+					}
+				} else {
+					if (flags & SGModel.FLAGS.FIRST_VALIDATE && defType.type === SGModel.TYPES.ARRAY_NUMBERS) {
+						Utils.toNumbers(nextValue);
 					}
 				}
 				break;
 			}
-			case SGModel.TYPE_OBJECT: case SGModel.TYPE_OBJECT_NUMBERS: {
-				if (!(nextValue instanceof Object)) {
-					throw new Error(`Error in validateProperty()! Property "${name}" (${this.constructor.name}) must be based on Object (not null, not Object.create(null))!`);
+			case SGModel.TYPES.OBJECT: {
+				if (typeof nextValue !== 'object') { // null допускается!
+					throw new Error(`Property "${name}" must be based on Object! ${this.getDebugInfo()}`);
 				}
-				if (typeProperty === SGModel.TYPE_OBJECT_NUMBERS) {
-					SGModel.toNumbers(nextValue); // TODO precision
-				}
-				SGModel.#vcResult.isComplexType = true;
-				SGModel.#vcResult.changed = true;
-				if (nextValue !== previous && (previous instanceof Object)) {
-					// TODO: сделать по элементное сравнение (с учётом JSON.stringify элементов-объектов) ?
-					for (const propName in previous) {
-						delete previous[propName];
-					}
-					Object.assign(previous, nextValue);
-					nextValue = previous;	
-				}
-				if (typeof options.format === 'function') {
-					for (let propName in nextValue) {
-						nextValue[propName] = options.format(nextValue[propName], propName);
+				if (nextValue === null) {
+					result.changed = previous !== null;
+				} else {
+					if (nextValue !== previous) {
+						if (typeof options.format === 'function') {
+							for (const prop in nextValue) nextValue[prop] = options.format(nextValue[prop], prop);
+						}
+						if (Utils.isObject(previous)) {
+							for (const prop in previous) {
+								if (!Object.hasOwn(nextValue, prop)) {
+									delete previous[prop];
+									result.changed = true;
+								}
+							}
+							for (const prop in nextValue) {
+								if (!Object.hasOwn(previous, prop) || (previous[prop] !== nextValue[prop])) {
+									previous[prop] = nextValue[prop];
+									result.changed = true;
+								}
+							}
+							nextValue = previous;
+						} else {
+							result.changed = true;
+						}	
 					}
 				}
 				break;
 			}
-			case SGModel.TYPE_SET: {
+			case SGModel.TYPES.SET: {
 				if (typeof nextValue === 'string') {
-					nextValue = SGModel.parsePgStrArray(nextValue);
+					nextValue = Utils.parsePgStrArray(nextValue);
 				}
-				if (!Array.isArray(nextValue) && !(nextValue instanceof Set)) {
-					throw new Error(`Error in validateProperty()! Property "${name}" (${this.constructor.name}) must be a Set class, Array or string in the format "{value1,value2,...}"!`); // TODO: формат строки м.б. сложнее, например, не просто элементы, а записи, т.е. вложенные {}
+				if (!Array.isArray(nextValue) && !Utils.isSet(nextValue)) {
+					throw new Error(`Property "${name}" must be a Set class, Array or string in the format "{value1,value2,...}"! ${this.getDebugInfo()}`);
 				}
-				SGModel.#vcResult.isComplexType = true;
-				SGModel.#vcResult.changed = true;
-				if (nextValue !== previous && (previous instanceof Set)) {
-					previous.clear();
-					for (const value of nextValue) {
-						previous.add(value);
+				if (nextValue !== previous) {
+					const inputArray = Array.isArray(nextValue) ? nextValue : Array.from(nextValue);
+					const processedArray = (typeof options.format === 'function')
+						? inputArray.map((v, i) => options.format(v, i))
+						: inputArray;
+					if (Utils.isSet(previous)) {
+						for (const val of previous) {
+							if (!processedArray.includes(val)) {
+								previous.delete(val);
+								result.changed = true;
+							}
+						}
+						for (const val of processedArray) {
+							if (!previous.has(val)) {
+								previous.add(val);
+								result.changed = true;
+							}
+						}
+						nextValue = previous;
+					} else {
+						nextValue = new Set(processedArray);
+						result.changed = true;
 					}
-					nextValue = previous;
-				} else if (!(nextValue instanceof Set)) {
-					nextValue = new Set(nextValue);
 				}
-				if (typeof options.format === 'function') {
+				break;
+			}
+			case SGModel.TYPES.MAP: {
+				if (typeof nextValue === 'string') {
+					nextValue = new Map(
+						Utils.parsePgStrArray(nextValue)
+							.map((item, index) => [index, options.format?.(item, index) ?? item])
+					);
+				} else if (Utils.isObject(nextValue) && !Utils.isMap(nextValue)) {
+					const entries = Array.isArray(nextValue) ? nextValue : Object.entries(nextValue);
+					nextValue = new Map(
+						entries.flatMap((pair, index) => 
+							pair.length === 2 
+								? [[pair[0], options.format?.(pair[1], pair[0], index) ?? pair[1]]] 
+								: (console.warn(`Error validating property "${name}" - nextValue is not in the correct format!`), [])
+						)
+					);
+				} else if (nextValue !== previous && Utils.isMap(nextValue) && typeof options.format === 'function') {
 					let index = 0;
-					const aTemp = Array.from(nextValue);
-					for (const value of aTemp) {
-						nextValue.delete(value);
-						nextValue.add(options.format(value, index++));
+					nextValue.forEach(([key, value]) => nextValue.set(key, options.format(value, index++, key)));
+				}
+				if (!Utils.isMap(nextValue)) {
+					throw new Error(`Property "${name}" must be based on Object (not null)! ${this.getDebugInfo()}`);
+				}
+				if (Utils.isMap(previous)) {
+					if (nextValue !== previous) {
+						for (const [key, _] of previous) {
+							if (!nextValue.has(key)) {
+								previous.delete(key);
+								result.changed = true;
+							}
+						}
+						for (const [key, val] of nextValue) {
+							if (!previous.has(key) || previous.get(key) !== val) {
+								previous.set(key, val);
+								result.changed = true;
+							}
+						}
+						nextValue = previous;
 					}
+				} else {
+					result.changed = true;
 				}
 				break;
 			}
-			case SGModel.TYPE_MAP: {
-				if (typeof nextValue === 'string') {
-					const arr = SGModel.parsePgStrArray(nextValue);
-					nextValue = new Map();
-					for (let index = 0; index < arr.length; index++) {
-						nextValue.set(index, arr[index]);
+			case SGModel.TYPES.MODEL: {
+				if (nextValue !== null && !SGModel.isBasedOnModel(nextValue)) {
+					throw new Error(`The value of property "${name}" must be an SGModel-based instance or be an SGModel (SGModelView)! ${this.getDebugInfo()}`);
+				}
+				if (nextValue !== previous) {
+					if ((flags & SGModel.FLAGS.NO_DESTROY_INSTANCE_MODEL) === 0 && (previous instanceof SGModel)) {
+						previous.destroy(flags);
 					}
+					result.changed = true;
 				}
-				if (!(nextValue instanceof Map)) {
-					throw new Error(`Error in validateProperty()! Property "${name}" (${this.constructor.name}) must be based on Object (not null, not Object.create(null))!`);
+				break;
+			}
+			case SGModel.TYPES.ARRAY_MODEL: {
+				if (!Array.isArray(nextValue)) {
+					throw new Error(`The value of the property "${name}" must be an array of SGModel (SGModelView) based instances! ${this.getDebugInfo()}`);
 				}
-				SGModel.#vcResult.isComplexType = true;
-				SGModel.#vcResult.changed = true;
-				if (nextValue !== previous && (previous instanceof Map)) {
-					// TODO: сделать по элементное сравнение (с учётом JSON.stringify элементов-объектов) ?
-					previous.clear();
-					for (const [key, value] of nextValue) {
-						previous.set(key, value);
+				if (previous !== nextValue) {
+					if (Array.isArray(previous)) {
+						if ((flags & SGModel.FLAGS.NO_DESTROY_INSTANCE_MODEL) === 0) {
+							previous.forEach(prevItem => ((prevItem instanceof SGModel) && !nextValue.includes(prevItem) && prevItem.destroy(flags)));
+						}
+						if (previous.length === nextValue.length) {
+							for (let i = 0; i < previous.length; i++) {
+								if (previous[i] !== nextValue[i]) {
+									result.changed = true;
+									break;
+								}
+            	}
+						} else {
+							result.changed = true;
+						}
+						if (result.changed) {
+							previous.length = 0;
+							previous.push(...nextValue);
+						}
+					} else {
+						result.changed = true;
 					}
 					nextValue = previous;
 				}
-				if (typeof options.format === 'function') {
-					for (const [key, value] of nextValue) {
-						nextValue.set(key, options.format(value, key));
-					}
-				}
+				break;
+			}
+			case SGModel.TYPES.FUNCTION: {
+				if (typeof nextValue !== 'function') nextValue = null;
 				break;
 			}
 			default: {
-				throw new Error(`Error in validateProperty()! Unknown type specified for property "${name}" (${this.constructor.name})!`);
+				throw new Error(`Unknown type specified for property "${name}"! ${this.getDebugInfo()}`);
 			}
 		}
-		SGModel.#vcResult.value = nextValue;
-		if (!SGModel.#vcResult.isComplexType) {
-			SGModel.#vcResult.changed = (nextValue !== previous);
+		result.value = nextValue;
+		if (!defType.type.isComplex) {
+			result.changed = (nextValue !== previous);
 		}
-		return SGModel.#vcResult;
+		return result;
 	}
 	
 	/**
-	* Set property value
+	* Задать значение свойству
 	* @param {string}	name
-	* @param {mixed}	valueOrCollection
-	* @param {object}	[options=SGModel.OBJECT_EMPTY]
-	* @param {mixed}	[options.previous_value] - Use this value as the previous value
+	* @param {mixed}	[valueOrCollection] - Если не задан (т.е. передан undefined), то свойство и его подписчики удаляются
+	* @param {object}	[options]
+	* @param {mixed}		[options.previous_value] - Использовать это значение в качестве предыдущего значения в колбэках подписчиков
 	* @param {function}	[options.format] - Функция для обработки элемента коллекции (item, index)=>{return...}. Например, можно элемент в виде массива ['http://test.ru', 'Title...'] превратить в объект { url: 'http://test.ru', title: 'Title...' }
-	* @param {number}	[flags=0] - Valid flags: **FLAG_OFF_MAY_BE** | **FLAG_PREV_VALUE_CLONE** | **FLAG_NO_CALLBACKS** | **FLAG_FORCE_CALLBACKS**
-	* @param {Event}	[event] - event when using SGModelView
-	* @param {DOMElement} [elem] - event source element when using SGModelView
-	* @return {boolean|Promise} If the value was changed will return **true** or Promise for option autoSave=true
+	* @param {number}	[flags] - Возможные флаги:
+	*			`FLAGS.OFF_MAY_BE`
+	*			`FLAGS.PREV_VALUE_CLONE`
+	*			`FLAGS.NO_CALLBACKS`
+	*			`FLAGS.FORCE_CALLBACKS`
+	*			`FLAGS.NO_DESTROY_INSTANCE_MODEL'
+	* @param {Event}	[event] - может передаваться в SGModelView-инстансах
+	* @param {DOMElement} [elem] - может передаваться в SGModelView-инстансах
+	* @return {boolean|Promise} Если значение было изменено, будет возвращено `true` или Promise при `static autoSave = true`
 	*/
-	set(name, valueOrCollection, options = SGModel.OBJECT_EMPTY, flags = 0, event = void 0, elem = void 0) { // eslint-disable-line no-unused-vars
+	set(name, valueOrCollection = void 0, options = Utils.OBJECT_EMPTY, flags = 0, event = void 0, elem = void 0) { // eslint-disable-line no-unused-vars
+		if (!this.constructor.allowUndeclaredProperties && !Object.hasOwn(this.defaults, name)) {
+			throw new Error(`Properties "${name}" doesn't exists! May not be registered in defaults or constructor, or set allowUndeclaredProperties = true! ${this.getDebugInfo()}`);
+		}
 		let previous = this.#data[name], value, changed;
 		if (valueOrCollection === void 0) {
+			this.#off(name);
+			changed = (previous !== void 0);
+			if ((flags & SGModel.FLAGS.NO_DESTROY_INSTANCE_MODEL) === 0) {
+				if (this.defaults[name]?.type === SGModel.TYPES.MODEL && previous instanceof SGModel) {
+					previous.destroy(flags);
+				} else if (Array.isArray(previous) && this.defaults[name]?.type === SGModel.TYPES.ARRAY_MODEL) {
+					for (const item of previous) {
+						if (item instanceof SGModel) item.destroy(flags);
+					}
+				}
+			}
 			delete this.#data[name];
 		} else {
 			({ value, previous, changed } = this.validateProperty(name, valueOrCollection, previous, options, flags));
@@ -600,7 +749,13 @@ class SGModel {
 		if (changed) {
 			this.#data[name] = value;
 		}
-		return this.#changedAndCallbacks(changed, name, value, previous, options, flags);
+		changed = this.#changedAndCallbacks(changed, name, value, previous, options, flags);
+		if (changed) {
+			if (this.initialized !== true) {
+				this.deferredProperties.add(name);
+			}
+		}
+		return changed;
 	}
 
 	/**
@@ -608,139 +763,155 @@ class SGModel {
 	 * @param {string} name
 	 * @param {mixed} value
 	 * @param {mixed} [key] Указывается для коллекций объектов и множеств Map
-	 * @param {object} [options=SGModel.OBJECT_EMPTY]
+	 * @param {object} [options]
 	 * @param {function}	[options.format] - Функция для обработки элемента коллекции (item, index)=>{return...}. Например, можно элемент в виде массива ['http://test.ru', 'Title...'] превратить в объект { url: 'http://test.ru', title: 'Title...' }
-	 * @param {number} [flags=0]
+	 * @param {number} [flags]
 	 * @returns {boolean|Promise} true, если данные в свойстве изменились (например, для коллекции-Set добавление уже существующего значения в коллекции метод вернёт false). Вернёт Promise при autoSave=true
 	 */
-	addTo(name, value, key = void 0, options = SGModel.OBJECT_EMPTY, flags = 0) {
-		const collection = this.#data[name];
+	addTo(name, value, key = void 0, options = Utils.OBJECT_EMPTY, flags = 0) {
+		let collection = this.#data[name];
 		let changed = false;
-		switch (this.constructor.typeProperties[name]) {
-			case SGModel.TYPE_ARRAY: {
-				value = (options.format instanceof Function) && options.format(value, collection.length) || value;
+		switch (this.defaults[name]?.type) {
+			case SGModel.TYPES.ARRAY: {
+				value = (typeof options.format === 'function') && options.format(value, collection.length) || value;
 				collection.push(value);
 				changed = true;
 				break;
 			}
-			case SGModel.TYPE_ARRAY_NUMBERS: {
-				value = (options.format instanceof Function) && options.format(value, collection.length) || value;
+			case SGModel.TYPES.ARRAY_NUMBERS: {
+				value = (typeof options.format === 'function') && options.format(value, collection.length) || value;
 				collection.push(Number(value));
 				changed = true;
 				break;
 			}
-			case SGModel.TYPE_OBJECT: {
+			case SGModel.TYPES.OBJECT: {
+				if (collection === null) this.#data[name] = collection = SGModel.TYPES.OBJECT();
 				if (collection[key] !== value) {
-					value = (options.format instanceof Function) && options.format(value, key) || value;
-					collection[key] = value;
+					collection[key] = (typeof options.format === 'function') && options.format(value, key) || value;
 					changed = true;
 				}
 				break;
 			}
-			case SGModel.TYPE_OBJECT_NUMBERS: {
-				value = Number(value);
-				if (collection[key] !== value) {
-					value = (options.format instanceof Function) && options.format(value, key) || value;
-					collection[key] = value;
-					changed = true;
-				}
-				break;
-			}
-			case SGModel.TYPE_SET: {
+			case SGModel.TYPES.SET: {
 				if (!collection.has(value)) {
-					value = (options.format instanceof Function) && options.format(value, collection.size) || value;
-					collection.add(value);
+					collection.add((typeof options.format === 'function') && options.format(value, collection.size) || value);
 					changed = true;
 				}
 				break;
 			}
-			case SGModel.TYPE_MAP: {
+			case SGModel.TYPES.MAP: {
 				if (!collection.has(key) || collection.get(key) !== value) {
-					value = (options.format instanceof Function) && options.format(value, key) || value;
-					collection.set(key, value);
+					collection.set(key, (typeof options.format === 'function') && options.format(value, key) || value);
 					changed = true;
 				}
 				break;
 			}
-			default: throw new Error(`Error in size() method! The property with name "${name}" (${this.constructor.name}) has a simple data type!`);
+			case SGModel.TYPES.ARRAY_MODEL: {
+				if (options.format) {
+					throw new Error(`For the property with name "${name}" and type "TYPES.ARRAY_MODEL" does not have an options.format parameter! ${this.getDebugInfo()}`);
+				}
+				collection.push(value);
+				changed = true;
+				break;
+			}
+			default: throw new Error(`The property with name "${name}" has a simple data type! ${this.getDebugInfo()}`);
 		}
-		return this.#changedAndCallbacks(changed, name, collection, null, options, flags);
+		changed = this.#changedAndCallbacks(changed, name, collection, null, options, flags);
+		if (changed) {
+			if (this.initialized !== true) {
+				this.deferredProperties.add(name);
+			}
+		}
+		return changed;
 	}
 
 	/**
 	 * Удалить элемент/свойство из коллекции - один из методов для работы с массивами, объектами и коллекциями Map/Set
 	 * @param {string} name
-	 * @param {string} indexOrKeyOrValue - Для Array - это индекс элемента, для объектов - это имя свойства, для Map - это имя ключа, для Set - это значение
+	 * @param {string} key - Для Array - это индекс элемента, для объектов - это имя свойства, для Map - это имя ключа, для Set - это значение
 	 * @returns {boolean|Promise} true, если данные в свойстве изменились. Вернёт Promise при autoSave=true
 	 */
-	removeFrom(name, indexOrKeyOrValue, options = void 0, flags = 0) {
+	removeFrom(name, key, options = void 0, flags = 0) {
+		const type = this.defaults[name]?.type;
 		const collection = this.#data[name];
 		if (collection === void 0) {
 			return false;
 		}
 		let changed = false;
-		switch (this.constructor.typeProperties[name]) {
-			case SGModel.TYPE_ARRAY: case SGModel.TYPE_ARRAY_NUMBERS: {
+		switch (type) {
+			case SGModel.TYPES.ARRAY: case SGModel.TYPES.ARRAY_MODEL: case SGModel.TYPES.ARRAY_NUMBERS: {
 				if (collection.length) {
-					if (typeof indexOrKeyOrValue === 'number') { // Значит keyName = 'index'
-						const deletedElements = collection.splice(indexOrKeyOrValue, 1); // collection как объект останется тем же!
+					let deletedElements;
+					if (typeof key === 'number') { // Значит keyName = 'index'
+						deletedElements = collection.splice(key, 1); // collection как объект останется тем же!
 						if (deletedElements.length) {
 							changed = true;
 						}
 					} else {
 						const firstElement = collection[0];
-						if (firstElement instanceof Object) { // элементы коллекции - объекты
-							if (typeof indexOrKeyOrValue === 'bigint') { // Значит keyName = 'id'
+						if (Utils.isObject(firstElement)) { // элементы коллекции - объекты
+							if (typeof key === 'bigint') { // Значит keyName = 'id'
 								if (!firstElement.id) {
-									throw new Error(`Error in removeFrom() method! For indexOrKeyOrValue with type BigInt, if the collection elements are objects, then they must store the property key - id!`);
+									throw new Error(`For key with type BigInt, if the collection elements are objects, then they must store the property key - id! Property name (collection): "${name}". ${this.getDebugInfo()}`);
 								}
 								const index = collection.findIndex((item) => {
-									return (BigInt(item.id) === indexOrKeyOrValue);
+									return (BigInt(item.id) === key);
 								});
 								if (index >= 0) {
-									collection.splice(index, 1);
+									deletedElements = collection.splice(index, 1);
 									changed = true;
 								}
-							} else if (typeof indexOrKeyOrValue === 'string') { // keyName = 'uuid' или keyName = 'code' или keyName = 'hash'
+							} else if (typeof key === 'string') { // keyName = 'uuid' или keyName = 'code' или keyName = 'hash'
 								if (!firstElement.uuid && !firstElement.code && !firstElement.hash) {
-									throw new Error(`Error in removeFrom() method! For indexOrKeyOrValue with type String, if the collection elements are objects, then they must store the property key - uuid or code or hash!`);
+									throw new Error(`For key with type String, if the collection elements are objects, then they must store the property key - uuid or code or hash! Property name (collection): "${name}". ${this.getDebugInfo()}`);
 								}
 								const index = collection.findIndex((item) => {
-									return ((item.uuid === indexOrKeyOrValue) || (item.code === indexOrKeyOrValue) || (item.hash === indexOrKeyOrValue));
+									return ((item.uuid === key) || (item.code === key) || (item.hash === key));
 								});
 								if (index >= 0) {
-									collection.splice(index, 1);
+									deletedElements = collection.splice(index, 1);
 									changed = true;
 								}
 							} else {
-								throw new Error(`Error in removeFrom() method! indexOrKeyOrValue has an unsupported data type!`);
+								throw new Error(`key has an unsupported data type! Property name (collection): "${name}". ${this.getDebugInfo()}`);
 							}
 						} else {
-							throw new Error(`Error in removeFrom() method! indexOrKeyOrValue is not a Number, but the collection contains primitive elements!`);
+							throw new Error(`key is not a Number, but the collection contains primitive elements! Property name (collection): "${name}". ${this.getDebugInfo()}`);
+						}
+					}
+					if (type === SGModel.TYPES.ARRAY_MODEL && Array.isArray(deletedElements) && (flags & SGModel.FLAGS.NO_DESTROY_INSTANCE_MODEL) === 0) {
+						while (deletedElements.length > 0) {
+							deletedElements.pop()?.destroy?.(flags);
 						}
 					}
 				}
 				break;
 			}
-			case SGModel.TYPE_OBJECT: case SGModel.TYPE_OBJECT_NUMBERS: {
-				if (Object.hasOwn(collection, indexOrKeyOrValue)) {
-					delete collection[indexOrKeyOrValue];
+			case SGModel.TYPES.OBJECT: {
+				if (collection !== null && Object.hasOwn(collection, key)) {
+					delete collection[key];
 					changed = true;
 				}
 				break;
 			}
-			case SGModel.TYPE_SET: case SGModel.TYPE_MAP: {
-				if (collection.has(indexOrKeyOrValue)) {
-					collection.delete(indexOrKeyOrValue);
+			case SGModel.TYPES.SET: case SGModel.TYPES.MAP: {
+				if (collection.has(key)) {
+					collection.delete(key);
 					changed = true;
 				}
 				break;
 			}
 			default: {
-				throw new Error(`Error in removeFrom() method! The property with name "${name}" (${this.constructor.name}) has a simple data type!`);
+				throw new Error(`The property with name "${name}" has a simple data type! ${this.getDebugInfo()}`);
 			}
 		}
-		return this.#changedAndCallbacks(changed, name, collection, null, options, flags);
+		changed = this.#changedAndCallbacks(changed, name, collection, null, options, flags);
+		if (changed) {
+			if (this.initialized !== true) {
+				this.deferredProperties.add(name);
+			}
+		}
+		return changed;
 	}
 
 	/**
@@ -750,113 +921,50 @@ class SGModel {
 	 */
 	forEach(name, callback) {
 		const collection = this.#data[name];
-		switch (this.constructor.typeProperties[name]) {
-			case SGModel.TYPE_ARRAY: case SGModel.TYPE_ARRAY_NUMBERS: {
+		switch (this.defaults[name]?.type) {
+			case SGModel.TYPES.ARRAY: case SGModel.TYPES.ARRAY_MODEL: case SGModel.TYPES.ARRAY_NUMBERS: {
 				for (let index = 0; index < collection.length; index++) {
 					callback(collection[index], index);
 				}
 				break;
 			}
-			case SGModel.TYPE_OBJECT: case SGModel.TYPE_OBJECT_NUMBERS: {
-				let index = 0;
-				for (const value of collection) {
-					callback(value, index++);
-				}
-				break;
-			}
-			case SGModel.TYPE_SET: {
+			case SGModel.TYPES.OBJECT: {
+				if (collection === null) break;
 				for (const key in collection) {
 					callback(collection[key], key);
 				}
 				break;
 			}
-			case SGModel.TYPE_MAP: {
+			case SGModel.TYPES.SET: {
+				for (const key in collection) {
+					callback(collection[key], key);
+				}
+				break;
+			}
+			case SGModel.TYPES.MAP: {
 				for (const [key, value] of collection) {
 					callback(value, key);
 				}
 				break;
 			}
 			default: {
-				throw new Error(`Error in forEach() method! Unknown type for property "${name}"!`);
+				throw new Error(`Unknown type for property "${name}"! ${this.getDebugInfo()}`);
 			}
 		}
 	}
 
 	/**
-	 * Очистить свойство - методов работает также со сложными типами данных - с массивами, объектами и коллекциями Map/Set
+	 * Очистить свойство - метод работает также со сложными типами данных - с массивами, объектами и коллекциями Map/Set
 	 * @param {string} name
 	 * @returns {boolean|Promise} true, если данные в свойстве изменились.
 	 */
-	clearProperty(name, options = void 0, flags = 0) {
-		let changed = false;
-		let valueOrCollection = this.#data[name];
-		switch (this.constructor.typeProperties[name] || SGModel.TYPE_ANY) {
-			case SGModel.TYPE_ANY: changed = (valueOrCollection !== null); this.#data[name] = null; break;
-			case SGModel.TYPE_STRING: changed = (valueOrCollection !== ''); if (changed) this.#data[name] = ''; break;
-			case SGModel.TYPE_NUMBER: changed = (valueOrCollection !== 0); this.#data[name] = 0; break;
-			case SGModel.TYPE_BOOLEAN: changed = (valueOrCollection !== false); this.#data[name] = false; break;
-			case SGModel.TYPE_ARRAY: case SGModel.TYPE_ARRAY_NUMBERS: {
-				if (Array.isArray(valueOrCollection)) {
-					if (valueOrCollection.length !== 0) {
-						valueOrCollection.length = 0;
-						changed = true;
-					}
-				} else {
-					this.#data[name] = valueOrCollection = [];
-					changed = true;
-				}
-				break;
-			}
-			case SGModel.TYPE_OBJECT: case SGModel.TYPE_OBJECT_NUMBERS: {
-				if (valueOrCollection instanceof Object) {
-					for (const p in valueOrCollection) {
-						delete valueOrCollection[p];
-						changed = true;
-					}
-				} else {
-					this.#data[name] = valueOrCollection = {};
-					changed = true;
-				}
-				break;
-			}
-			case SGModel.TYPE_SET: {
-				if (valueOrCollection instanceof Set) {
-					if (valueOrCollection.size) {
-						valueOrCollection.clear();
-						changed = true;
-					}
-				} else {
-					this.#data[name] = new Set();
-					changed = true;
-				}
-				break;
-			}
-			case SGModel.TYPE_MAP: {
-				if (valueOrCollection instanceof Map) {
-					if (valueOrCollection.size) {
-						valueOrCollection.clear();
-						changed = true;
-					}
-				} else {
-					this.#data[name] = new Map();
-					changed = true;
-				}
-				break;
-			}
-			case SGModel.TYPE_XY: {
-				if (!(valueOrCollection instanceof Object)) {
-					valueOrCollection = this.#data[name] = {};
-				}
-				if (valueOrCollection.x !== 0 || valueOrCollection.y !== 0) {
-					valueOrCollection.x = 0;
-					valueOrCollection.y = 0;
-					changed = true;
-				}
-				break;
-			}
-			default: throw new Error(`Error in clearProperty()! Unknown type for property "${name}"!`);
+	clearProperty(name, options = Utils.OBJECT_EMPTY, flags = 0) {
+		const typeDefault = this.defaults[name]?.type;
+		if (typeDefault) {
+			const defaultValue = this.defaults[name]?.type?.();
+			return this.set(name, defaultValue, options, flags);
 		}
-		return this.#changedAndCallbacks(changed, name, valueOrCollection, null, options, flags);
+		throw new Error(`Unknown type for property "${name}"! ${this.getDebugInfo()}`);
 	}
 
 	/**
@@ -869,44 +977,21 @@ class SGModel {
 		if (collection === void 0) {
 			return 0;
 		}
-		switch (this.constructor.typeProperties[name]) {
-			case SGModel.TYPE_ARRAY: case SGModel.TYPE_ARRAY_NUMBERS: return collection.length;
-			case SGModel.TYPE_OBJECT: case SGModel.TYPE_OBJECT_NUMBERS: return Object.keys(collection).length;
-			case SGModel.TYPE_SET: case SGModel.TYPE_MAP: return collection.size;
+		switch (this.defaults[name]?.type) {
+			case SGModel.TYPES.ARRAY: case SGModel.TYPES.ARRAY_MODEL: case SGModel.TYPES.ARRAY_NUMBERS: return collection.length;
+			case SGModel.TYPES.OBJECT: return collection === null ? 0 : Object.keys(collection).length;
+			case SGModel.TYPES.SET: case SGModel.TYPES.MAP: return collection.size;
 		}
-		throw new Error(`Error in size() method! The property with name "${name}" (${this.constructor.name}) has a simple data type!`);
+		throw new Error(`The property with name "${name}" has a simple data type! ${this.getDebugInfo()}`);
 	}
 	
-	/** Get property value */
+	/**
+	 * Получить значение свойства. Если свойство с таким именем не существует, то ошибка не будет выброшена
+	 * @param {string} name
+	 * @returns {mixed}
+	 */
 	get(name) {
 		return this.#data[name];
-	}
-
-	/**
-	 * Получить тип свойства в формате SGModel
-	 * @param {mixed} value 
-	 * @returns {SGModel.TYPE}
-	 */
-	getType(value) {
-		switch (typeof value) {
-			case 'number': return SGModel.TYPE_NUMBER;
-			case 'string': return SGModel.TYPE_STRING;
-			case 'boolean': return SGModel.TYPE_BOOLEAN;
-			case 'function': return SGModel.TYPE_FUNCTION;
-			case 'object': {
-				if (Array.isArray(value)) return SGModel.TYPE_ARRAY;
-				if (value instanceof Set) return SGModel.TYPE_SET;
-				if (value instanceof Map) return SGModel.TYPE_MAP;
-				if (value instanceof Object) {
-					if (Object.keys(value).every(k => ['x', 'y'].includes(k)) && Object.keys(value).length === 2) {
-						return SGModel.TYPE_XY;
-					}
-					return SGModel.TYPE_OBJECT;
-				}
-				return SGModel.TYPE_ANY;
-			}
-		}
-		return SGModel.TYPE_ANY;
 	}
 
 	/** @private */
@@ -914,23 +999,28 @@ class SGModel {
 		let callbacks = this.#onChangeCallbacks[name];
 		if (!callbacks) callbacks = this.#onChangeCallbacks[name] = [];
 		callbacks.push({f: func, c: context, d: data});
-		if (flags & SGModel.FLAG_IMMEDIATELY) {
+		if (flags & SGModel.FLAGS.IMMEDIATELY) {
 			func.call(context ? context : this, data ? data : this.#data[name], this.#data[name], name);
 		}
 	}
 
 	/**
-	 * Set trigger for property change
+	 * Задать колбэк на изменение свойства
 	 * @param {string|array} name
 	 * @param {function} func
 	 * @param {object} [context] If not specified, the **this** of the current object is passed
 	 * @param {mixed} [data]	If **data** is set, then this value (data) is passed instead of the current value of the property
 	 * @param {number} [flags=0] Valid flags:
-	 *		**SGModel.FLAG_IMMEDIATELY** - **func** will be executed once now
+	 *		**SGModel.FLAGS.IMMEDIATELY** - **func** will be executed once now
 	 */
 	on(name, func, context = void 0, data = void 0, flags = 0) {
+		let deferredDetected = false;
 		if (Array.isArray(name)) {
 			for (let i = 0; i < name.length; i++) {
+				if (!deferredDetected && this.deferredProperties.has(name[i])) {
+					flags = flags | SGModel.FLAGS.IMMEDIATELY;
+					deferredDetected = true;
+				}
 				this.#on.call(this,
 					name[i],
 					func,
@@ -940,24 +1030,26 @@ class SGModel {
 				);
 			}
 		} else {
-			this.#on.apply(this, arguments);
+			if (this.deferredProperties.has(name)) {
+				flags = flags | SGModel.FLAGS.IMMEDIATELY;
+			}
+			this.#on.call(this, name, func, context, data, flags);
 		}
 	}
 	
 	/**
-	 * Set trigger to change any property
+	 * Задать единый колбэк на изменение любого свойства
 	 * @param {function} func
-	 * @param {number} [flags=0] Valid flags:
-	 *		**SGModel.FLAG_IMMEDIATELY** - **func** will be executed once now
+	 * @param {number} [flags=0] Допустимые флаги:
+	 *		**SGModel.FLAGS.IMMEDIATELY** - колбэк будет выполнен в первый раз сразу же здесь
 	 */
 	setOnAllCallback(func, flags = 0) {
 		this.onAllCallback = func;
-		if (flags & SGModel.FLAG_IMMEDIATELY) {
+		if (flags & SGModel.FLAGS.IMMEDIATELY) {
 			this.onAllCallback();
 		}
 	}
 
-	/** @private */
 	#off(name, func) {
 		const callbacks = this.#onChangeCallbacks[name];
 		if (callbacks) {
@@ -975,7 +1067,7 @@ class SGModel {
 	}
 
 	/**
-	 * Remove trigger on property change
+	 * Удаляет колбэк на изменение свойства
 	 * @param {string|array} name
 	 * @param {function} func
 	 */
@@ -995,23 +1087,29 @@ class SGModel {
 		}
 	}
 
-	/** Check if there is a property in the model */
+	/**
+	 * Проверяет, есть ли свойство 
+	 * @param {string} name
+	 */
 	has(name) {
 		return Object.hasOwn(this.#data, name);
 	}
 	
 	/**
-	 * Execute callbacks that are executed when the property value changes
+	 * Вызвать колбэки подписчиков, которые выполняются при изменении значения свойства
 	 * @param {string} name
 	 * @param {mixed} [value]
-	 * @param {number} [flags=0] Valid flags:
-	 *		**SGModel.FLAG_OFF_MAY_BE** - if set can be **.off()**, then you need to pass this flag
+	 * @param {number} [flags] Допустимые флаги:
+	 *		**SGModel.FLAGS.OFF_MAY_BE** - если в процессе выполнения колбэков может быть выполнена отписка (`.off()`), нужно передать этот флаг.
 	 */
 	trigger(name, value = void 0, flags = 0) {
+		if (!this.constructor.allowUndeclaredProperties && !Object.hasOwn(this.defaults, name)) {
+			throw new Error(`Properties "${name}" doesn't exists! May not be registered in defaults or constructor! ${this.getDebugInfo()}`);
+		}
 		let callbacks = this.#onChangeCallbacks[name];
 		if (callbacks) {
-			if (flags & SGModel.FLAG_OFF_MAY_BE) {
-				callbacks = SGModel.clone(callbacks);
+			if (flags & SGModel.FLAGS.OFF_MAY_BE) {
+				callbacks = Utils.clone(callbacks);
 			}
 			for (const i in callbacks) {
 				const cb = callbacks[i];
@@ -1025,11 +1123,15 @@ class SGModel {
 	}
 
 	/**
-	 * Очистить все свойства, задава значения по умолчанию
+	 * Очистить все свойства, задав значения по умолчанию
 	 */
 	clearToDefaults() {
-		for (const propName in this.constructor.defaultProperties) {
-			this.data[propName] = this.constructor.defaultProperties[propName];
+		for (const name in this.data) {
+			if (Object.hasOwn(this.defaults, name)) {
+				this.data[name] = Utils.clone(this.defaults[name].value);
+			} else {
+				throw new Error(`Default value not found for property "${name}"`);
+			}
 		}
 	}
 
@@ -1037,15 +1139,23 @@ class SGModel {
 	 * Очистить все свойства
 	 * @param {object} [options]
 	 * @param {number} [flags=0]
+	 * @param {function} [_callback] - колбэк для внутреннего использования движком
 	 * @returns {boolean|Promise} Если изменилось хотя бы одно свойство, то вернёт true или Promise в зависимости от того синхронизируются ли данные с каким-нибудь хранилищем
 	 */
-	clear(options = void 0, flags = 0) {
+	clear(options = void 0, flags = 0, _callback = void 0) {
 		let changed = false;
-		for (const name in this.constructor.typeProperties) {
+		for (const name in this.defaults) {
 			const result = this.clearProperty(name, options, flags);
+			if (_callback) {
+				if (result === true) {
+					_callback(name);
+				} else if (Utils.isPromise(result)) {
+					result.then((status) => (status === true && _callback(name)));
+				}
+			}
 			if (!changed) {
-				if (result instanceof Promise) {
-					changed = result;
+				if (Utils.isPromise(result)) {
+					changed = result; // TODO: асинхронное хранилище
 				} else if (result === true) {
 					changed = true;
 				}
@@ -1055,522 +1165,124 @@ class SGModel {
 	}
 	
 	/**
-	 * Save instance data to local storage.
-	 * You can override this method and save, for example, to a remote database by making asynchronous requests to the server
-	 * @return Promise
+	 * Сохранить данные инстанса в постоянном хранилище.
+	 * @overridden Вы можете переопределить этот метод и сохранить, например, в удаленную базу данных, сделав асинхронные запросы к серверу
+	 * @returns {Promise}
 	 */
-	save() {
+	async save() {
 		if (!this.constructor.localStorageKey) {
-			throw new Error('Error in this.save()! The static property "localStorageKey" is not set!');
+			throw new Error(`The static property "localStorageKey" is not set! ${this.getDebugInfo()}`);
 		}
 		const dest = this.getData();
-		localStorage.setItem(this.constructor.localStorageKey + (!this.constructor.singleInstance ? ':' + this.uuid : ''), JSON.stringify(dest));
-		return Promise.resolve(true);
-	}
-	
-	/**
-	 * Get data for saved
-	 * @return {object}
-	 */
-	getData(bDeleteEmpties = true) { // SGModel.DELETE_EMPTIES=true
-		const dest = {};
-		if (Array.isArray(this.constructor.storageProperties)) {
-			for (let i = 0; i < this.constructor.storageProperties.length; i++) {
-				const name = this.constructor.storageProperties[i];
-				const value = this.#data[name];
-				if (value || value === 0 || value === '' || !bDeleteEmpties) {
-					dest[name] = value;
-				}
-			}
-		} else {
-			// Discard properties starting with '_'
-			for (const name in this.#data) {
-				if (name[0] === '_') continue;
-				const value = this.#data[name];
-				if (value || value === 0 || value === '' || !bDeleteEmpties) {
-					dest[name] = value;
-				}
-			}
-		}
-		return dest;
+		localStorage.setItem(
+			`${this.constructor.localStorageKey}${this.constructor.singleInstance ? '' : `:${this.uuid}`}`,
+			JSON.stringify(dest)
+		);
+		return true;
 	}
 
 	/**
-	 * Get all data
-	 * @returns {object}
+	 * Получить ключевую информацию об инстансе при выбросе исключений
+	 * @returns {string}
 	 */
-	getAllData() {
-		return this.#data;
+	getDebugInfo() {
+		let keyValue;
+		for (const key of SGModel.standardKeys) {
+			if (key === 'uuid') continue;
+			const value = this.get(key);
+			if (value) {
+				keyValue = { key, value };
+				break;
+			}
+		}
+		return `Instance of ${this.constructor.name} with UUID "${this.uuid}" [${keyValue?`${keyValue.key}=${keyValue.value}, `:''}__uid=${this.__uid}]`;
 	}
 	
-	/** Destroy the instance */
-	destroy() {
+	/**
+	 * Удалить инстанс. Учитывает вложенные инстансы в свойствах.
+	 * Выполняет destroy() для всех вложенных инстансов, не проверяя их нахождение в родительских инстансах (TODO?)
+	 */
+	destroy(flags = 0) {
+		if (this.destroyed) {
+			return;
+		}
+		this.destroyed = true;
 		this.off();
 		delete SGModel.__instancesByClass[this.constructor.name][this.uuid];
 		delete SGModel.__instances[this.uuid];
-		this.destroyed = true;
-		this.constructor.__instance = null;
-	}
-	
-	/**
-	 * Получить массив строк из текстового представления в формате PostgreSQL массива
-	 * @param {string} line
-	 * @returns {Array}
-	 */
-	static parsePgStrArray(line) {
-		const result = [];
-		if (line.startsWith('{') && line.endsWith('}')) {
-			if (line.at(1) === '"' && line.at(-2) === '"') {
-				line = line.slice(2, -2);
-				const item = line.split('","');
-				item.forEach(line => {
-					if (line.startsWith('(') && line.endsWith(')')) {
-						const arr = [];
-						result.push(arr);
-						line = line.slice(1, -1).replaceAll('\\"', '"').replaceAll('\\\\', '\\').replaceAll('""', '$DOUBLE_QUOTE$');
-						const parts = line.matchAll(/"([^"]+(?:\\[^"]+)*)"|([^,]+)/g);
-						parts.forEach(part => {
-							if (part === '""') {
-								arr.push('');
-							} else {
-								const str = part[1] || part[2];
-								arr.push(str.replace('\\\\', '\\').replaceAll('$DOUBLE_QUOTE$', '"'));
-							}
-						});
-					} else {
-						result.push(line);
-					}
-				});
-			} else {
-				line = line.slice(1, -1);
-				const item = line.split(',');
-				result.push(...item);
+		if (this.constructor.singleInstance) {
+			this.constructor.__instance = null;
+		}
+		if ((flags & SGModel.FLAGS.NO_DESTROY_INSTANCE_MODEL) === 0) {
+			for (let name in this.#data) {
+				const type = this.defaults[name]?.type;
+				if (type === SGModel.TYPES.ARRAY_MODEL || type === SGModel.TYPES.MODEL) {
+					this.clearProperty(name);
+				}
 			}
 		}
-		return result;
 	}
-
-	static #toJSONExclude = {
-		thisProperties: 'data,initialization'.split(','),
-		classProperties: 'data,__instance,__instances,__instancesByClass'.split(','),
-	};
 	
 	/**
-	 * Подготовить инстанс для преобразования в текстовое json-представление
+	 * Проверяет базируется ли класс или объект на SGModel
+	 * @param {object|function} source
+	 * @param {number} [flags]
+	 * @returns 
+	 */
+	static isBasedOnModel(source, flags = SGModel.FLAGS.INCLUDING_INSTANCE) {
+		if ((flags & SGModel.FLAGS.INCLUDING_INSTANCE) && source instanceof SGModel) return true;
+		while (source) {
+			if (source === SGModel) return true;
+			source = Object.getPrototypeOf(source);
+		}
+		return false;
+	}
+
+	/**
+	 * Получить json-представление данных (например, для сохранения в постоянное хранилище)
+	 * @param {number} [flags] - Флаги, см. в классе `SGJson`
+	 * @param {WeakSet} [_seen] - Для внутреннего использования (отслеживание циклических ссылок)
+	 * @returns {object}
+	 */
+	getData(flags = 0, _seen = new WeakSet()) {
+		return SGJson.getData(this, flags, _seen);
+	}
+
+	/**
+	 * Подготовить объект на основе инстанса для преобразования в текстовое json-представление
+	 * @param {number} [flags] - Флаги, см. в классе `SGJson`
+	 * @param {WeakSet} [_seen] - Для внутреннего использования (отслеживание циклических ссылок)
 	 * @returns {string}
 	 */
-	toJSON() {
-		const cls = this.constructor;
-		const result = {
-			data: this.getAllData(),
-			__class: {
-				name: this.constructor.name,
-				__hash: this.constructor.__hash,
-				__prototype: {
-					name: 'SGModel',
-					version: SGModel.version,
-					isNode: SGModel.isNode,
-					isBrowser: SGModel.isBrowser,
-				},
-			},
-		};
-		for (let name in this) {
-			if (typeof this[name] !== 'function' && !SGModel.#toJSONExclude.thisProperties.includes(name)) {
-				result[name] = this[name];
-			}
-		}
-		for (let name in cls) {
-			if (typeof cls[name] !== 'function' && !SGModel.#toJSONExclude.classProperties.includes(name)) {
-				if (Object.hasOwn(SGModel, name)) continue;
-				result.__class[name] = cls[name];
-			}
-		}
-		return result;
+	toJSON(flags = void 0, _seen = new WeakSet()) {
+		return SGJson.toJSON(this, flags, _seen);
 	}
-
+	
 	/**
-   * Returns the singleton instance. By default, creates it if necessary.
+   * Возвращает экземпляр синглтона. По умолчанию создает его при необходимости
    * @public
-	 * @param {boolean} [createIfMissing=true] If true, creates the instance if it doesn't exist.
- 	 *                                         If false, throws an error instead of creating.
-	 * @throws {Error} If the singleton is not properly configured (when `singleInstance` is falsy).
+	 * @param {boolean} [createIfMissing=true] Если true, создается экземпляр, если он не существует
+ 	 *                                         Если false, вместо создания выбрасывается ошибка
+	 * @throws {Error} Если синглтон настроен неправильно (когда `singleInstance` имеет значение false)
    * @returns {object}
    */
-	static getInstance = function(createIfMissing = true) {
+	static getInstance(createIfMissing = true) {
 		if (!this.singleInstance) {
-			throw new Error('Error in getInstance()! Singleton not configured (singleInstance=false)!');
+			throw new Error('Singleton not configured (singleInstance = false)!');
 		}
 		if (!this.__instance && !createIfMissing) {
-			throw new Error('Error in getInstance()! Singleton instance does not exist and creation is disabled!');
+			throw new Error('Singleton instance does not exist and creation is disabled!');
 		}
 		return this.__instance ?? (this.__instance = new this());
-	};
-
-	/**
-	 * Method **save()** for single instance of a class
-	 */
-	static save() {
-		if (this.__instance) {
-			if (this.singleInstance) {
-				return this.__instance.save();
-			} else {
-				throw new Error('Error! The class must be with singleInstance=true!');
-			}
-		}
-		throw new Error('Error! this.__instance is empty!');
-	};
-
-	/**
-	 * The flag passed in the **.on(...)** call to execute the callback
-	 * @constant {boolean}
-	 */
-	static FLAG_IMMEDIATELY = 1;
-
-	/** @protected */
-	static OBJECT_EMPTY = Object.preventExtensions({}); // @aos
-
-	static FLAG_OFF_MAY_BE = 0b00000001; // if set can be .off(), then you need to pass this flag
-	static FLAG_PREV_VALUE_CLONE = 0b00000010; // Pass the previous value (heavy clone for objects / arrays)
-	static FLAG_NO_CALLBACKS = 0b00000100; // if given, no callbacks are executed
-	static FLAG_FORCE_CALLBACKS = 0b00001000; // execute callbacks even if there is no change
-
-	static DELETE_EMPTIES = true;
-	
-	// Функция-заглушка
-	static fStub = (v) => v;
-
-	/**
-	 * Сгенерировать uuid
-	 * @returns {string}
-	 */
-	static uuidLite() {
-		return crypto.randomUUID && crypto.randomUUID() // must be https protocol to support the function crypto.randomUUID()
-		|| '10000000-1000-4000-8000-100000000000'.replace(/[018]/g, c => (+c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> +c / 4).toString(16));
-	}
-
-	/**
-	 * If **dest** does not have a property from **sources**, then it is copied from **sources** to **dest** (composite objects are copied completely using recursion!)
-	 * @param {object} dest
-	 * @param {object} sources 
-	 */
-	static defaults = function(dest, ...sources) {
-		for (let i = sources.length; i--; ) {
-			const source = sources[i];
-			for (const p in source) {
-				if (dest[p] === void 0) {
-					dest[p] = (typeof source[p] === 'object' ? SGModel.clone(source[p]) : source[p]);
-				}
-			}
-		}
-		return dest;
-	};
-
-	/**
-	 * Full cloning (with nested objects).
-	 * Attention! There is no check for circular references. You cannot allow nested objects to refer to each other through properties, because recursion is used!
-	 * @param {object|primitive} source
-	 * @return {object|primitive}
-	 */
-	static clone = function(source) {
-		// Стандартную функцию structuredClone() не используем, т.к. она не поддерживает свойства-функции и не учитывает особенности объектов на основе пользовательских классов
-		let dest;
-		if (Array.isArray(source)) {
-			dest = [];
-			for (let i = 0; i < source.length; i++) {
-				dest[i] = (
-					typeof source[i] === 'object' ? SGModel.clone(source[i]) : source[i]
-				);
-			}
-		} else if (typeof source === 'object') {
-			if (source === null) {
-				dest = null;
-			} else {
-				if (source instanceof Set) {
-					dest = new Set();
-					for (const value of source) {
-						dest.add(SGModel.clone(value));
-					}
-				} else if (source instanceof Map) {
-					dest = new Map();
-					for (const [key, value] of source) {
-						dest.set(key, SGModel.clone(value));
-					}
-				} else {
-					dest = {};
-					for (const p in source) {
-						dest[p] = (
-							typeof source[p] === 'object' ? SGModel.clone(source[p]) : source[p]
-						);
-					}
-				}
-			}
-		} else {
-			dest = source; // string, number, boolean, function
-		}
-		return dest;
-	};
-
-	/**
-	 * Перезаписать рекурсивно значения всех свойств/элементов объекта/массива **dest** соответствующими значениями свойств/элементов объекта/массива **sources**.
-	 * @english Fill the values **dest** with the values from **source** (with recursion).
-	 * @param {object|array} dest
-	 * @param {object|array} source
-	 * @param {number} [flags=0b0011]	Флаги: 0001 (1) - добавлять незнакомые свойства, т.е. свойства, которые есть в source, но нет в dest - будут копироваться; 0010 (2) - режим форса (перезаписывает свойство даже если типы разные)
-	 * @param {string} [comments]			Комментарий для отладки ошибок
-	 * @param {string} [_path]				Приватный параметр для внутреннего использования при рекурсивных вызовах
-	 * @param {object} [_seen]				Для защиты от циклических ссылок
-	 * @returns {dest}								Модифицированный dest
-	 */
-	static initObjectByObject = function(dest, source, flags = 0b0011, comments = '', _path = '{...}', _seen = new WeakSet()) {
-		if (!SGModel.isObject(dest)) {
-			console.warn(`SGModel->initObjectByObject(): "dest" is not an object at ${_path}! ${comments}`);
-			return dest;
-		}
-		if (!SGModel.isObject(source)) {
-			console.warn(`SGModel->initObjectByObject(): "source" is not an object at ${_path}! ${comments}`);
-			return dest;
-		}
-		if (_seen.has(source)) {
-			console.warn(`SGModel->initObjectByObject(): Circular reference detected at ${_path}! ${comments}`);
-			return dest;
-		}
-		_seen.add(source);
-		const allowAddNew = (flags & 1) === 1;
-		const forceReplace = (flags & 2) === 2;
-		for (const propName in source) {
-			const sourceVal = source[propName];
-			const destHasProp = Object.prototype.hasOwnProperty.call(dest, propName);	
-			if (destHasProp || allowAddNew) {
-				const destVal = dest[propName];
-				if (SGModel.isObject(sourceVal)) {
-					if (SGModel.isObject(destVal) || forceReplace) {
-						if (!SGModel.isObject(destVal)) {
-							dest[propName] = Array.isArray(sourceVal) ? [] : {};
-						}
-						this.initObjectByObject(dest[propName], sourceVal, flags, comments, `${_path}.${propName}`, _seen);
-					} else {
-						console.warn(`Type mismatch at ${_path}["${propName}"] — skip copying nested object. ${comments}`);
-					}
-				} else {
-					dest[propName] = sourceVal;
-				}
-			} else {
-				console.warn(`Property missing in dest: ${_path}["${propName}"] will be ignored. ${comments}`);
-			}
-		}
-		return dest;
-	};
-
-	/** @public */
-	static isObject = (val) => val !== null && typeof val === 'object';
-
-	/** @public */
-	static upperFirstLetter = function(s) {
-		return s.charAt(0).toUpperCase() + s.slice(1);
-	};
-
-	static toNumberOrNull = function(value, precision = void 0) {
-		if (value === null || value === '') {
-			return null;
-		}
-		return SGModel.toNumber(value, precision);
-	};
-
-	static toNumber = function(value, precision = void 0) {
-		if (typeof value === 'string') {
-			if (/[\d]+\.[\d]+$/.test(value)) {
-				value = value.replace(',', '');
-			}
-			value = value.replace(',', '.').replace(/\s/g, '').replace('−', '-'); // 6,724.33 -> 6724.33
-		}
-		return precision ? SGModel.roundTo(value, precision) : Number(value);
-	};
-
-	/**
-	 * Преобразовать элементы коллекции в числа
-	 * @aos
-	 * @param {Array|object} collection 
-	 * @param {number} [precision]
-	 * @returns {Array|object}
-	 */
-	static toNumbers = function(collection, precision = void 0) {
-		for (const p in collection) {
-			let value = collection[p];
-			if (typeof value === 'string') {
-				if (/[\d]+\.[\d]+$/.test(value)) {
-					value = value.replace(',', '');
-				}
-				value = value.replace(',', '.').replace(/\s/g, '').replace('−', '-'); // 6,724.33 -> 6724.33
-			}
-			collection[p] = (precision ? SGModel.roundTo(value, precision) : Number(value));
-		}
-		return collection;
-	};
-
-	/**
-	 * Rounding to the required precision
-	 * @param {Number} value
-	 * @param {Number} [precision=0]
-	 * @returns {Number}
-	 */
-	static roundTo = function(value, precision = 0) {
-		const m = 10 ** precision;
-		return Math.round(Number(value) * m) / m;
-	};
-
-	/** @public */
-	static toBooleanOrNull = function(value) {
-		if (value === null) {
-			return null;
-		}
-		if (typeof value === 'string') {
-			return value === '1' || value.toUpperCase() === 'TRUE' ? true : false;
-		}
-		return Boolean(value);
-	};
-
-	/** @public */
-	static toStringOrNull = function(value) {
-		if (value === null) {
-			return null;
-		}
-		return value ? String(value) : '';
-	};
-
-	/** @public */
-	static isEmpty = function(value) {
-		if (value) {
-			return Object.keys(value).length === 0 && value.constructor === Object;
-		}
-		return true;
-	};
-
-	/** @public */
-	static sleep = function(ms = 33) {
-		return new Promise(resolve => setTimeout(resolve, ms));
-	}
-
-	/**
-	 * Enable multiple instances
-	 */
-	static multipleInstances = false;
-
-	/**
-	 * Automatic saving to storage when any property is changed
-	 */
-	static autoSave = false;
-
-	// TODO: назначение статических методов get, set, addTo и т.д. написать в виде единственного блока кода? Учесть JSDoc!
-
-	/**
-	 * Method **get()** for single instance of a class
-	 */
-	static get = function(...args) {
-		return this.__instance && this.__instance.get(...args);
-	};
-
-	/**
-	 * Method **set()** for single instance of a class
-	 */
-	static set = function(...args) {
-		return this.__instance && this.__instance.set(...args);
-	};
-
-	/**
-	 * Method **addTo()** for single instance of a class
-	 */
-	static addTo = function(...args) {
-		return this.__instance && this.__instance.addTo(...args);
-	};
-
-	/**
-	 * Method **removeFrom()** for single instance of a class
-	 */
-	static removeFrom = function(...args) {
-		return this.__instance && this.__instance.removeFrom(...args);
-	};
-
-	/**
-	 * Method **clearProperty()** for single instance of a class
-	 */
-	static clearProperty = function(...args) {
-		return this.__instance && this.__instance.clearProperty(...args);
-	};
-
-	/**
-	 * Method **size()** for single instance of a class
-	 */
-	static size = function(...args) {
-		return this.__instance && this.__instance.size(...args);
-	};
-
-	/**
-	 * Method on() for single instance of a class
-	 * @public
-	 */
-	static on = function(...args) {
-		return this.__instance && this.__instance.on(...args);
-	};
-
-	/**
-	 * Method *off()** for single instance of a class
-	 */
-	static off = function(...args) {
-		return this.__instance && this.__instance.off(...args);
 	};
 
 	static #nextUID() {
 		return ++SGModel.#uid;
 	}
-
-	static #ITEM_HASH_LEN = 16;
-
-	/**
-	 * SGModelView.sha256 - Хеширование данных
-	 * [js-sha256]{@link https://github.com/emn178/js-sha256}
-	 * @version 0.11.0
-	 * @author Chen, Yi-Cyuan [emn178@gmail.com]
-	 * @copyright Chen, Yi-Cyuan 2014-2024
-	 * @license MIT
-	 * @minify https://minify-js.com
-	 * @notes Удалёны: код для sha224, определение root, экспорты, код использующий Node.js
-	 *//* eslint-disable */
-	 static #sha256 = function(){"use strict";var t="input is invalid type",h=("undefined"!=typeof ArrayBuffer),i="0123456789abcdef".split(""),
-		r=[-2147483648,8388608,32768,128],s=[24,16,8,0],
-		e=[1116352408,1899447441,3049323471,3921009573,961987163,1508970993,2453635748,2870763221,3624381080,310598401,607225278,1426881987,1925078388,2162078206,2614888103,3248222580,3835390401,4022224774,264347078,604807628,770255983,1249150122,1555081692,1996064986,2554220882,2821834349,2952996808,3210313671,3336571891,3584528711,113926993,338241895,666307205,773529912,1294757372,1396182291,1695183700,1986661051,2177026350,2456956037,2730485921,2820302411,3259730800,3345764771,3516065817,3600352804,4094571909,275423344,430227734,506948616,659060556,883997877,958139571,1322822218,1537002063,1747873779,1955562222,2024104815,2227730452,2361852424,2428436474,2756734187,3204031479,3329325298],
-		n=["hex","array","digest","arrayBuffer"],o=[];Array.isArray||(Array.isArray=function(t){return"[object Array]"===Object.prototype.toString.call(t)}),h&&!ArrayBuffer.isView&&(ArrayBuffer.isView=function(t){return"object"==typeof t&&t.buffer&&t.buffer.constructor===ArrayBuffer});
-		var a=function(t){return function(h){return new u(!0).update(h)[t]()}},f=function(t){return function(h,i){return new c(h,!0).update(i)[t]()}};
-		function u(t){t?(o[0]=o[16]=o[1]=o[2]=o[3]=o[4]=o[5]=o[6]=o[7]=o[8]=o[9]=o[10]=o[11]=o[12]=o[13]=o[14]=o[15]=0,this.blocks=o):this.blocks=[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],this.h0=1779033703,this.h1=3144134277,this.h2=1013904242,this.h3=2773480762,this.h4=1359893119,this.h5=2600822924,this.h6=528734635,this.h7=1541459225,this.block=this.start=this.bytes=this.hBytes=0,this.finalized=this.hashed=!1,this.first=!0}
-		function c(i,r){var s,e=typeof i;if("string"===e){var n,o=[],a=i.length,f=0;for(s=0;s<a;++s)(n=i.charCodeAt(s))<128?o[f++]=n:n<2048?(o[f++]=192|n>>>6,o[f++]=128|63&n):n<55296||n>=57344?(o[f++]=224|n>>>12,o[f++]=128|n>>>6&63,o[f++]=128|63&n):(n=65536+((1023&n)<<10|1023&i.charCodeAt(++s)),o[f++]=240|n>>>18,o[f++]=128|n>>>12&63,o[f++]=128|n>>>6&63,o[f++]=128|63&n);i=o}else{if("object"!==e)throw new Error(t);
-		if(null===i)throw new Error(t);if(h&&i.constructor===ArrayBuffer)i=new Uint8Array(i);else if(!(Array.isArray(i)||h&&ArrayBuffer.isView(i)))throw new Error(t)}i.length>64&&(i=new u(!0).update(i).array());var c=[],y=[];for(s=0;s<64;++s){var p=i[s]||0;c[s]=92^p,y[s]=54^p}u.call(this,r),this.update(y),this.oKeyPad=c,this.inner=!0,this.sharedMemory=r}u.prototype.update=function(i){if(!this.finalized){var r,e=typeof i;
-		if("string"!==e){if("object"!==e)throw new Error(t);if(null===i)throw new Error(t);if(h&&i.constructor===ArrayBuffer)i=new Uint8Array(i);else if(!(Array.isArray(i)||h&&ArrayBuffer.isView(i)))throw new Error(t);r=!0}for(var n,o,a=0,f=i.length,u=this.blocks;a<f;){if(this.hashed&&(this.hashed=!1,u[0]=this.block,this.block=u[16]=u[1]=u[2]=u[3]=u[4]=u[5]=u[6]=u[7]=u[8]=u[9]=u[10]=u[11]=u[12]=u[13]=u[14]=u[15]=0),r)for(o=this.start;a<f&&o<64;++a)u[o>>>2]|=i[a]<<s[3&o++];else for(o=this.start;a<f&&o<64;++a)(n=i.charCodeAt(a))<128?u[o>>>2]|=n<<s[3&o++]:n<2048?(u[o>>>2]|=(192|n>>>6)<<s[3&o++],u[o>>>2]|=(128|63&n)<<s[3&o++]):n<55296||n>=57344?(u[o>>>2]|=(224|n>>>12)<<s[3&o++],u[o>>>2]|=(128|n>>>6&63)<<s[3&o++],u[o>>>2]|=(128|63&n)<<s[3&o++]):(n=65536+((1023&n)<<10|1023&i.charCodeAt(++a)),u[o>>>2]|=(240|n>>>18)<<s[3&o++],u[o>>>2]|=(128|n>>>12&63)<<s[3&o++],u[o>>>2]|=(128|n>>>6&63)<<s[3&o++],u[o>>>2]|=(128|63&n)<<s[3&o++]);this.lastByteIndex=o,this.bytes+=o-this.start,o>=64?(this.block=u[16],this.start=o-64,this.hash(),this.hashed=!0):this.start=o}return this.bytes>4294967295&&(this.hBytes+=this.bytes/4294967296<<0,this.bytes=this.bytes%4294967296),this}},
-		u.prototype.finalize=function(){if(!this.finalized){this.finalized=!0;var t=this.blocks,h=this.lastByteIndex;t[16]=this.block,t[h>>>2]|=r[3&h],this.block=t[16],h>=56&&(this.hashed||this.hash(),t[0]=this.block,t[16]=t[1]=t[2]=t[3]=t[4]=t[5]=t[6]=t[7]=t[8]=t[9]=t[10]=t[11]=t[12]=t[13]=t[14]=t[15]=0),t[14]=this.hBytes<<3|this.bytes>>>29,t[15]=this.bytes<<3,this.hash()}},
-		u.prototype.hash=function(){var t,h,i,r,s,n,o,a,f,u=this.h0,c=this.h1,y=this.h2,p=this.h3,l=this.h4,d=this.h5,b=this.h6,w=this.h7,A=this.blocks;for(t=16;t<64;++t)h=((s=A[t-15])>>>7|s<<25)^(s>>>18|s<<14)^s>>>3,i=((s=A[t-2])>>>17|s<<15)^(s>>>19|s<<13)^s>>>10,A[t]=A[t-16]+h+A[t-7]+i<<0;for(f=c&y,t=0;t<64;t+=4)this.first?(n=704751109,w=(s=A[0]-210244248)-1521486534<<0,p=s+143694565<<0,this.first=!1):(h=(u>>>2|u<<30)^(u>>>13|u<<19)^(u>>>22|u<<10),r=(n=u&c)^u&y^f,w=p+(s=w+(i=(l>>>6|l<<26)^(l>>>11|l<<21)^(l>>>25|l<<7))+(l&d^~l&b)+e[t]+A[t])<<0,p=s+(h+r)<<0),h=(p>>>2|p<<30)^(p>>>13|p<<19)^(p>>>22|p<<10),r=(o=p&u)^p&c^n,b=y+(s=b+(i=(w>>>6|w<<26)^(w>>>11|w<<21)^(w>>>25|w<<7))+(w&l^~w&d)+e[t+1]+A[t+1])<<0,h=((y=s+(h+r)<<0)>>>2|y<<30)^(y>>>13|y<<19)^(y>>>22|y<<10),r=(a=y&p)^y&u^o,d=c+(s=d+(i=(b>>>6|b<<26)^(b>>>11|b<<21)^(b>>>25|b<<7))+(b&w^~b&l)+e[t+2]+A[t+2])<<0,h=((c=s+(h+r)<<0)>>>2|c<<30)^(c>>>13|c<<19)^(c>>>22|c<<10),r=(f=c&y)^c&p^a,l=u+(s=l+(i=(d>>>6|d<<26)^(d>>>11|d<<21)^(d>>>25|d<<7))+(d&b^~d&w)+e[t+3]+A[t+3])<<0,u=s+(h+r)<<0,this.chromeBugWorkAround=!0;this.h0=this.h0+u<<0,this.h1=this.h1+c<<0,this.h2=this.h2+y<<0,this.h3=this.h3+p<<0,this.h4=this.h4+l<<0,this.h5=this.h5+d<<0,this.h6=this.h6+b<<0,this.h7=this.h7+w<<0},
-		u.prototype.hex=function(){this.finalize();var t=this.h0,h=this.h1,r=this.h2,s=this.h3,e=this.h4,n=this.h5,o=this.h6,a=this.h7;return i[t>>>28&15]+i[t>>>24&15]+i[t>>>20&15]+i[t>>>16&15]+i[t>>>12&15]+i[t>>>8&15]+i[t>>>4&15]+i[15&t]+i[h>>>28&15]+i[h>>>24&15]+i[h>>>20&15]+i[h>>>16&15]+i[h>>>12&15]+i[h>>>8&15]+i[h>>>4&15]+i[15&h]+i[r>>>28&15]+i[r>>>24&15]+i[r>>>20&15]+i[r>>>16&15]+i[r>>>12&15]+i[r>>>8&15]+i[r>>>4&15]+i[15&r]+i[s>>>28&15]+i[s>>>24&15]+i[s>>>20&15]+i[s>>>16&15]+i[s>>>12&15]+i[s>>>8&15]+i[s>>>4&15]+i[15&s]+i[e>>>28&15]+i[e>>>24&15]+i[e>>>20&15]+i[e>>>16&15]+i[e>>>12&15]+i[e>>>8&15]+i[e>>>4&15]+i[15&e]+i[n>>>28&15]+i[n>>>24&15]+i[n>>>20&15]+i[n>>>16&15]+i[n>>>12&15]+i[n>>>8&15]+i[n>>>4&15]+i[15&n]+i[o>>>28&15]+i[o>>>24&15]+i[o>>>20&15]+i[o>>>16&15]+i[o>>>12&15]+i[o>>>8&15]+i[o>>>4&15]+i[15&o]+i[a>>>28&15]+i[a>>>24&15]+i[a>>>20&15]+i[a>>>16&15]+i[a>>>12&15]+i[a>>>8&15]+i[a>>>4&15]+i[15&a]},
-		u.prototype.toString=u.prototype.hex,
-		u.prototype.digest=function(){this.finalize();var t=this.h0,h=this.h1,i=this.h2,r=this.h3,s=this.h4,e=this.h5,n=this.h6,o=this.h7;return[t>>>24&255,t>>>16&255,t>>>8&255,255&t,h>>>24&255,h>>>16&255,h>>>8&255,255&h,i>>>24&255,i>>>16&255,i>>>8&255,255&i,r>>>24&255,r>>>16&255,r>>>8&255,255&r,s>>>24&255,s>>>16&255,s>>>8&255,255&s,e>>>24&255,e>>>16&255,e>>>8&255,255&e,n>>>24&255,n>>>16&255,n>>>8&255,255&n,o>>>24&255,o>>>16&255,o>>>8&255,255&o]},
-		u.prototype.array=u.prototype.digest,
-		u.prototype.arrayBuffer=function(){this.finalize();var t=new ArrayBuffer(32),h=new DataView(t);return h.setUint32(0,this.h0),h.setUint32(4,this.h1),h.setUint32(8,this.h2),h.setUint32(12,this.h3),h.setUint32(16,this.h4),h.setUint32(20,this.h5),h.setUint32(24,this.h6),h.setUint32(28,this.h7),t},c.prototype=new u,c.prototype.finalize=function(){if(u.prototype.finalize.call(this),this.inner){this.inner=!1;var t=this.array();u.call(this,this.sharedMemory),this.update(this.oKeyPad),this.update(t),u.prototype.finalize.call(this)}};
-		var y=function(){var t=a("hex");t.create=function(){return new u},t.update=function(h){return t.create().update(h)};for(var h=0;h<n.length;++h){var i=n[h];t[i]=a(i)}return t}();y.sha256=y,y.sha256.hmac=function(){var t=f("hex");t.create=function(t){return new c(t)},t.update=function(h,i){return t.create(h).update(i)};for(var h=0;h<n.length;++h){var i=n[h];t[i]=f(i)}return t}();return y.sha256}();
-	static sha256 = this.#sha256.sha256;/* eslint-enable */
-
-	/**
-	 * Получить первые N шестнадцатеричных цифер хеша
-	 * @param {string} line 
-	 * @param {number} [len=SGModel.#ITEM_HASH_LEN]
-	 * @returns {string}
-	 */
-	static sha256trimL = (line, len = SGModel.#ITEM_HASH_LEN) => {
-		return this.sha256(line).substring(0, len);
-	};
 }
 
-if (typeof globalThis === 'object') globalThis.SGModel = SGModel;
-
-if (SGModel.isNode) {
-	module.exports = SGModel;
-} else if (SGModel.isBrowser) {
-	window['SGModel'] = SGModel;
-}
+if (typeof globalThis === 'object' && globalThis !== null) globalThis.SGModel = SGModel;
+else if (Utils.isNode) module.exports = SGModel;
+else if (Utils.isBrowser) window['SGModel'] = SGModel;
 
 export default SGModel;

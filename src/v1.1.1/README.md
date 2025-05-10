@@ -20,8 +20,7 @@
 ## Описание API
 
 * [Основные статические свойства SGModel](#основные-статические-свойства-sgmodel)
-	* [static typeProperties = {…}](#static-typeproperties--)
-	* [static defaultsProperties = {…}](#static-defaultsproperties--)
+	* [static defaults = {...} или static defaults() {...}](#static-defaults---или-static-defaults-)
 	* [static options = {...}](#static-options--)
 	* [static localStorageKey = ""](#static-localstoragekey--)
 	* [static storageProperties = []](#static-storageproperties--)
@@ -30,33 +29,30 @@
 	* [constructor(properties = {}, options = void 0, thisProperties = void 0)](#constructorproperties---options--void-0-thisproperties--void-0)
 	* [UUID и uid](#uuid-и-uid)
 	* [data](#data)
-	* [initialization = {}](#initialization--)
+	* [initialization](#initialization)
 	* [initialized = false](#initialized--false)
 	* [async initialize()](#async-initialize)
 	* [changed = false](#changed--false)
 	* [destroyed = false](#destroyed--false)
-	* [defaults()](#defaults)
-	* [set(name, value, options = void 0, flags = 0, event = void 0, elem = void 0)](#setname-value-options--void-0-flags--0-event--void-0-elem--void-0)
+	* [set(name, value, options = void 0, flags = 0, ...)](#setname-value-options--void-0-flags--0-)
 	* [get(name)](#getname)
-	* [addTo(), removeFrom(), clearProperty(), size()](#addto-removefrom-clearproperty-size)
+	* [addTo(), removeFrom(), size()](#addto-removefrom-size)
 	* [on(name, func, context = void 0, data = void 0, flags = 0)](#onname-func-context--void-0-data--void-0-flags--0)
 	* [off(name, func)](#offname-func)
 	* [trigger(name, value = void 0, flags = 0)](#triggername-value--void-0-flags--0)
 	* [clearToDefaults()](#cleartodefaults)
 	* [clear()](#clear)
+	* [clearProperty()](#clearproperty)
 	* [save()](#save)
-	* [getData(bDeleteEmpties = false)](#getdatabdeleteempties--false)
+	* [getData(flags = 0)](#getdataflags--0)
 	* [toJSON()](#tojson)
 	* [destroy()](#destroy)
 * [Поддержка Singleton паттерна в наследуемых классах](#поддержка-singleton-паттерна-в-наследуемых-классах)
 	* [static singleInstance = false](#static-singleinstance--false)
 	* [static getInstance(createIfMissing = true)](#static-getinstancecreateifmissing--true)
-	* [Статические методы для работы с данными](#статические-методы-для-работы-с-данными)
 	* [static data](#static-data)
 * [Утилиты используемые в SGModel](#утилиты-используемые-в-sgmodel)
-	* [static defaults(dest, …sources)](#static-defaultsdest-sources)
 	* [static clone(source)](#static-clonesource)
-	* [static initObjectByObject(dest, source)](#static-initobjectbyobjectdest-source)
 	* [static upperFirstLetter(s)](#static-upperfirstletters)
 	* [static roundTo(value, precision = 0)](#static-roundtovalue-precision--0)
 	* [static parsePgStrArray(line)](#static-parsepgstrarrayline)
@@ -69,7 +65,7 @@
 		* [this.$view](#thisview)
 	* [Методы экземпляра SGModelView](#методы-экземпляра-sgmodelview)
 		* [bindHTML(root = void 0, mTemplate = void 0)](#bindhtmlroot--void-0-mtemplate--void-0)
-		* [destroy(noRemoveDOM = false)](#destroynoremovedom--false)
+		* [destroy(flags = 0)](#destroyflags--0)
 	* [Атрибуты в HTML-документе](#атрибуты-в-html-документе)
 		* [sg-model](#sg-model)
 		* [sg-property](#sg-property)
@@ -91,55 +87,28 @@ SGModel - Легковесная библиотека-класс для стру
 
 ## Основные статические свойства SGModel
 
-### static typeProperties = {...}
-
-Описание типов свойств. Пример кода:
-
-```js
-class PlayerBase extends SGModel {
-
-	static typeProperties = Object.assign({
-		position: SGModel.TYPE_OBJECT_NUMBERS,
-		rotate: SGModel.TYPE_NUMBER
-	}, SGModel.typeProperties);
-	
-	//...
-}
-
-class Tank extends PlayerBase {
-	
-	static typeProperties = Object.assign({
-		armor: SGModel.TYPE_NUMBER,
-		ammunition1: SGModel.TYPE_NUMBER,
-		ammunition2: SGModel.TYPE_NUMBER,
-		ammunition3: SGModel.TYPE_NUMBER
-	}, PlayerBase.typeProperties);
-	
-	//...
-}
-```
-
 #### Поддерживаемые типы свойств:
 
-- `SGModel.TYPE_ANY` - тип свойства по умолчанию
-- `SGModel.TYPE_NUMBER` - при установке `null` или пустой строки (`""`) сохраняется значение `null` (как в СУБД)
-- `SGModel.TYPE_STRING`
-- `SGModel.TYPE_BOOLEAN`
-- `SGModel.TYPE_FUNCTION`
-- `SGModel.TYPE_XY` - либо число, например, 1234.5, либо объект, например: {x: 1234.5, y: 1234.5}. Этот тип удобен для работы с графическими движками
-- `SGModel.TYPE_OBJECT` - при изменении хотя бы одного свойства объекта выполняются колбэки заданные методом `.on()`
-- `SGModel.TYPE_ARRAY` - при изменении хотя бы одного элемента массива выполняются колбэки заданные методом `.on()`
-- `SGModel.TYPE_ARRAY_NUMBERS` - то же что и `SGModel.TYPE_ARRAY`, но значения приводятся к числовому типу
-- `SGModel.TYPE_OBJECT_NUMBERS` - то же что и `SGModel.TYPE_OBJECT`, но значения приводятся к числовому типу
-- `SGModel.TYPE_SET`
-- `SGModel.TYPE_MAP`
+- `SGModel.TYPES.ANY` - тип свойства по умолчанию (любое значение кроме `undefined`, т.к. при присвоении `undefined` свойство и его подписчики удаляются!)
+- `SGModel.TYPES.NUMBER` - при установке `null` или пустой строки (`""`) сохраняется значение `null` (как в СУБД)
+- `SGModel.TYPES.STRING`
+- `SGModel.TYPES.BOOLEAN`
+- `SGModel.TYPES.FUNCTION`
+- `SGModel.TYPES.XY` - объект в формате {x: 1234.5, y: 1234.5}. Этот тип удобен для работы с графическими движками
+- `SGModel.TYPES.OBJECT` - при изменении хотя бы одного свойства объекта выполняются колбэки заданные методом `.on()`. Может быть `null`
+- `SGModel.TYPES.ARRAY` - при изменении хотя бы одного элемента массива выполняются колбэки заданные методом `.on()`
+- `SGModel.TYPES.ARRAY_NUMBERS` - то же что и `SGModel.TYPES.ARRAY`, но значения приводятся к числовому типу
+- `SGModel.TYPES.SET`
+- `SGModel.TYPES.MAP`
+- `SGModel.TYPES.MODEL` - инстанс на основе `SGModel` (`SGModelView`), либо `null`
+- `SGModel.TYPES.ARRAY_MODEL` - массив инстансов на основе `SGModel` (`SGModelView`)
 
 (!) При проверке изменения значения везде применяется строгая проверка (===).
-(!) При получении `undefined` (или то же что и `void 0`) свойство удаляется (`delete this._data[propName]`)
+(!) При получении `undefined` (или то же что и `void 0`) свойство удаляется (`delete this.#data[propName]`)
 
-### static defaultsProperties = {...}
+### static defaults = {...} или static defaults() {...}
 
-Один из способов задания перечня свойств и их значений по умолчанию при создании экземпляра. Другой способ - использовать метод `defaults()` экземпляра, см. ниже.
+Описание свойств и их значений по умолчанию.
 
 Пример кода:
 
@@ -148,9 +117,9 @@ class PlayerBase extends SGModel {
 
 	//...
 
-	static defaultProperties = {
+	static defaults = {
 		position: {x: 0, y: 0},
-		rotate: 0
+		rotate: 0,
 	}
 	
 	//...
@@ -160,13 +129,13 @@ class Tank extends PlayerBase {
 
 	//...
 
-	defaults() {
-		return SGModel.defaults({
+	static defaults() {
+		return Object.assign({}, PlayerBase.defaults, {
 			armor: 1000,
 			ammunition1: 20,
 			ammunition2: 20,
-			ammunition3: 5
-		}, PlayerBase.defaultProperties);
+			ammunition3: 5,
+		});
 	}
 	
 	//...
@@ -184,7 +153,7 @@ class Tank extends PlayerBase {
 
 ### static storageProperties = []
 
-Если задан перечень названий свойств, то при выполнении save() записываются только эти свойства! Также эти свойства возвращаются методом [this.getData()](#getdatabdeleteempties--false)
+Если задан перечень названий свойств, то при выполнении save() записываются только эти свойства! Также эти свойства возвращаются методом [this.getData(flags)](#getdataflags--0)
 
 ### static autoSave = false
 
@@ -200,7 +169,7 @@ class Tank extends PlayerBase {
 
 ### UUID и uid
 
-* `this.uuid` - уникальный идентификатор экземпляра. Генерируется автоматически при создании экземпляра, если не был передан вручную в `this.defaults()` (или `static defaultProperties`) или в конструкторе в properties. Значение UUID используется в составе имени ключа для получения сохраненных данных инстанса из локального хранилища (задан `static localStorageKey`).
+* `this.uuid` - уникальный идентификатор экземпляра. Генерируется автоматически при создании экземпляра, если не был передан вручную в `this.defaults` (или `static defaults()`) или в конструкторе в properties. Значение UUID используется в составе имени ключа для получения сохраненных данных инстанса из локального хранилища (задан `static localStorageKey`).
 * `this.__uid` - (@protected) порядковый сквозной (в разрезе всех классов-потомков унаследованных от SGModel) числовой номер экземпляра. Генерируется автоматически при создании экземпляра.
 
 ### data
@@ -212,18 +181,18 @@ const model = new SGModel({ title: '' });
 model.data.title = 'Title 1';
 ```
 
-### initialization = {...}
+### initialization
 
-Объект с промисом инициализации: `this.initialization = { promise, resolve, reject };`. Создаётся автоматически при создании инстанса.
+Промис инициализации `this.initialization`. Создаётся автоматически при создании инстанса. Можно дождаться инициализации инстанса используя: `await myInstance.initialization;`
 
 ### initialized = false
 
-Статус инициализации инстанса. Присваивается в `true`, когда `this.initialization.promise` выполняется успешно.
+Статус инициализации инстанса. Присваивается в `true`, когда `this.initialization` выполняется успешно.
 
 ### async initialize()
 
 Вызывается сразу после создания экземпляра. Переопределяется в классах потомках.
-Обычно ничего не возвращает, но можно вернуть boolean-значение, причём как в промисе (`async initialize() {...}`), так и без него (`initialize() {...}`), тогда это переопределит присваивание `this.initialized` в конструкторе, откуда вызывается метод. По умолчанию, если выбросов ошибок не было, `this.initialized` присваивается в `true`.
+Обычно ничего не возвращает, но можно вернуть boolean-значение, причём как в промисе (`async initialize() {...}`), так и без него (`initialize() {...}`). По умолчанию, если выбросов ошибок или возврата `false` во внутренних промисах не было, `this.initialized` присваивается в `true`.
 
 ### changed = false
 
@@ -233,13 +202,7 @@ model.data.title = 'Title 1';
 
 Если true, значит экземпляр прошёл процедуру уничтожения destroy()
 
-### defaults()
-
-Один из способов задания перечня свойств и их значений по умолчанию при создании экземпляра.
-Этот вариант предпочтителен, когда нужно обратиться к статическим свойствам и методам класса.
-Другой способ - использовать `static defaultsProperties = {...}`, см. выше.
-
-### set(name, value, options = void 0, flags = 0, event = void 0, elem = void 0)
+### set(name, value, options = void 0, flags = 0, ...)
 
 Задать значение свойства.
 
@@ -249,11 +212,11 @@ model.data.title = 'Title 1';
 	* `previous_value` - Если задано, то используется в качестве предыдущего значения
 	* `format` - Функция для форматирования элементов коллекции ((item, index)=>{...}). Например, если элемент - это массив ['url', 'title'] и его можно нужно преобразовать в объект { url: 'url', title: 'title' } для вывода во вьюхе с циклом sg-for
 * `flags`	- допустимые флаги:
-	* `SGModel.FLAG_OFF_MAY_BE` - если при .set() могут быть .off() то нужно передать этот флаг
-	* `SGModel.FLAG_PREV_VALUE_CLONE` - передавать предыдущее значение (делается тяжёлый clone)
-	* `SGModel.FLAG_NO_CALLBACKS` - если задано, то колбэки не выполняются
-	* `SGModel.FLAG_FORCE_CALLBACKS` - выполнить колбеки даже если нет изменений
-	* `SGModel.FLAG_IGNORE_OWN_SETTER` - игнорировать собственные сеттеры (выполняется стандартный)
+	* `SGModel.FLAGS.OFF_MAY_BE` - если при .set() могут быть .off() то нужно передать этот флаг
+	* `SGModel.FLAGS.PREV_VALUE_CLONE` - передавать предыдущее значение (делается тяжёлый clone)
+	* `SGModel.FLAGS.NO_CALLBACKS` - если задано, то колбэки не выполняются
+	* `SGModel.FLAGS.FORCE_CALLBACKS` - выполнить колбеки даже если нет изменений
+	* `SGModel.FLAGS.IGNORE_OWN_SETTER` - игнорировать собственные сеттеры (выполняется стандартный)
 * `event` - событие элемента
 * `elem` - DOM-элемент вызвавший событие
 
@@ -263,13 +226,12 @@ model.data.title = 'Title 1';
 
 Получить значение свойства
 
-### addTo(), removeFrom(), clearProperty(), size()
+### addTo(), removeFrom(), size()
 
 Методы для работы со свойстами типа массив, объект, Set, Map:
 
 * addTo(name, value, key = void 0, options = void 0, flags = 0)
 * removeFrom(name, keyOrValue, options = void 0, flags = 0)
-* clearProperty(name, options = void 0, flags = 0) // Очищает сложные типы, но при этом сохраняя их (указатель на объект тот же!)
 * size(name) // Для объекта подсчитает кол-во его собственных свойств
 
 ### on(name, func, context = void 0, data = void 0, flags = 0)
@@ -281,7 +243,7 @@ model.data.title = 'Title 1';
 * `context` - если не задано, то передаётся "this" текущего объекта. Для массива имён можно передать массив контекстов
 * `data` - если задано, то в колбэке вместо текущего значения (первый элемент в arguments[]) передаётся это значение (data). Для массива имён можно передать массив данных
 * `flags` - допустимые флаги:
-	* `SGModel.FLAG_IMMEDIATELY` - func выполнится сразу
+	* `SGModel.FLAGS.IMMEDIATELY` - func выполнится сразу
 
 Пример выполнении колбэка и список параметров:
 
@@ -309,7 +271,7 @@ this.on(
 * `name` - имя свойства или имя события
 * `value` - параметр события
 * `flags` - допустимые флаги:
-	* `SGModel.FLAG_OFF_MAY_BE` - если при .set() могут быть .off() то нужно передать этот флаг
+	* `SGModel.FLAGS.OFF_MAY_BE` - если при .set() могут быть .off() то нужно передать этот флаг
 
 ### clearToDefaults()
 
@@ -319,19 +281,35 @@ this.on(
 
 Очищает значения всех свойств, задавая им "нулевые" значения согласно типу данных. Сложные объекты очищаются, например, у массива остаётся 0 элементов.
 
+### clearProperty()
+
+Очищает сложные типы, но при этом сохраняя их (указатель на объект тот же!)
+
+`clearProperty(name, options = void 0, flags = 0)`
+
 ### save()
 
 Сохраняет данные (из this.data) в локальное хранилище localStorage.
 Если `storageProperties` не задан, то свойства, начинающиеся с символа "_" не записывается в хранилище.
 Если `storageProperties` задан, то в хранилище записываются только те свойства, которые указаны в массиве `storageProperties`.
 
-### getData(bDeleteEmpties = false)
+### getData(flags = 0)
 
-Получить объект с properties и значениями. Используется либо данные `storageProperties`, либо берутся свойства без начального символа "_". Флаг `bDeleteEmpties` определяет - будут ли в возвращаемом объекте свойства со значениями `null` и `undefined`.
+Получить объект с properties и значениями. Используется либо данные `storageProperties`, либо берутся свойства без начального символа "_". Список флагов см. для `this.getJSON()`.
 
 ### toJSON()
 
-Подготовить инстанс для преобразования в текстовое json-представление. Статические свойства класса инстанса запишутся в свойство-объект __class. Функция `this.toJSON()` также используется при некоторых вызовах стандартных функций, например: `JSON.stringify(instance1)`.
+Подготовить инстанс для преобразования в текстовое json-представление. Статические свойства класса инстанса запишутся в свойство-объект `"[[class %ИмяКласса%]]": {...}`. Функция `this.toJSON()` также используется при некоторых вызовах стандартных функций, например: `JSON.stringify(myInstance)`.
+
+Список флагов (`SGModel.json === SGJson`):
+
+* `SGJson.FLAGS.WITH_EMPTIES` - В данных (this.data) оставлять свойства с пустыми (нулевыми) значениями (!value не будет проигнорирован)
+* `SGJson.FLAGS.FUNCTION_DECLARATION` - Свойства-функции попадут в результат в виде текстового объявления
+* `SGJson.FLAGS.USER_FUNCTION_DETAILS` - Свойства-функции будут обработаны и выведены как объект
+* `SGJson.FLAGS.PRINT_OBJECT_TYPE` - Вывести в имени свойства после двоеточия тип объекта, либо после двойного двоеточия - прототип объекта, либо после тройного двоеточния - имя функции
+* `SGJson.FLAGS.ALL_ATTRIBUTES` - Будут обработаны все данные в this.data, а не только те, которые указаны storageProperties или не начинающиеся с "_"
+* `SGJson.FLAGS.INCLUDING_INSTANCE` - При проверке значения свойства на тип SGModel будут учтены инстансы (в первую очередь это служебный флаг)
+* `SGJson.FLAGS.JSON_DEBUG` - комбинация нескольких флагов для отладки данных в объектах и массивах
 
 ### destroy()
 
@@ -354,18 +332,16 @@ class Application extends SGModel {
 	static APP_STATE1 = 0;
 	static APP_STATE2 = 0;
 	//...
+
+	static defaults = {
+		state: this.APP_STATE1,
+	};
 	
 	constructor(...args) {
 		super(...args);
 		window.MyApp = this;
 		
 		//...
-	}
-	
-	defaults() {
-		return {
-			state: Application.APP_STATE1
-		};
 	}
 	
 	initialize() {
@@ -380,10 +356,6 @@ new Application();
 
 Получить указатель на одиночный (singleton) экземляр класса. Для `createIfMissing` = false если экземпляр ещё не существует, то будет выброшено исключение.
 
-### Статические методы для работы с данными
-
-Проекции на методы singleton-экземпляра get, set, addto, removefrom, clear, size, on, off и save.
-
 ### static data
 
 Ссылка на объект со свойствами singleton-экземпляра
@@ -391,17 +363,9 @@ new Application();
 
 ## Утилиты используемые в SGModel
 
-### static defaults(dest, ...sources)
-
-Если какого-то свойства в dest не оказалось, то оно при наличии берётся из объектов sources
-
 ### static clone(source)
 
 Полное клонирование объекта с вложенными массивами и объектами (используется рекурсия)
-
-### static initObjectByObject(dest, source)
-
-Заполнить значения объекта/массива dest значениями из объекта/массива source (с рекурсией)
 
 ### static upperFirstLetter(s)
 
@@ -413,11 +377,12 @@ new Application();
 
 ### static parsePgStrArray(line)
 
-Преобразование из текстового представления массива PostgreSQL в массив объектов
+Преобразование из текстового представления массива PostgreSQL в массив объектов.
+Пример использования в виде автотеста: https://model.sg2d.ru/src/tests/index.html#sgmodel-static-parsepgstrarray
 
 # MVVM-паттерн в SGModelView
 
-**SGModelView** - Микрофрейморк для создания MVVM-приложений, основанный на **SGModel**. Поддерживает использование TEMPLATE-шаблонов для singleton-инстансов и multi-инстансов в циклах sg-for.
+**SGModelView** - Микрофреймворк для реализации паттерна MVVM, расширяющий **SGModel** и обеспечивающий автоматическую привязку данных из инстанса к HTML-элементам. Поддерживает использование TEMPLATE-шаблонов для singleton-инстансов и multi-инстансов в циклах sg-for.
 
 ## Статические свойства экземпляра SGModelView
 
@@ -512,11 +477,11 @@ for (let i = 0; i < 10; i++) {
 
 Есть следующие способы инициализации вьюхи:
 
-* const view = new CustomView(); ...; view.bindHTML('#my_view_id'); // Ручная инициализация и связывание с данными (без template-шаблонов)
-* static autoLoadBind = { srcHTML }; ...; view.bindHTML('#my_view_id', true); // Ручная инициализация и связывание с данными (используется template-шаблон по умолчанию, который создаётся т.к. задан `srcHTML`)
-* static autoLoadBind = { srcHTML }; ...; view.bindHTML('#my_view_id', 'tmp_filters'); // Ручная инициализация и связывание с данными (используется определённый template-шаблон, который создаётся т.к. задан `srcHTML`)
-* static autoLoadBind = { srcHTML, templateId, containerId|viewId }; // Автоматическая загрузка контента вьюхи и связывание
-* static autoLoadBind = { templateId, containerId|viewId }; // Автоматическая загрузка контента вьюхи и связывание, при этом template-шаблон уже должен существовать на странице (`srcHTML` не задан)
+* `const view = new CustomView(); ...; view.bindHTML('#my_view_id');` // Ручная инициализация и связывание с данными (без template-шаблонов)
+* `static autoLoadBind = { srcHTML }; ...; view.bindHTML('#my_view_id', true);` // Ручная инициализация и связывание с данными (используется template-шаблон по умолчанию, который создаётся т.к. задан `srcHTML`)
+* `static autoLoadBind = { srcHTML }; ...; view.bindHTML('#my_view_id', 'tmp_filters');` // Ручная инициализация и связывание с данными (используется определённый template-шаблон, который создаётся т.к. задан `srcHTML`)
+* `static autoLoadBind = { srcHTML, templateId, containerId|viewId };` // Автоматическая загрузка контента вьюхи и связывание
+* `static autoLoadBind = { templateId, containerId|viewId };` // Автоматическая загрузка контента вьюхи и связывание, при этом template-шаблон уже должен существовать на странице (`srcHTML` не задан)
 * new MyModeView(); <div sg-model="MyModeView">...<span>Content...</span>...</div> // Использование атрибута **sg-model** на корневом элементе вьюхи, контент непосредственно в корневом элементе вьюхи (например, всё одном html-файле)
 * Атрибут **sg-model** на корневом элементе вьюхи, контент в отдельном html-файле в виде template-шаблона: class CustomView extends SGModeView { autoLoadBind = { srcHTML: './templates/my-template1.html' } }
 
@@ -532,23 +497,23 @@ for (let i = 0; i < 10; i++) {
 
 ### bindHTML(root = void 0, mTemplate = void 0)
 
-Ручное связвание данных (свойств в `this.data`) с HTML-документом (его частью, например, с формой) - теперь при изменении значений в HTML-элементах автоматически обновляются данные в экземпляре модели и наоборот.
 Если одновременно заданы статические свойства `autoLoadBind.templateId` и (`autoLoadBind.viewId` || `autoLoadBind.$container` || `autoLoadBind.containerId`), то `bindHTML()` выполняется автоматически.
-Параметр `mTemplate` позволяет сразу же вывести содержимое шаблона, загруженного, например, с указанием пути к шаблону (или сразу контента шаблона) `autoLoadBind.srcHTML`, но без других заданных директив в объекте `autoLoadBind`.
+Но можно выполнить связывание данных (свойств в `this.data`) с HTML-документом (его частью, например, с формой) в ручную:
 
 ```js
 initialize()
 	...
-	let promise = this.bindHTML("#my_form");
+	this.bindHTML("#my_form");
 	...
-	return promise;
 }
 ```
 
-### destroy(noRemoveDOM = false)
+Параметр `mTemplate` позволяет сразу же вывести содержимое шаблона, загруженного, например, с указанием пути к шаблону (или сразу контента шаблона) `autoLoadBind.srcHTML`, но без других заданных директив в объекте `autoLoadBind`.
 
-Удалить представление вместе с его элементами в DOM (по умолчанию). Если `noRemoveDOM` true, элементы в DOM не удаляются, но очищаются от днамически генерируемых sg-атрибутов (sg-uuid, sg-item), свойств (__sg, __sgModelUUID) и подписчиков на события change и input.
-После выполнения метода `this.destroyed` инстанса будет `true`.
+### destroy(flags = 0)
+
+Удалить представление вместе с его элементами в DOM (по умолчанию). Если задан флаг `SGModelView.FLAGS.DESTROY_AND_SAVE_DOM`, то представление из DOM не удаляется и доступно для повторного биндинга (выполнится только очистка от днамически генерируемых sg-атрибутов (sg-uuid, sg-item), свойств (__sg, __sgModelUUID) и подписчиков на события change и input).
+Также в результате вызова `destroy(...)` у инстанса `this.destroyed` станет `true`.
 
 ## Атрибуты в HTML-документе
 
@@ -576,7 +541,7 @@ initialize()
 <div sg-value="getSomeValue()">loading...</div> <!-- вызов метода без параметров -->
 <div sg-value="getSomeValue('ggg')">loading...</div>
 <div sg-value="getSomeValue('ggg', 'ggg2')">loading...</div>
-<div sg-value="versionCore">loading...</div> <!-- обычное свойства в this.data (значение должно быть задано при инициализации, например, в static defaultProperties = {...}) -->
+<div sg-value="versionCore">loading...</div> <!-- обычное свойства в this.data (значение должно быть задано при инициализации, например, в static defaults = {...}) -->
 <div sg-value="MyForm.STAT_PROP_NAME1">loading...</div> <!-- статическое свойство текущего класса -->
 <div sg-value="OtherCustomView.PROP_NAME5">loading...</div> <!-- статическое свойство другого класса -->
 ```
@@ -613,7 +578,7 @@ class MyForm extends SGModelView {
 ```js
 class MyForm extends SGModelView {
 
-	static defaultProperties = {
+	static defaults = {
 		contract: 1,
 		...
 	};
@@ -658,15 +623,9 @@ class MyForm extends SGModelView {
 
 ```js
 class MyForm extends SGModelView {
-	static defaultProperties = {
+	static defaults = {
 		hours: 8
 	}
-	/* or
-	defaults() {
-		return {
-			hours: 8
-		};
-	}*/
 	...
 	someMethod() {
 		this.set("hours", 4);
@@ -816,7 +775,7 @@ class MyForm extends SGModelView {
 *	**item** - запись коллекции (для массивов или Set-коллекции равно **value**)
 *	**collection** - коллекция, в которой присутствует item
 *	**property** - имя свойства в атрибуте sg-for
-*	**type** - тип данных (SGModel.TYPE_ARRAY|SGModel.TYPE_ARRAY_NUMBERS|SGModel.TYPE_OBJECT|SGModel.TYPE_OBJECT_NUMBERS|SGModel.TYPE_SET|SGModel.TYPE_MAP)	
+*	**type** - тип данных (SGModel.TYPES.ARRAY|SGModel.TYPES.ARRAY_NUMBERS|SGModel.TYPES.OBJECT|SGModel.TYPES.SET|SGModel.TYPES.MAP)	
 *	**keyName** - имя ключа (м.б. id, uuid, code, hash или index)
 *	**$item** - корневой DOM-элемент записи
 *	**$control** - DOM-элемент, на который нажал пользователь, например, BUTTON
@@ -841,7 +800,7 @@ class MyForm extends SGModelView {
 
 ```js
 export default class GroupInfo extends SGModelView {
-	static defaultProperties = {
+	static defaults = {
 		name: '',
 		users: []
 	};
@@ -937,21 +896,13 @@ export default class FiltersPanel extends SGModelView {
 		templateId: 'tmp_filters_panel',
 		viewId: '#filters_panel_cnt',
 	};
-	static defaultProperties = {
+	static defaults = {
 		selectedProjects: false,
 		selectedTasks: false,
 		selectedKeywords: false,
 		projects: [],
 		tasks: [],
 		keywords: '',
-	};
-	static typeProperties = {
-		selectedOrgs: SGModel.TYPE_BOOLEAN,
-		selectedTasks: SGModel.TYPE_BOOLEAN,
-		selectedKeywords: SGModel.TYPE_BOOLEAN,
-		projects: SGModel.TYPE_ARRAY,
-		tasks: SGModel.TYPE_ARRAY,
-		keywords: SGModel.TYPE_STRING,
 	};
 	async initialize() {
 		//...

@@ -52,15 +52,21 @@
 				<div class="item-details" style="display: none">
 					&nbsp;Входные данные: <code class="input-data"></code><br/>
 					&nbsp;Раннер: <code class="runner"></code><br/>
-					<div class="verify-fact">
+					<div class="verify-and-fact">
 						<div>
 							<div class="text-center">Ожидаемый результат:</div>
-							<pre class="in-out verify"></pre>
+							<div class="pre-wrapper">
+								<pre class="in-out verify"></pre>
+								<span class="icon-copy js-verify" title="Copy"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor"><rect class="copy-path" x="5" y="5" width="12" height="16" rx="1" stroke-width="1.5"/><rect class="copy-path" x="7" y="3" width="12" height="16" rx="1" stroke-width="1.5"/><path class="check-path" d="M5 13 l6 6 10-10"/></svg></span>
+							</div>
 						</div>
 						<div>
 							<div class="text-center">Фактический результат:</div>
-							<pre class="in-out failed-or-error" style="display: none"></pre>
-							<div class="passed text-center" style="display: none">совпадает с ожидаемым</div>
+							<div class="pre-wrapper">
+								<pre class="in-out failed-or-error" style="display: none"></pre>
+								<span class="icon-copy js-failed-or-error" title="Copy"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor"><rect class="copy-path" x="5" y="5" width="12" height="16" rx="1" stroke-width="1.5"/><rect class="copy-path" x="7" y="3" width="12" height="16" rx="1" stroke-width="1.5"/><path class="check-path" d="M5 13 l6 6 10-10"/></svg></span>
+								<div class="passed text-center" style="display: none">совпадает с ожидаемым</div>
+							</div>
 						</div>
 					</div>
 				</div>

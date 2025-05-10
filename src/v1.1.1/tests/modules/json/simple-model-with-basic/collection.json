@@ -1,0 +1,24 @@
+{
+  "objectProperty": {
+    "a": "a1_change",
+    "v": "value3"
+  },
+  "arrayProperty": [
+    "999",
+    666,
+    "repeat_text2",
+ 
+    666,
+    "repeat_text",
+    777,
+    5000
+  ],
+  "setProperty:Set": [
+    304,
+    500
+  ],
+  "mapProperty:Map": {
+    "name": "name1",
+    "description": "Description..."
+  }
+}

@@ -126,7 +126,7 @@ pre.code, pre.description {
 	max-height: 500px;
 }
 
-ul > li .item-details .verify-fact pre.in-out {
+ul > li .item-details .verify-and-fact pre.in-out {
 	max-height: 400px;
 }
 ul > li .item-header {
@@ -156,15 +156,55 @@ ul > li .item-header span.close {
 }
 ul > li .item-header .status { font-weight: bold; }
 ul > li .item-header .status.passed { color: green; }
-ul > li .item-details .verify-fact {
+ul > li .item-details .verify-and-fact {
 	display: flex; /* Делаем контейнер flex-контейнером */
 	width: 100%; /* Ширина контейнера (можно задать конкретное значение) */
 	padding: 3px;
 }
-ul > li .item-details .verify-fact > div {
+ul > li .item-details .verify-and-fact > div {
 	flex: 1; /* Каждый дочерний div займет равное пространство */
 	min-width: 0; /* Для корректного сжатия содержимого */
 	box-sizing: border-box; /* Чтобы padding и border не влияли на ширину */
 	overflow: auto;
 	padding: 3px;
+	
+}
+ul > li .item-details .verify-and-fact > div .pre-wrapper {
+	position: relative;
+}
+ul > li .item-details .verify-and-fact > div .pre-wrapper span.icon-copy {
+  position: absolute;
+	right: 20px;
+	top: 20px;
+  width: 32px;
+  height: 32px;
+  background-color: transparent;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.2s;
+	display: flex;
+  align-items: center;
+  justify-content: center;
+	border-radius: 20px;
+}
+ul > li .item-details .verify-and-fact > div .pre-wrapper:hover span.icon-copy {
+  opacity: 1;
+}
+ul > li .item-details .verify-and-fact > div .pre-wrapper span.icon-copy:hover {
+	background-color: #e0e0e0;
+	color: green;
+}
+ul > li .item-details .verify-and-fact > div .pre-wrapper span.icon-copy .copy-path {
+	opacity: 1;
+  transition: opacity 0.3s;
+}
+ul > li .item-details .verify-and-fact > div .pre-wrapper span.icon-copy .check-path {
+	opacity: 0;
+  transition: opacity 0.3s;
+}
+ul > li .item-details .verify-and-fact > div .pre-wrapper span.icon-copy.copied .copy-path {
+  opacity: 0;
+}
+ul > li .item-details .verify-and-fact > div .pre-wrapper span.icon-copy.copied .check-path {
+  opacity: 1;
 }
