@@ -1,0 +1,7 @@
+node_modules/ export-ignore
+dist/ export-ignore
+*.log export-ignore
+.config_add_git_config export-ignore
+_config.yml export-ignore
+versions/ export-ignore
+CNAME export-ignore

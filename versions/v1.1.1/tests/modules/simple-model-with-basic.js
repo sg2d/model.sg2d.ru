@@ -1,5 +1,4 @@
 import SGModel from './../../sg-model.js';
-import SGJson from './../../sg-json.js';
 
 // TODO?:
 //import json1 from './json/sgmodel-basic-checkers__auto-type-properties.json' assert { type: 'json' }; // TODO: ES2025
@@ -214,7 +213,7 @@ async function prepareTests({CustomModel, model}) {
 				code: (testCode = 'auto-type-properties',`${moduleCode}__${testCode}`),
 				title: 'автоматическая типизация свойств модели на основе: <code>static defaults = {...}</code>',
 				input: model,
-				runner: async (model) => ({ defTypes: SGJson.debug(model.defaults) }),
+				runner: async (model) => ({ defTypes: SGModel.json.debug(model.defaults) }),
 				verify: await window.loadJSON(moduleCode, testCode),
 				//skip: true, // пропустить тест
 				//break: true, // прервать группу тестов
@@ -235,7 +234,7 @@ async function prepareTests({CustomModel, model}) {
 				code: (testCode = 'tojsondebug',`${moduleCode}__${testCode}`),
 				title: 'получение отладочного объекта для сериализации (+функции, +типы): <code>SGJson.debug(model)</code>',
 				input: model,
-				runner: async (model) => SGJson.debug(model),
+				runner: async (model) => SGModel.json.debug(model),
 				verify: (
 					temp = await window.loadJSON(moduleCode, testCode),
 					temp?.['[[class CustomModel]]'] && (temp['[[class CustomModel]]'].__hash = model.constructor.__hash),
@@ -261,49 +260,49 @@ async function prepareTests({CustomModel, model}) {
 				code: (testCode = 'getdatawithempty',`${moduleCode}__${testCode}`),
 				title: 'получение данных для сохранения в localStorage или БД с пустыми значениями: <code>getData(flags)</code>',
 				input: model,
-				runner: async (model) => model.getData(SGJson.FLAGS.WITH_EMPTIES),
+				runner: async (model) => model.getData(SGModel.json.FLAGS.WITH_EMPTIES),
 				verify: await window.loadJSON(moduleCode, testCode),
 			},
 			{ // 1.7
 				code: (testCode = 'getalldata',`${moduleCode}__${testCode}`),
 				title: 'получение всех данных с декларациями функций - <code>getData(flags)</code>',
 				input: model,
-				runner: async (model) => model.getData(SGJson.FLAGS.ALL_ATTRIBUTES | SGJson.FLAGS.FUNCTION_DECLARATION | SGJson.FLAGS.WITH_EMPTIES),
+				runner: async (model) => model.getData(SGModel.json.FLAGS.ALL_ATTRIBUTES | SGModel.json.FLAGS.FUNCTION_DECLARATION | SGModel.json.FLAGS.WITH_EMPTIES),
 				verify: await window.loadJSON(moduleCode, testCode),
 			},
 			{ // 1.8
 				code: (testCode = 'collection',`${moduleCode}__${testCode}`),
 				title: 'работа с коллекциями: детекция изменений, форматирование, добавление/удаление/очистка',
 				input: model,
-				runner: async (model) => (SGJson.debug(model.collectionWork())),
+				runner: async (model) => (SGModel.json.debug(model.collectionWork())),
 				verify: await window.loadJSON(moduleCode, testCode),
 			},
 			{ // 1.9
 				code: (testCode = 'clear',`${moduleCode}__${testCode}`),
 				title: 'очистка свойств (+из-за рекурсивной ссылки на исходный инстанс увы сейчас делается destroy()!)',
 				input: model,
-				runner: async (model) => (SGJson.debug(model.clearWork())),
+				runner: async (model) => (SGModel.json.debug(model.clearWork())),
 				verify: await window.loadJSON(moduleCode, testCode),
 			},
 			{ // 1.10
 				code: (testCode = 'cleartodefaults',`${moduleCode}__${testCode}`),
 				title: 'очистка свойств значениями по умолчанию',
 				input: model,
-				runner: async (model) => (SGJson.debug(model.clearToDefaultsWork())),
+				runner: async (model) => (SGModel.json.debug(model.clearToDefaultsWork())),
 				verify: await window.loadJSON(moduleCode, testCode),
 			},
 			{ // 1.11
 				code: (testCode = 'set-various-values',`${moduleCode}__${testCode}`),
 				title: 'обработка типами данных различных значений',
 				input: model,
-				runner: async (model) => (SGJson.debug(model.setVariousValues())),
+				runner: async (model) => (SGModel.json.debug(model.setVariousValues())),
 				verify: await window.loadJSON(moduleCode, testCode),
 			},
 			{ // 1.99
 				code: (testCode = 'tojsonfinish',`${moduleCode}__${testCode}`),
 				title: 'последняя проверка инстанса: <code>SGJson.debug(model)()</code>',
 				input: model,
-				runner: async (model) => SGJson.debug(model),
+				runner: async (model) => SGModel.json.debug(model),
 				verify: (
 					temp = await window.loadJSON(moduleCode, testCode),
 					temp?.['[[class CustomModel]]'] && (temp['[[class CustomModel]]'].__hash = model.constructor.__hash),

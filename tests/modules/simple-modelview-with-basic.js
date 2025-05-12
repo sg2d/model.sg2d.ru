@@ -1,5 +1,4 @@
-import SGModelView from './../../sg-model-view.js';
-import SGJson from './../../sg-json.js';
+import SGModelView from '/src/sg-model-view.js';
 
 const moduleCode = new URL(import.meta.url).pathname.split('/').pop().replace(/\.[^/.]+$/, '');
 
@@ -189,7 +188,7 @@ async function prepareTests({CustomView, model}) {
 				input: model,
 				runner: async (model) => {
 					model.$view.querySelector('.js-positions tbody tr:nth-of-type(3) td:nth-of-type(3)').click();
-					const resultFromGetForItem = SGJson.debug(model.resultFromGetForItem, model);
+					const resultFromGetForItem = SGModelView.json.debug(model.resultFromGetForItem, model);
 					delete model.resultFromGetForItem;
 					return resultFromGetForItem;
 				},
@@ -258,7 +257,7 @@ async function prepareTests({CustomView, model}) {
 				code: (testCode = 'tojson-debug',`${moduleCode}__${testCode}`),
 				title: 'получение отладочного объекта для сериализации (класс-потомок от SGModelView): <code>SGJson.debug(model)</code>',
 				input: model,
-				runner: async (model) => SGJson.debug(model),
+				runner: async (model) => SGModelView.json.debug(model),
 				verify: await window.loadJSON(moduleCode, testCode),
 			},
 			/*{ // TODO:

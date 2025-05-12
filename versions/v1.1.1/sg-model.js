@@ -678,7 +678,7 @@ class SGModel {
 									result.changed = true;
 									break;
 								}
-            	}
+							}
 						} else {
 							result.changed = true;
 						}
@@ -1259,13 +1259,13 @@ class SGModel {
 	}
 	
 	/**
-   * Возвращает экземпляр синглтона. По умолчанию создает его при необходимости
-   * @public
+	 * Возвращает экземпляр синглтона. По умолчанию создает его при необходимости
+	 * @public
 	 * @param {boolean} [createIfMissing=true] Если true, создается экземпляр, если он не существует
- 	 *                                         Если false, вместо создания выбрасывается ошибка
+	 *                                         Если false, вместо создания выбрасывается ошибка
 	 * @throws {Error} Если синглтон настроен неправильно (когда `singleInstance` имеет значение false)
-   * @returns {object}
-   */
+	 * @returns {object}
+	 */
 	static getInstance(createIfMissing = true) {
 		if (!this.singleInstance) {
 			throw new Error('Singleton not configured (singleInstance = false)!');
