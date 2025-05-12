@@ -1,0 +1,41 @@
+{
+  "contracts": {
+    "l": {
+      "discount": -15,
+      "shortCode": "labor",
+      "title": "Трудовой договор, в т.ч. по совм.",
+      "discountText": "-15%"
+    },
+    "g": {
+      "discount": -10,
+      "shortCode": "gph",
+      "title": "Договор ГПХ с физ.лицом",
+      "discountText": "-10%"
+    },
+    "s": {
+      "discount": 0,
+      "shortCode": "self",
+      "title": "Самозанятый (договор услуг)",
+      "discountText": ""
+    },
+    "i": {
+      "discount": 15,
+      "shortCode": "ip",
+      "title": "Индивидуальный предприниматель",
+      "discountText": "+15%"
+    },
+    "c": {
+      "discount": 50,
+      "shortCode": "crypta",
+      "title": "Оплата криптовалютой",
+      "discountText": "+50%"
+    },
+    "f": {
+      "discount": 100,
+      "shortCode": "freelance",
+      "title": "Фриланс + Безопасная сделка",
+      "discountText": "+100%"
+    }
+  },
+  "ULHash": "1d811e4872acf621b5d5c4f9f296a6db06759199f101f213aebca480279f462f"
+}

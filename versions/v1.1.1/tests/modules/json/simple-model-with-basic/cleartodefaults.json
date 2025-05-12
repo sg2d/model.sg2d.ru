@@ -1,0 +1,117 @@
+{
+  "data": {
+    "nullProperty": null,
+    "numberProperty0": 0,
+    "numberProperty": 3.141592654,
+    "stringPropertyEmpty": "",
+    "stringProperty": "text",
+    "booleanProperty0": false,
+    "booleanProperty": true,
+    "functionAnonProperty": "[[function functionAnonProperty()]]",
+    "functionNameProperty": "[[function fName(_)]]",
+    "classProperty:::CustomClass": {
+      "staticProp1": 12
+    },
+    "instanceCustomClass:CustomClass": {},
+    "xyProperty0": {
+      "x": 0,
+      "y": 0
+    },
+    "xyProperty": {
+      "x": 128,
+      "y": 256
+    },
+    "objectPropertyEmpty": {},
+    "objectProperty": {
+      "a": "a1",
+      "b": "bb22"
+    },
+    "arrayPropertyEmpty": [],
+    "arrayProperty": [
+      "999",
+      666,
+      "repeat_text",
+      333,
+      666,
+      "repeat_text"
+    ],
+    "arrayNumbersPropertyEmpty": [],
+    "arrayNumbersProperty": [
+      1,
+      22,
+      333,
+      4444.44,
+      555.55,
+      -6666.66,
+      "NaN"
+    ],
+    "setPropertyEmpty:Set": [],
+    "setProperty:Set": [
+      400,
+      303
+    ],
+    "mapPropertyEmpty:Map": {},
+    "mapProperty:Map": {
+      "id": 333,
+      "code": "code1"
+    },
+    "arrayModelPropertyEmpty": [],
+    "arrayModelProperty": [
+      {
+        "__uid": 1,
+        "initialized": true,
+        "changed": false,
+        "destroyed": true,
+        "uuid": "00000000-0000-0000-0000-3066eb5090f1",
+        "options": {},
+        "defaults": {
+          "index": {
+            "value": 0,
+            "type::SGBaseType": "[[function TYPE_NUMBER()]]"
+          }
+        },
+        "[[Prototype.constructor]]": "[[class SubCustomModel]]"
+      }
+    ],
+    "modelPropertyEmpty": null,
+    "modelProperty:SubCustomModel": {
+      "__uid": 2,
+      "initialized": true,
+      "changed": false,
+      "destroyed": true,
+      "uuid": "00000000-0000-0000-0000-3066eb5090f2",
+      "options": {},
+      "defaults": {
+        "index": {
+          "value": 1,
+          "type::SGBaseType": "[[function TYPE_NUMBER()]]"
+        }
+      }
+    },
+    "_noSaveToStorageProperty": 12345,
+    "uuid": "",
+    "nullProperty2": null,
+    "numberProperty2": 0,
+    "stringProperty2": "",
+    "booleanProperty2": false,
+    "functionAnonProperty2": null,
+    "functionNameProperty2": null,
+    "classProperty2": null,
+    "instanceClassProperty2:CustomClass": {},
+    "xyProperty2": {
+      "x": 0,
+      "y": 0
+    },
+    "objectProperty2": {},
+    "arrayProperty2": [],
+    "arrayNumbersProperty2": [],
+    "setProperty2:Set": [],
+    "mapProperty2:Map": {},
+    "mapPropertyEmpty2:Map": {},
+    "modelProperty2": null,
+    "arrayModelProperty2": [],
+    "_noSaveToStorageProperty2": "",
+    "voidProperty2": null
+  },
+  "destroyed": true
+}

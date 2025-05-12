@@ -1,0 +1,63 @@
+{
+  "destroyed": true,
+  "data": {
+    "nullProperty": null,
+    "numberProperty0": 0,
+    "numberProperty": 0,
+    "stringPropertyEmpty": "",
+    "stringProperty": "",
+    "booleanProperty0": false,
+    "booleanProperty": false,
+    "functionAnonProperty": null,
+    "functionNameProperty": null,
+    "classProperty": null,
+    "instanceCustomClass:CustomClass": {},
+    "xyProperty0": {
+      "x": 0,
+      "y": 0
+    },
+    "xyProperty": {
+      "x": 0,
+      "y": 0
+    },
+    "objectPropertyEmpty": {},
+    "objectProperty": {},
+    "arrayPropertyEmpty": [],
+    "arrayProperty": [],
+    "arrayNumbersPropertyEmpty": [],
+    "arrayNumbersProperty": [],
+    "setPropertyEmpty:Set": [],
+    "setProperty:Set": [],
+    "mapPropertyEmpty:Map": {},
+    "mapProperty:Map": {},
+    "arrayModelPropertyEmpty": [],
+    "arrayModelProperty": [],
+    "modelPropertyEmpty": null,
+    "modelProperty": null,
+    "_noSaveToStorageProperty": 0,
+    "uuid": "",
+    "nullProperty2": null,
+    "numberProperty2": 0,
+    "stringProperty2": "",
+    "booleanProperty2": false,
+    "functionAnonProperty2": null,
+    "functionNameProperty2": null,
+    "classProperty2": null,
+    "instanceClassProperty2:CustomClass": {},
+    "xyProperty2": {
+      "x": 0,
+      "y": 0
+    },
+    "objectProperty2": {},
+    "arrayProperty2": [],
+    "arrayNumbersProperty2": [],
+    "setProperty2:Set": [],
+    "mapProperty2:Map": {},
+    "mapPropertyEmpty2:Map": {},
+    "modelProperty2": null,
+    "arrayModelProperty2": [],
+    "_noSaveToStorageProperty2": "",
+    "voidProperty": null,
+    "voidProperty2": null
+  }
+}

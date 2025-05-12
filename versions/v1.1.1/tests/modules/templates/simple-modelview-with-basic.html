@@ -1,0 +1,66 @@
+<style>
+	.modelview-basic-tests .color-green { color: green; }
+	.modelview-basic-tests .color-red { color: red; }
+	.modelview-basic-tests .border-red { border-color: red; }
+	.modelview-basic-tests input, .modelview-basic-tests button { border-radius: 5px; }
+	.modelview-basic-tests .no-wrap { white-space: nowrap; }
+	.modelview-basic-tests button.btn-contract { color: black; background-color: #ccc; border-color: #aaa; }
+	.modelview-basic-tests input.input-rate { width: 100px; }
+	.modelview-basic-tests input.input-range { vertical-align: middle; }
+	.modelview-basic-tests table th { text-align: center; }
+	.modelview-basic-tests table td { padding-left: 5px; padding-right: 5px; }
+	.modelview-basic-tests table tbody tr:hover { cursor: pointer; background-color: #ffa; }
+</style>
+<header>
+	<h5>Базовые проверки SGModelView на примере формы выбора должности для нового сотрудника</h5>
+</header>
+<main class="modelview-basic-tests">
+	<section>
+		<div>Укажите данные для нового сотрудника:</div>
+		<div>
+			Форма сотрудничества: 
+			<button id="modelview-basic-tests_contract" sg-property="contract" sg-type="dropdown" class="btn dropdown-toggle bg-gradient btn-contract mt-1 mb-1" type="button" data-bs-toggle="dropdown" aria-expanded="false"></button>
+			<ul class="dropdown-menu" aria-labelledby="modelview-basic-tests_contract"
+					sg-for="contracts"
+					sg-template="tmp_contracts_item"
+					sg-item-variables="{ $property: 'contract' }">
+				<li class="dropdown-item" role="button" sg-option="$key" sg-dropdown="$property">$title <sup sg-value="discount" sg-css="cssDangerOrSuccess" sg-format="formatDiscount"></sup></li>
+			</ul>
+		</div>
+		<div>
+			<label>Ранг и должность: <select class="js-rang" sg-property="rang" sg-options="rangs"></select> <span sg-property="position_info"></span></label>
+		</div>
+		<div>
+			<label>
+				Занятость (часы):
+				<input sg-property="employment" type="range" min="0" max="5" value="5" class="input-range"/>
+				<span sg-property="hours"></span> часов/месяц (<span sg-property="employment_info"></span>)
+			</label>
+		</div>
+		<div class="no-wrap">
+			<label>Ставка: <input sg-property="rate_with_discount_with_rang" sg-css="!rate_with_discount_with_rang || isNaN(rate_with_discount_with_rang) ? 'border-red' : ''" placeholder="ставка" class="js-rate input-rate"/></label><button sg-click="onClickChangeDiscountPer" data-dir="-5">&ndash;</button><button sg-click="onClickChangeDiscountPer" data-dir="+5">+</button>
+			<span sg-property="discountPer" sg-format="formatPer" sg-css="cssIncreaseOrDecrease" class="js-discount"></span>
+		</div>
+		<div>
+			Итого з/п <span sg-property="salary" sg-format="formatCost"></span> в месяц
+		</div>
+	</section>
+	<table class="js-positions">
+		<thead>
+			<tr>
+				<th></th>
+				<th>п/п</th>
+				<th>Должность</th>
+				<th>Базовый оклад</th>
+			</tr>
+		</thead>
+		<tbody sg-for="positions" sg-template="tmp_position_tr" sg-item-variables="{ $inputType: _input_type, $tdOrdNumClass: 'text-center', $tdMidleRateStyle: 'text-align: right;' }" sg-click="onClickTablePositions">
+			<tr onclick="this.closest('tr').querySelector('input[type=radio]').checked = true;">
+				<td><input type="radio" name="positions" sg-property="checked"/></td>
+				<td class="$tdOrdNumClass" sg-property="$index"></td>
+				<td sg-property="name"></td>
+				<td sg-property="middleRate" style="$tdMidleRateStyle"></td>
+			</tr>
+		</tbody>
+	</table>
+</main>

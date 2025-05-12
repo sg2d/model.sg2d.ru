@@ -1,21 +1,22 @@
 # SGModel & SGModelView
 
+*Ссылка на Self-hosted сайт: [https://model.sg2d.ru](https://model.sg2d.ru)*
+
 *Ссылка на GitHub-страницу: [https://github.com/sg2d/model.sg2d.ru](https://github.com/sg2d/model.sg2d.ru)*
 
 *Ссылка на Gitverse-страницу: [https://gitverse.ru/sg2d/model.sg2d.ru](https://gitverse.ru/sg2d/model.sg2d.ru)*
 
-**SGModelView** - Микрофреймворк для создания MVVM-приложений.
+**SGModel** - Библиотека-класс для работы с данными (биндинг-модели). Библиотека хорошо адаптирована для наследования классов. Может использоваться как в браузере, так и на Node.js.
 
-**SGModel** - Библиотека-класс в основе SGModelView для работы с данными (биндинг-модели). Библиотека хорошо адаптирована для наследования классов. Может использоваться как в браузере, так и на Node.js.
+**SGModelView** - Микрофреймворк для реализации паттерна MVVM, расширяющий **SGModel** и обеспечивающий автоматическую привязку данных из инстанса к HTML-элементам
 
 #### Исходники (версия 1.1.1):
 
-* [sg-model.js (58 KB)](https://model.sg2d.ru/src/v1.1.1/sg-model.js)
-* [sg-model-view.js (54 KB)](https://model.sg2d.ru/src/v1.1.1/sg-model-view.js)
+См. директорию /src
 
 #### Страница автотестов:
 
-* [https://model.sg2d.ru/src/tests](https://model.sg2d.ru/src/v1.1.1/tests)
+* [https://model.sg2d.ru/src/tests](https://model.sg2d.ru/src/tests)
 
 ## Описание API
 

@@ -1,0 +1,48 @@
+{
+  "key": "3n",
+  "value": null,
+  "item": {
+    "id": 3,
+    "name": "Fullstack-developer",
+    "middleRate": 2000,
+    "checked": true
+  },
+  "collection": [
+    {
+      "id": 1,
+      "name": "Frontend-developer",
+      "middleRate": 1000,
+      "checked": false
+    },
+    {
+      "id": 2,
+      "name": "Backend-developer",
+      "middleRate": 1500,
+      "checked": false
+    },
+    {
+      "id": 3,
+      "name": "Fullstack-developer",
+      "middleRate": 2000,
+      "checked": true
+    },
+    {
+      "id": 4,
+      "name": "Devops",
+      "middleRate": 2000,
+      "checked": false
+    },
+    {
+      "id": 5,
+      "name": "TeamLead",
+      "middleRate": 3000,
+      "checked": false
+    }
+  ],
+  "property": "positions",
+  "type::SGBaseType": "[[function TYPE_ARRAY()]]",
+  "keyName": "id",
+  "$item:HTMLTableRowElement": "[object HTMLTableRowElement]",
+  "$control:HTMLTableCellElement": "[object HTMLTableCellElement]",
+  "hash": "1361a9d9315215d3"
+}
