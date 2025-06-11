@@ -49,15 +49,15 @@ class SGModel {
 	 * @constant {boolean}
 	 */
 	static FLAGS = Object.freeze({
-		NONE:												0b0000_0000,
-		IMMEDIATELY:								0b0000_0001,
-		OFF_MAY_BE:									0b0000_0010, // Если в процессе вызова колбэков может быть выполнен `this.off()`, нужно передать этот флаг
-		PREV_VALUE_CLONE:						0b0000_0100, // Клонировать предыдущее значение (тяжелое клонирование для объектов/массивов)
-		NO_CALLBACKS:								0b0000_1000, // Не выполнять колбэки
-		FORCE_CALLBACKS:						0b0001_0000, // Выполнить колбэки, даже если не было изменений
-		NO_DESTROY_INSTANCE_MODEL:	0b0010_0000, // не вызывать destroy() у инстансов на основе SGModel
-		INCLUDING_INSTANCE:					0b0100_0000, // системный флаг (При проверке значения свойства на тип SGModel будут учтены инстансы)
-		FIRST_VALIDATE:							0b1000_0000, // системный флаг
+		NONE:												0b0000_0000_0000,
+		IMMEDIATELY:								0b0000_0000_0001,
+		OFF_MAY_BE:									0b0000_0000_0010, // Если в процессе вызова колбэков может быть выполнен `this.off()`, нужно передать этот флаг
+		PREV_VALUE_CLONE:						0b0000_0000_0100, // Клонировать предыдущее значение (тяжелое клонирование для объектов/массивов)
+		NO_CALLBACKS:								0b0000_0000_1000, // Не выполнять колбэки
+		FORCE_CALLBACKS:						0b0000_0001_0000, // Выполнить колбэки, даже если не было изменений
+		NO_DESTROY_INSTANCE_MODEL:	0b0000_0010_0000, // не вызывать destroy() у инстансов на основе SGModel
+		INCLUDING_INSTANCE:					0b0001_0000_0000, // системный флаг (При проверке значения свойства на тип SGModel будут учтены инстансы)
+		FIRST_VALIDATE:							0b0010_0000_0000, // системный флаг
 	});
 
 	/**
@@ -537,7 +537,7 @@ class SGModel {
 						result.changed = true;
 					}
 				} else {
-					if (flags & SGModel.FLAGS.FIRST_VALIDATE && defType.type === SGModel.TYPES.ARRAY_NUMBERS) {
+					if ((flags & SGModel.FLAGS.FIRST_VALIDATE) && defType.type === SGModel.TYPES.ARRAY_NUMBERS) {
 						Utils.toNumbers(nextValue);
 					}
 				}

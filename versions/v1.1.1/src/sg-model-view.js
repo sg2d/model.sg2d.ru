@@ -353,7 +353,7 @@ class SGModelView extends SGModel {
 	static #findElementsBySGModel(modelName = void 0, root = void 0, _results = []) {
 		root = (root && (typeof root === 'string' ? document.querySelector(root) : root)) || document.body;
 		if (root instanceof HTMLElement === false) {
-			throw new Error(`Error in #findElementsBySGModel()! Incorrect type of parameter "root"!`);
+			throw new Error(`Incorrect type of parameter "root"!`);
 		}
 		if (modelName && !root[SGModelView.#sgModelUUID] && root.getAttribute(SGModelView.#ATTRIBUTES.SG_MODEL) === modelName) {
 			return root;

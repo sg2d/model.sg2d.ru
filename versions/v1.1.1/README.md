@@ -19,6 +19,11 @@
 
 * [https://model.sg2d.ru/tests](https://model.sg2d.ru/tests)
 
+#### Примеры:
+
+* [https://model.sg2d.ru/examples/salary-calc/](https://model.sg2d.ru/examples/salary-calc/)
+* [https://model.sg2d.ru/examples/survey-motivation/](https://model.sg2d.ru/examples/survey-motivation/)
+
 ## Описание API
 
 * [Основные статические свойства SGModel](#основные-статические-свойства-sgmodel)
