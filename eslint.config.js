@@ -6,15 +6,16 @@ export default defineConfig([
 	{
 		files: ["**/*.{js,mjs,cjs}"],
 		languageOptions: {
-			globals: { ...globals.browser, ...globals.node },
+			globals: { ...globals.browser, ...globals.node, bootstrap: 'readonly' },
 			ecmaVersion: 'latest',
 			sourceType: 'module'
 		},
 		ignores: [
-      "node_modules/",
+      "**/node_modules/",
 			"_nogit/",
       "res/",
-      "*.config.js"
+      "*.config.js",
+			".git/",
     ],
 		plugins: {
 			js,
