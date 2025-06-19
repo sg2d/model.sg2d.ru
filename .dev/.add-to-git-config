@@ -2,6 +2,7 @@
 		push-all = !git push origin && git push origin_github && git push origin_gitverse && git push origin_gitee
     push-all-force = !git push -f origin && git push -f origin_github && git push -f origin_gitverse && git push -f origin_gitee
 		push-all-tags = !git push origin --tags && git push origin_github --tags && git push origin_gitverse --tags && git push origin_gitee --tags
+		aap = !git add . && git commit --amend --no-edit && git push -f
 [remote "origin"]
 	url = https://kib@gitlab.core.sg2d.ru/sg2d/model.sg2d.ru.git
 	fetch = +refs/heads/*:refs/remotes/origin/*

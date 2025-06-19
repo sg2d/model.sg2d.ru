@@ -1,4 +1,4 @@
-/_nogit
-/node_modules
-/package-lock.json
-/nbproject
+_nogit/
+node_modules
+*.log
+nbproject

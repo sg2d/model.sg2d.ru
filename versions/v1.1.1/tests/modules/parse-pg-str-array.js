@@ -23,10 +23,10 @@ CREATE TABLE IF NOT EXISTS wob_tasks (
 	code VARCHAR(16) NOT NULL,
 	description text,
 	wiki_links wob_url_type[],
-	doc_links wob_url_type[]
+	links wob_url_type[]
 );
 
-INSERT INTO wob_tasks (id, code, description, wiki_links, doc_links) OVERRIDING SYSTEM VALUE VALUES	(
+INSERT INTO wob_tasks (id, code, description, wiki_links, links) OVERRIDING SYSTEM VALUE VALUES	(
 	1, 'ADO-52', 'description...',
 	ARRAY[('Проект SG2D ModelView - Отечественный MVVM-фреймворк (4-SGM)','https://wiki.sg2d.ru/ru/dev/sgm'),('SG2D Wiki: 3. Регламент по разработке: 9. CI/CD','https://wiki.sg2d.ru/ru/dev/regulations#h-9-cicd')]::wob_url_type[],
 	ARRAY[('SGModel & SGModelView - Binding models and MVVM pattern','https://model.sg2d.ru/'),('Special symbols: '', ", \\, /, (, ), |, -, _, +, =, {, }, \`, !, ?, @, #, $, %, ^, &, *, ~, . end!','https://ggg.ggg')]::wob_url_type[]

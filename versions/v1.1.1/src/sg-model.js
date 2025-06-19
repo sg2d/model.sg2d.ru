@@ -504,7 +504,9 @@ class SGModel {
 				break;
 			}
 			case SGModel.TYPES.ARRAY: case SGModel.TYPES.ARRAY_NUMBERS: {
-				if (typeof nextValue === 'string') {
+				if (!nextValue) {
+					nextValue = [];
+				} else if (typeof nextValue === 'string') {
 					nextValue = Utils.parsePgStrArray(nextValue);
 				}
 				if (!Array.isArray(nextValue)) {
@@ -1282,7 +1284,7 @@ class SGModel {
 }
 
 if (typeof globalThis === 'object' && globalThis !== null) globalThis.SGModel = SGModel;
-else if (Utils.isNode) module.exports = SGModel;
+else if (Utils.isNode && typeof module === 'object') module.exports = SGModel; // eslint-disable-line no-undef
 else if (Utils.isBrowser) window['SGModel'] = SGModel;
 
 export default SGModel;

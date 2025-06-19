@@ -1,29 +1,36 @@
 import { defineConfig } from "eslint/config";
 import globals from "globals";
 import js from "@eslint/js";
+import stylistic from '@stylistic/eslint-plugin';
 
 export default defineConfig([
 	{
-		files: ["**/*.{js,mjs,cjs}"],
-		languageOptions: {
-			globals: { ...globals.browser, ...globals.node, bootstrap: 'readonly' },
-			ecmaVersion: 'latest',
-			sourceType: 'module'
-		},
 		ignores: [
       "**/node_modules/",
 			"_nogit/",
       "res/",
       "*.config.js",
 			".git/",
-    ],
-		plugins: {
-			js,
+			"dist/",
+    ]
+	},
+	{
+		files: ["**/*.{js}"],
+		languageOptions: {
+			globals: {
+				...globals.browser,
+				...globals.node,
+				...globals.es2025,
+				bootstrap: 'readonly',
+			},
+			ecmaVersion: 'latest',
+			sourceType: 'module'
 		},
-		extends: [
-			"js/recommended",
-		],
+		plugins: {
+			'@stylistic': stylistic,
+		},
 		rules: {
+			...js.configs.recommended.rules,
 			'indent': ['error', 'tab', { // Используем табуляцию для отступов
         SwitchCase: 1 // Отступ для case внутри switch
 			}],
@@ -35,7 +42,8 @@ export default defineConfig([
 					argsIgnorePattern: '^_$',
 					caughtErrorsIgnorePattern: '^_$'
 				}
-			]
-		}
-	}
+			],
+			'@stylistic/eol-last': ['error', 'always'],
+		},
+	},
 ]);

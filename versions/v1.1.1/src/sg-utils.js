@@ -8,14 +8,14 @@
  */
 
 // Среда выполнения кода
-export const isNode = ((typeof process === 'object' && process !== null) && (typeof process.versions === 'object') && process.versions.node !== undefined);
+export const isNode = ((typeof process === 'object' && process !== null) && (typeof process.versions === 'object') && process.versions.node !== undefined); // eslint-disable-line no-undef
 export const isBrowser = (typeof window === 'object' && window !== null && window.document !== undefined);
 
 /**
  * Глобальный объект (window для браузеров, global для Node.js)
  * @protected
  */
-export const __global = isNode ? global : window; // @protected
+export const __global = isNode ? global : window; // eslint-disable-line no-undef
 
 export const __enumerableFalse = { enumerable: false }; // @protected
 

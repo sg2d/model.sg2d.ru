@@ -1336,7 +1336,7 @@ class SGModelView extends SGModel {
 }
 
 if (typeof globalThis === 'object' && globalThis !== null) globalThis.SGModelView = SGModelView;
-if (Utils.isNode) module.exports = SGModelView;
+if (Utils.isNode && typeof module === 'object') module.exports = SGModelView; // eslint-disable-line no-undef
 else if (Utils.isBrowser) window['SGModelView'] = SGModelView;
 
 export default SGModelView;
