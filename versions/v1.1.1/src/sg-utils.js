@@ -1,10 +1,10 @@
 /**
  * SGUtils - функции-утилиты для SGModel и SGModelView
- * @version 1.1.1
- * @requires ES2024+ (ES15+)
+ * @version 1.1.2
+ * @requires ES2025+ (ES16+)
  * @link https://github.com/sg2d/model.sg2d.ru
- * @license SGModel may be freely distributed under the MIT license
- * @copyright 2019-2025 © Калашников Илья (https://model.sg2d.ru)
+ * @license This module with utility functions functions may be freely distributed under the MIT license
+ * @copyright 2019-2025 © Калашников Илья (https://model.sg2d.ru, sg2d@yandex.ru)
  */
 
 // Среда выполнения кода

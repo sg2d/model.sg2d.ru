@@ -2,28 +2,49 @@
 
 import Utils from './sg-utils.js';
 import SGModel from './sg-model.js';
+import SGDevTools from './sg-devtools.js';
 
 /**
  * SGModelView - Микрофреймворк для реализации паттерна MVVM, расширяющий SGModel и обеспечивающий автоматическую привязку данных из инстанса к HTML-элементам.
  * @english Microframework for implementing the MVVM pattern, extending SGModel and providing automatic binding of data from the instance to HTML elements.
- * @version 1.1.1
- * @requires ES2024+ (ES15+)
+ * @version 1.1.2
+ * @requires ES2025+ (ES16+)
  * @link https://github.com/sg2d/model.sg2d.ru
  * @license SGModelView may be freely distributed under the MIT license
- * @copyright 2019-2025 © Калашников Илья (https://model.sg2d.ru)
+ * @copyright 2019-2025 © Калашников Илья (https://model.sg2d.ru, sg2d@yandex.ru)
  * @extends SGModel
  */
 class SGModelView extends SGModel {
 
 	/*static version = SGModel.version; // @see SGModel.version*/
 
+	static dev = SGDevTools; // Используйте Alt+'`' + клик на любом элементе HTML => в SGModelView.dev.temp будет ссылка на найденный экземпляр SGModelView
+
+	/**
+	 * Карта sg-атрибутов
+	 */
 	static #ATTRIBUTES = {};
+
+	/**
+	 * Список sg-атрибутов с учётом префикса (используется в SGDevTools)
+	 * @public
+	 */
+	static ATTRIBUTES = {};
 
 	/**
 	 * Имя ключа объекта в каждом DOM-элементе для служебного использования объекта фреймворком
 	 */
 	static #sgNameInNode = Symbol('__sg');
 	static #sgModelUUID = Symbol('__sgModelUUID');
+	
+	/**
+	 * Получить UUID SGModelView-инстанса для HTML-элемента
+	 * @param {HTMLElement} element 
+	 * @returns {string|null} UUID инстанса или null
+	 */
+	static getElementUUID(element) {
+		return element[SGModelView.#sgModelUUID] || null;
+	}
 
 	/**
 	 * Переопределить префикс атрибутов для SGModelView.
@@ -43,6 +64,7 @@ class SGModelView extends SGModel {
 				const ucName = `SG_${name.replaceAll('-', '_').toUpperCase()}`;
 				SGModelView.#ATTRIBUTES[ucName] = `${newPrefix}${name}`;
 				SGModelView.#ATTRIBUTES[`${newPrefix}${name}`] = ucName; // use in this.#scanItemContentAndSetValues()
+				SGModelView.ATTRIBUTES[`${newPrefix}${name}`] = ucName;
 			});
 	}
 
@@ -198,6 +220,7 @@ class SGModelView extends SGModel {
 				.split(',').reduce((result, name) => (result[name.trim()] = Utils.__enumerableFalse, result), {})
 		);
 		this.setAttributesPrefix();
+		SGDevTools._init(this);
 	}
 	
 	/**
