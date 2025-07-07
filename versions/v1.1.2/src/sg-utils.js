@@ -1,21 +1,21 @@
 /**
  * SGUtils - функции-утилиты для SGModel и SGModelView
- * @version 1.1.1
- * @requires ES2024+ (ES15+)
+ * @version 1.1.2
+ * @requires ES2025+ (ES16+)
  * @link https://github.com/sg2d/model.sg2d.ru
- * @license SGModel may be freely distributed under the MIT license
- * @copyright 2019-2025 © Калашников Илья (https://model.sg2d.ru)
+ * @license This module with utility functions functions may be freely distributed under the MIT license
+ * @copyright 2019-2025 © Калашников Илья (https://model.sg2d.ru, sg2d@yandex.ru)
  */
 
 // Среда выполнения кода
-export const isNode = ((typeof process === 'object' && process !== null) && (typeof process.versions === 'object') && process.versions.node !== undefined);
+export const isNode = ((typeof process === 'object' && process !== null) && (typeof process.versions === 'object') && process.versions.node !== undefined); // eslint-disable-line no-undef
 export const isBrowser = (typeof window === 'object' && window !== null && window.document !== undefined);
 
 /**
  * Глобальный объект (window для браузеров, global для Node.js)
  * @protected
  */
-export const __global = isNode ? global : window; // @protected
+export const __global = isNode ? global : window; // eslint-disable-line no-undef
 
 export const __enumerableFalse = { enumerable: false }; // @protected
 

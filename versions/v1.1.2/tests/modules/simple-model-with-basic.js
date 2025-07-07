@@ -1,4 +1,4 @@
-import SGModel from '/src/sg-model.js';
+import SGModel from './../../sg-model.js';
 
 // TODO?:
 //import json1 from './json/sgmodel-basic-checkers__auto-type-properties.json' assert { type: 'json' }; // TODO: ES2025
@@ -213,7 +213,7 @@ async function prepareTests({CustomModel, model}) {
 				code: (testCode = 'auto-type-properties',`${moduleCode}__${testCode}`),
 				title: 'автоматическая типизация свойств модели на основе: <code>static defaults = {...}</code>',
 				input: model,
-				runner: async (model) => ({ defTypes: SGModel.json.debug(model.defaults) }),
+				runner: async (model) => SGModel.json.debug(model.defaults),
 				verify: await window.loadJSON(moduleCode, testCode),
 				//skip: true, // пропустить тест
 				//break: true, // прервать группу тестов

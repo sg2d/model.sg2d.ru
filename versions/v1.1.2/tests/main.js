@@ -1,5 +1,5 @@
-import SGModel from '/src/sg-model.js';
-import SGModelView from '/src/sg-model-view.js';
+import SGModel from './../sg-model.js';
+import SGModelView from './../sg-model-view.js';
 import simpleModelWithBasicTests from './modules/simple-model-with-basic.js';
 import parsePgStrArrayTests from './modules/parse-pg-str-array.js';
 import simpleModelViewWithBasicTests from './modules/simple-modelview-with-basic.js';

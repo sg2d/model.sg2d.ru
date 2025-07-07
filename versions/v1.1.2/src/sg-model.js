@@ -7,11 +7,11 @@ import SGJson from './sg-json.js';
 /**
  * SGModel - Библиотека-класс для структурирования веб-приложений с помощью биндинг-моделей. Библиотека хорошо адаптирована для наследования классов. Может использоваться как в браузере, так и на Node.js.
  * @english A library class for structuring web applications using binding models. The library is well adapted for inheritance classes. Can be used both in the browser and on Node.js.
- * @version 1.1.1
- * @requires ES2024+ (ES15+)
+ * @version 1.1.2
+ * @requires ES2025+ (ES16+)
  * @link https://github.com/sg2d/model.sg2d.ru
  * @license SGModel may be freely distributed under the MIT license
- * @copyright 2019-2025 © Калашников Илья (https://model.sg2d.ru)
+ * @copyright 2019-2025 © Калашников Илья (https://model.sg2d.ru, sg2d@yandex.ru)
  */
 class SGModel {
 
@@ -20,7 +20,7 @@ class SGModel {
  	 * @readonly
 	 * @constant {string}
 	 */
-	static version = (typeof __SGMODEL_VERSION__ !== 'undefined' ? __SGMODEL_VERSION__ : '1.1.1'); // eslint-disable-line no-undef
+	static version = (typeof __SGMODEL_VERSION__ !== 'undefined' ? __SGMODEL_VERSION__ : '1.1.2'); // eslint-disable-line no-undef
 
 	static utils = Utils;
 	static json = SGJson;
@@ -49,15 +49,15 @@ class SGModel {
 	 * @constant {boolean}
 	 */
 	static FLAGS = Object.freeze({
-		NONE:												0b0000_0000,
-		IMMEDIATELY:								0b0000_0001,
-		OFF_MAY_BE:									0b0000_0010, // Если в процессе вызова колбэков может быть выполнен `this.off()`, нужно передать этот флаг
-		PREV_VALUE_CLONE:						0b0000_0100, // Клонировать предыдущее значение (тяжелое клонирование для объектов/массивов)
-		NO_CALLBACKS:								0b0000_1000, // Не выполнять колбэки
-		FORCE_CALLBACKS:						0b0001_0000, // Выполнить колбэки, даже если не было изменений
-		NO_DESTROY_INSTANCE_MODEL:	0b0010_0000, // не вызывать destroy() у инстансов на основе SGModel
-		INCLUDING_INSTANCE:					0b0100_0000, // системный флаг (При проверке значения свойства на тип SGModel будут учтены инстансы)
-		FIRST_VALIDATE:							0b1000_0000, // системный флаг
+		NONE:												0b0000_0000_0000,
+		IMMEDIATELY:								0b0000_0000_0001,
+		OFF_MAY_BE:									0b0000_0000_0010, // Если в процессе вызова колбэков может быть выполнен `this.off()`, нужно передать этот флаг
+		PREV_VALUE_CLONE:						0b0000_0000_0100, // Клонировать предыдущее значение (тяжелое клонирование для объектов/массивов)
+		NO_CALLBACKS:								0b0000_0000_1000, // Не выполнять колбэки
+		FORCE_CALLBACKS:						0b0000_0001_0000, // Выполнить колбэки, даже если не было изменений
+		NO_DESTROY_INSTANCE_MODEL:	0b0000_0010_0000, // не вызывать destroy() у инстансов на основе SGModel
+		INCLUDING_INSTANCE:					0b0001_0000_0000, // системный флаг (При проверке значения свойства на тип SGModel будут учтены инстансы)
+		FIRST_VALIDATE:							0b0010_0000_0000, // системный флаг
 	});
 
 	/**
@@ -504,7 +504,9 @@ class SGModel {
 				break;
 			}
 			case SGModel.TYPES.ARRAY: case SGModel.TYPES.ARRAY_NUMBERS: {
-				if (typeof nextValue === 'string') {
+				if (!nextValue) {
+					nextValue = [];
+				} else if (typeof nextValue === 'string') {
 					nextValue = Utils.parsePgStrArray(nextValue);
 				}
 				if (!Array.isArray(nextValue)) {
@@ -537,7 +539,7 @@ class SGModel {
 						result.changed = true;
 					}
 				} else {
-					if (flags & SGModel.FLAGS.FIRST_VALIDATE && defType.type === SGModel.TYPES.ARRAY_NUMBERS) {
+					if ((flags & SGModel.FLAGS.FIRST_VALIDATE) && defType.type === SGModel.TYPES.ARRAY_NUMBERS) {
 						Utils.toNumbers(nextValue);
 					}
 				}
@@ -678,7 +680,7 @@ class SGModel {
 									result.changed = true;
 									break;
 								}
-            	}
+							}
 						} else {
 							result.changed = true;
 						}
@@ -1259,13 +1261,13 @@ class SGModel {
 	}
 	
 	/**
-   * Возвращает экземпляр синглтона. По умолчанию создает его при необходимости
-   * @public
+	 * Возвращает экземпляр синглтона. По умолчанию создает его при необходимости
+	 * @public
 	 * @param {boolean} [createIfMissing=true] Если true, создается экземпляр, если он не существует
- 	 *                                         Если false, вместо создания выбрасывается ошибка
+	 *                                         Если false, вместо создания выбрасывается ошибка
 	 * @throws {Error} Если синглтон настроен неправильно (когда `singleInstance` имеет значение false)
-   * @returns {object}
-   */
+	 * @returns {object}
+	 */
 	static getInstance(createIfMissing = true) {
 		if (!this.singleInstance) {
 			throw new Error('Singleton not configured (singleInstance = false)!');
@@ -1282,7 +1284,7 @@ class SGModel {
 }
 
 if (typeof globalThis === 'object' && globalThis !== null) globalThis.SGModel = SGModel;
-else if (Utils.isNode) module.exports = SGModel;
+else if (Utils.isNode && typeof module === 'object') module.exports = SGModel; // eslint-disable-line no-undef
 else if (Utils.isBrowser) window['SGModel'] = SGModel;
 
 export default SGModel;

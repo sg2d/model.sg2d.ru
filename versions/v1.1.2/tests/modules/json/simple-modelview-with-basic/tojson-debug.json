@@ -1,0 +1,522 @@
+{
+  "data": {
+    "contract": "g",
+    "contracts": {
+      "l": {
+        "discount": -15,
+        "shortCode": "labor",
+        "title": "Трудовой договор, в т.ч. по совм.",
+        "discountText": "-15%"
+      },
+      "g": {
+        "discount": -10,
+        "shortCode": "gph",
+        "title": "Договор ГПХ с физ.лицом",
+        "discountText": "-10%"
+      },
+      "s": {
+        "discount": 0,
+        "shortCode": "self",
+        "title": "Самозанятый (договор услуг)",
+        "discountText": ""
+      },
+      "i": {
+        "discount": 15,
+        "shortCode": "ip",
+        "title": "Индивидуальный предприниматель",
+        "discountText": "+15%"
+      },
+      "c": {
+        "discount": 50,
+        "shortCode": "crypta",
+        "title": "Оплата криптовалютой",
+        "discountText": "+50%"
+      },
+      "f": {
+        "discount": 100,
+        "shortCode": "freelance",
+        "title": "Фриланс + Безопасная сделка",
+        "discountText": "+100%"
+      }
+    },
+    "rate": 2000,
+    "rate_with_discount_with_rang": 2070,
+    "hours": 80,
+    "discountPer": 15,
+    "salary": 165600,
+    "position_id": 0,
+    "position_info": "Fullstack-developer",
+    "rang": 2,
+    "employment": 1,
+    "employment_info": "4 часа/день",
+    "employments": [
+      {
+        "hours": 40,
+        "title": "2 часа/день"
+      },
+      {
+        "hours": 80,
+        "title": "4 часа/день"
+      },
+      {
+        "hours": 100,
+        "title": "5 часов/день"
+      },
+      {
+        "hours": 120,
+        "title": "6 часов/день"
+      },
+      {
+        "hours": 140,
+        "title": "7 часов/день"
+      },
+      {
+        "hours": 160,
+        "title": "фуллтайм"
+      }
+    ],
+    "rangs": [
+      {
+        "value": 0,
+        "title": "Trainee (-50%)",
+        "koef": -0.5,
+        "hint": "Стажёр"
+      },
+      {
+        "value": 1,
+        "title": "Junior (-25%)",
+        "koef": -0.25
+      },
+      {
+        "value": 2,
+        "title": "Middle",
+        "koef": 0
+      },
+      {
+        "value": 3,
+        "title": "Senior (+25%)",
+        "koef": 0.25
+      },
+      {
+        "value": 4,
+        "title": "TechLead (+50%)",
+        "koef": 0.5
+      }
+    ],
+    "positions": [
+      {
+        "id": 1,
+        "name": "Frontend-developer",
+        "middleRate": 1000,
+        "checked": false
+      },
+      {
+        "id": 2,
+        "name": "Backend-developer",
+        "middleRate": 1500,
+        "checked": false
+      },
+      {
+        "id": 3,
+        "name": "Fullstack-developer",
+        "middleRate": 2000,
+        "checked": true
+      },
+      {
+        "id": 4,
+        "name": "Devops",
+        "middleRate": 2000,
+        "checked": false
+      },
+      {
+        "id": 5,
+        "name": "TeamLead",
+        "middleRate": 3000,
+        "checked": false
+      }
+    ],
+    "_input_type": "radio",
+    "uuid": "00000000-0000-0000-0000-8240f6f432cb"
+  },
+  "__uid": 7,
+  "initialized": true,
+  "changed": true,
+  "destroyed": false,
+  "options": {},
+  "defaults": {
+    "contract": {
+      "value": "s",
+      "type::SGBaseType": "[[function TYPE_STRING()]]"
+    },
+    "contracts": {
+      "value": {},
+      "type::SGBaseType": "[[function TYPE_OBJECT()]]"
+    },
+    "rate": {
+      "value": 1000,
+      "type::SGBaseType": "[[function TYPE_NUMBER()]]"
+    },
+    "rate_with_discount_with_rang": {
+      "value": 1000,
+      "type::SGBaseType": "[[function TYPE_NUMBER()]]"
+    },
+    "hours": {
+      "value": 160,
+      "type::SGBaseType": "[[function TYPE_NUMBER()]]"
+    },
+    "discountPer": {
+      "value": 0,
+      "type::SGBaseType": "[[function TYPE_NUMBER()]]"
+    },
+    "salary": {
+      "value": 0,
+      "type::SGBaseType": "[[function TYPE_NUMBER()]]"
+    },
+    "position_id": {
+      "value": 0,
+      "type::SGBaseType": "[[function TYPE_NUMBER()]]"
+    },
+    "position_info": {
+      "value": "[выберите должность в таблице внизу]",
+      "type::SGBaseType": "[[function TYPE_STRING()]]"
+    },
+    "rang": {
+      "value": 2,
+      "type::SGBaseType": "[[function TYPE_NUMBER()]]"
+    },
+    "employment": {
+      "value": 1,
+      "type::SGBaseType": "[[function TYPE_NUMBER()]]"
+    },
+    "employment_info": {
+      "value": "",
+      "type::SGBaseType": "[[function TYPE_STRING()]]"
+    },
+    "employments": {
+      "value": [
+        {
+          "hours": 40,
+          "title": "2 часа/день"
+        },
+        {
+          "hours": 80,
+          "title": "4 часа/день"
+        },
+        {
+          "hours": 100,
+          "title": "5 часов/день"
+        },
+        {
+          "hours": 120,
+          "title": "6 часов/день"
+        },
+        {
+          "hours": 140,
+          "title": "7 часов/день"
+        },
+        {
+          "hours": 160,
+          "title": "фуллтайм"
+        }
+      ],
+      "type::SGBaseType": "[[function TYPE_ARRAY()]]"
+    },
+    "rangs": {
+      "value": [
+        {
+          "value": 0,
+          "title": "Trainee (-50%)",
+          "koef": -0.5,
+          "hint": "Стажёр"
+        },
+        {
+          "value": 1,
+          "title": "Junior (-25%)",
+          "koef": -0.25
+        },
+        {
+          "value": 2,
+          "title": "Middle",
+          "koef": 0
+        },
+        {
+          "value": 3,
+          "title": "Senior (+25%)",
+          "koef": 0.25
+        },
+        {
+          "value": 4,
+          "title": "TechLead (+50%)",
+          "koef": 0.5
+        }
+      ],
+      "type::SGBaseType": "[[function TYPE_ARRAY()]]"
+    },
+    "positions": {
+      "value": [
+        {
+          "id": 1,
+          "name": "Frontend-developer",
+          "middleRate": 1000,
+          "checked": false
+        },
+        {
+          "id": 2,
+          "name": "Backend-developer",
+          "middleRate": 1500,
+          "checked": false
+        },
+        {
+          "id": 3,
+          "name": "Fullstack-developer",
+          "middleRate": 2000,
+          "checked": false
+        },
+        {
+          "id": 4,
+          "name": "Devops",
+          "middleRate": 2000,
+          "checked": false
+        },
+        {
+          "id": 5,
+          "name": "TeamLead",
+          "middleRate": 3000,
+          "checked": false
+        }
+      ],
+      "type::SGBaseType": "[[function TYPE_ARRAY()]]"
+    },
+    "_input_type": {
+      "value": "radio",
+      "type::SGBaseType": "[[function TYPE_STRING()]]"
+    },
+    "uuid": {
+      "value": "",
+      "type::SGBaseType": "[[function TYPE_STRING()]]"
+    }
+  },
+  "uuid": "00000000-0000-0000-0000-8240f6f432cb",
+  "prrContracts": {
+    "promise:Promise": "[object Promise]",
+    "resolve": "[[function(_)]]",
+    "reject": "[[function(_)]]"
+  },
+  "$view:HTMLDivElement": "[object HTMLDivElement]",
+  "onChangeDOMElementValue": "[[function bound #onChangeDOMElementValue(_)]]",
+  "[[class CustomView]]": {
+    "singleInstance": true,
+    "autoLoadBind": {
+      "srcHTML": "modules/templates/simple-modelview-with-basic.html",
+      "templateId": "00000000-0000-0000-0000-8240f6f432cb"
+    },
+    "defaults": {
+      "contract": {
+        "value": "s",
+        "type::SGBaseType": "[[function TYPE_STRING()]]"
+      },
+      "contracts": {
+        "value": {},
+        "type::SGBaseType": "[[function TYPE_OBJECT()]]"
+      },
+      "rate": {
+        "value": 1000,
+        "type::SGBaseType": "[[function TYPE_NUMBER()]]"
+      },
+      "rate_with_discount_with_rang": {
+        "value": 1000,
+        "type::SGBaseType": "[[function TYPE_NUMBER()]]"
+      },
+      "hours": {
+        "value": 160,
+        "type::SGBaseType": "[[function TYPE_NUMBER()]]"
+      },
+      "discountPer": {
+        "value": 0,
+        "type::SGBaseType": "[[function TYPE_NUMBER()]]"
+      },
+      "salary": {
+        "value": 0,
+        "type::SGBaseType": "[[function TYPE_NUMBER()]]"
+      },
+      "position_id": {
+        "value": 0,
+        "type::SGBaseType": "[[function TYPE_NUMBER()]]"
+      },
+      "position_info": {
+        "value": "[выберите должность в таблице внизу]",
+        "type::SGBaseType": "[[function TYPE_STRING()]]"
+      },
+      "rang": {
+        "value": 2,
+        "type::SGBaseType": "[[function TYPE_NUMBER()]]"
+      },
+      "employment": {
+        "value": 1,
+        "type::SGBaseType": "[[function TYPE_NUMBER()]]"
+      },
+      "employment_info": {
+        "value": "",
+        "type::SGBaseType": "[[function TYPE_STRING()]]"
+      },
+      "employments": {
+        "value": [
+          {
+            "hours": 40,
+            "title": "2 часа/день"
+          },
+          {
+            "hours": 80,
+            "title": "4 часа/день"
+          },
+          {
+            "hours": 100,
+            "title": "5 часов/день"
+          },
+          {
+            "hours": 120,
+            "title": "6 часов/день"
+          },
+          {
+            "hours": 140,
+            "title": "7 часов/день"
+          },
+          {
+            "hours": 160,
+            "title": "фуллтайм"
+          }
+        ],
+        "type::SGBaseType": "[[function TYPE_ARRAY()]]"
+      },
+      "rangs": {
+        "value": [
+          {
+            "value": 0,
+            "title": "Trainee (-50%)",
+            "koef": -0.5,
+            "hint": "Стажёр"
+          },
+          {
+            "value": 1,
+            "title": "Junior (-25%)",
+            "koef": -0.25
+          },
+          {
+            "value": 2,
+            "title": "Middle",
+            "koef": 0
+          },
+          {
+            "value": 3,
+            "title": "Senior (+25%)",
+            "koef": 0.25
+          },
+          {
+            "value": 4,
+            "title": "TechLead (+50%)",
+            "koef": 0.5
+          }
+        ],
+        "type::SGBaseType": "[[function TYPE_ARRAY()]]"
+      },
+      "positions": {
+        "value": [
+          {
+            "id": 1,
+            "name": "Frontend-developer",
+            "middleRate": 1000,
+            "checked": false
+          },
+          {
+            "id": 2,
+            "name": "Backend-developer",
+            "middleRate": 1500,
+            "checked": false
+          },
+          {
+            "id": 3,
+            "name": "Fullstack-developer",
+            "middleRate": 2000,
+            "checked": false
+          },
+          {
+            "id": 4,
+            "name": "Devops",
+            "middleRate": 2000,
+            "checked": false
+          },
+          {
+            "id": 5,
+            "name": "TeamLead",
+            "middleRate": 3000,
+            "checked": false
+          }
+        ],
+        "type::SGBaseType": "[[function TYPE_ARRAY()]]"
+      },
+      "_input_type": {
+        "value": "radio",
+        "type::SGBaseType": "[[function TYPE_STRING()]]"
+      },
+      "uuid": {
+        "value": "",
+        "type::SGBaseType": "[[function TYPE_STRING()]]"
+      }
+    },
+    "CONTRACTS": [
+      [
+        "l",
+        -15,
+        "labor",
+        "Трудовой договор, в т.ч. по совм."
+      ],
+      [
+        "g",
+        -10,
+        "gph",
+        "Договор ГПХ с физ.лицом"
+      ],
+      [
+        "s",
+        0,
+        "self",
+        "Самозанятый (договор услуг)"
+      ],
+      [
+        "i",
+        15,
+        "ip",
+        "Индивидуальный предприниматель"
+      ],
+      [
+        "c",
+        50,
+        "crypta",
+        "Оплата криптовалютой"
+      ],
+      [
+        "f",
+        100,
+        "freelance",
+        "Фриланс + Безопасная сделка"
+      ]
+    ],
+    "__hash": "3de3852b36670f7a54218785743ef2d4f0e0b3259089506aab82215609e88ff0",
+    "__instance:CustomView": "[[Circular reference]]",
+    "templates": {
+      "00000000-0000-0000-0000-8240f6f432cb:HTMLTemplateElement": "[object HTMLTemplateElement]",
+      "tmp_contracts_item:HTMLTemplateElement": "[object HTMLTemplateElement]",
+      "tmp_position_tr:HTMLTemplateElement": "[object HTMLTemplateElement]"
+    },
+    "initialized": true,
+    "[[class SGModel]]": {
+      "version": "1.1.1",
+ 
+      "utils": {
+        "isNode": false,
+        "isBrowser": true,
+        "__global": "[object Window]"
+      }
+    }
+  }
+}

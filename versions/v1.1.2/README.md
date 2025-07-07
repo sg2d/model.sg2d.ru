@@ -4,7 +4,11 @@
 
 *Ссылка на GitHub-страницу: [https://github.com/sg2d/model.sg2d.ru](https://github.com/sg2d/model.sg2d.ru)*
 
-*Ссылка на Gitverse-страницу: [https://gitverse.ru/sg2d/model.sg2d.ru](https://gitverse.ru/sg2d/model.sg2d.ru)*
+*Ссылка на Gitee-страницу: [https://gitee.com/sg2d/model.sg2d.ru](https://gitee.com/sg2d/model.sg2d.ru)*
+
+*Ссылка на GitVerse-страницу: [https://gitverse.ru/sg2d/model.sg2d.ru](https://gitverse.ru/sg2d/model.sg2d.ru)*
+
+*Ссылка на GitFlame-страницу: [https://gitflame.ru/sg2d/model.sg2d.ru](https://gitflame.ru/sg2d/model.sg2d.ru)*
 
 **SGModel** - Библиотека-класс для работы с данными (биндинг-модели). Библиотека написана на современном ECMAScript (ES2024+) и хорошо адаптирована для наследования классов. Может использоваться как в браузере, так и на Node.js.
 
@@ -18,6 +22,11 @@
 #### Страница автотестов:
 
 * [https://model.sg2d.ru/tests](https://model.sg2d.ru/tests)
+
+#### Примеры:
+
+* [https://model.sg2d.ru/examples/salary-calc/](https://model.sg2d.ru/examples/salary-calc/)
+* [https://model.sg2d.ru/examples/survey-motivation/](https://model.sg2d.ru/examples/survey-motivation/)
 
 ## Описание API
 

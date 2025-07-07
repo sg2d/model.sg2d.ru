@@ -15,6 +15,9 @@
 [remote "origin_gitverse"]
 	url = https://sg2d@gitverse.ru/sg2d/model.sg2d.ru.git
 	fetch = +refs/heads/*:refs/remotes/origin_gitverse/*
+[remote "origin_gitflame"]
+	url = https://api.gitflame.ru/sg2d/model.sg2d.ru.git
+	fetch = +refs/heads/*:refs/remotes/origin_gitflame/*
 [branch "master"]
 	remote = origin
 	merge = refs/heads/master

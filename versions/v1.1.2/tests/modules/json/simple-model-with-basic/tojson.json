@@ -1,0 +1,664 @@
+{
+  "data": {
+    "nullProperty": null,
+    "numberProperty0": 0,
+    "numberProperty": 3.141592654,
+    "stringPropertyEmpty": "",
+    "stringProperty": "text0 (overridding!)",
+    "booleanProperty0": false,
+    "booleanProperty": true,
+    "instanceCustomClass": {
+      "instanceProp1": "ggg",
+      "options": {
+        "option1": "optionValue1"
+      }
+    },
+    "xyProperty0": {
+      "x": 0,
+      "y": 0
+    },
+    "xyProperty": {
+      "x": 128,
+      "y": 256
+    },
+    "objectPropertyEmpty": {},
+    "objectProperty": {
+      "a": "a1",
+      "b": "bb22"
+    },
+    "arrayPropertyEmpty": [],
+    "arrayProperty": [
+      "999",
+      666,
+      "repeat_text",
+      333,
+      666,
+      "repeat_text"
+    ],
+    "arrayNumbersPropertyEmpty": [],
+    "arrayNumbersProperty": [
+      1,
+      22,
+      333,
+      4444.44,
+      555.55,
+      -6666.66,
+      "NaN"
+    ],
+    "setPropertyEmpty": [],
+    "setProperty": [
+      400,
+      303
+    ],
+    "mapPropertyEmpty": {},
+    "mapProperty": {
+      "id": 333,
+      "code": "code1"
+    },
+    "arrayModelPropertyEmpty": [],
+    "arrayModelProperty": [
+      {
+        "index": 0
+      }
+    ],
+    "modelPropertyEmpty": null,
+    "modelProperty": {
+      "index": 1
+    },
+    "_noSaveToStorageProperty": 12345,
+    "uuid": "00000000-0000-0000-0000-3066eb5090f4",
+    "nullProperty2": null,
+    "numberProperty2": 65536,
+    "stringProperty2": "loading...",
+    "booleanProperty2": true,
+    "instanceClassProperty2": {
+      "instanceProp1": "ggg",
+      "options": {
+        "option1": "optionValue1"
+      }
+    },
+    "xyProperty2": {
+      "x": 192,
+      "y": 64
+    },
+    "objectProperty2": {
+      "prop1": 5,
+      "prop2": "33",
+      "prop3": {
+        "subprop1": 10
+      },
+      "prop4": [
+        66,
+        40
+      ]
+    },
+    "arrayProperty2": [
+      70,
+      "text1",
+      70,
+      "text1",
+      50
+    ],
+    "arrayNumbersProperty2": [
+      256,
+      "NaN",
+      "NaN"
+    ],
+    "setProperty2": [
+      22,
+      "text2",
+      {
+        "prop1": 500,
+        "prop2": "200"
+      }
+    ],
+    "mapProperty2": {
+      "30": "text3",
+      "user25": {
+        "name": "Ilya"
+      }
+    },
+    "mapPropertyEmpty2": {},
+    "modelProperty2": {
+      "index": 2
+    },
+    "arrayModelProperty2": [
+      {
+        "index": 3
+      },
+      {
+        "property1": 12345,
+        "property2": "text3",
+        "subPropModel1": {
+          "index": 2
+        },
+        "subPropModel2": "[[Circular reference]]"
+      },
+      {
+        "index": 2
+      }
+    ],
+    "_noSaveToStorageProperty2": "54321"
+  },
+  "__uid": 6,
+  "initialized": true,
+  "changed": false,
+  "destroyed": false,
+  "thisData1": "2024-12-31T21:00:00.000Z",
+  "thisData2": [
+    10,
+    -20,
+    10,
+    40.5,
+    "10"
+  ],
+  "thisData3": [
+    1024,
+    512,
+    256
+  ],
+  "thisData4": {
+    "__uid": 3,
+    "initialized": true,
+    "changed": false,
+    "destroyed": false,
+    "uuid": "00000000-0000-0000-0000-3066eb5090f3",
+    "options": {},
+    "defaults": {
+      "index": {
+        "value": 2
+      }
+    }
+  },
+  "thisData5": {
+    "instanceProp1": "ggg",
+    "options": {
+      "option1": "optionValue1"
+    }
+  },
+  "options": {},
+  "defaults": {
+    "voidProperty": {},
+    "nullProperty": {
+      "value": null
+    },
+    "numberProperty0": {
+      "value": 0
+    },
+    "numberProperty": {
+      "value": 3.141592654
+    },
+    "stringPropertyEmpty": {
+      "value": ""
+    },
+    "stringProperty": {
+      "value": "text"
+    },
+    "booleanProperty0": {
+      "value": false
+    },
+    "booleanProperty": {
+      "value": true
+    },
+    "functionAnonProperty": {},
+    "functionNameProperty": {},
+    "classProperty": {},
+    "instanceCustomClass": {
+      "value": {
+        "instanceProp1": "ggg",
+        "options": {
+          "option1": "optionValue1"
+        }
+      }
+    },
+    "xyProperty0": {
+      "value": {
+        "x": 0,
+        "y": 0
+      }
+    },
+    "xyProperty": {
+      "value": {
+        "x": 128,
+        "y": 256
+      }
+    },
+    "objectPropertyEmpty": {
+      "value": {}
+    },
+    "objectProperty": {
+      "value": {
+        "a": "a1",
+        "b": "bb22"
+      }
+    },
+    "arrayPropertyEmpty": {
+      "value": []
+    },
+    "arrayProperty": {
+      "value": [
+        "999",
+        666,
+        "repeat_text",
+        333,
+        666,
+        "repeat_text"
+      ]
+    },
+    "arrayNumbersPropertyEmpty": {
+      "value": []
+    },
+    "arrayNumbersProperty": {
+      "value": [
+        1,
+        22,
+        333,
+        "+4444.44",
+        "555,55",
+        "-6 666,66",
+        "some text2..."
+      ]
+    },
+    "setPropertyEmpty": {
+      "value": []
+    },
+    "setProperty": {
+      "value": [
+        400,
+        303
+      ]
+    },
+    "mapPropertyEmpty": {
+      "value": {}
+    },
+    "mapProperty": {
+      "value": {
+        "id": 333,
+        "code": "code1"
+      }
+    },
+    "arrayModelPropertyEmpty": {
+      "value": []
+    },
+    "arrayModelProperty": {
+      "value": [
+        {
+          "__uid": 1,
+          "initialized": true,
+          "changed": false,
+          "destroyed": false,
+          "uuid": "00000000-0000-0000-0000-3066eb5090f1",
+          "options": {},
+          "defaults": {
+            "index": {
+              "value": 0
+            }
+          }
+        }
+      ]
+    },
+    "modelPropertyEmpty": {
+      "value": null
+    },
+    "modelProperty": {
+      "value": {
+        "__uid": 2,
+        "initialized": true,
+        "changed": false,
+        "destroyed": false,
+        "uuid": "00000000-0000-0000-0000-3066eb5090f2",
+        "options": {},
+        "defaults": {
+          "index": {
+            "value": 1
+          }
+        }
+      }
+    },
+    "_noSaveToStorageProperty": {
+      "value": 12345
+    },
+    "uuid": {
+      "value": ""
+    },
+    "voidProperty2": {
+      "value": null
+    },
+    "nullProperty2": {
+      "value": null
+    },
+    "numberProperty2": {
+      "value": 0
+    },
+    "stringProperty2": {
+      "value": ""
+    },
+    "booleanProperty2": {
+      "value": false
+    },
+    "functionAnonProperty2": {
+      "value": null
+    },
+    "functionNameProperty2": {
+      "value": null
+    },
+    "classProperty2": {
+      "value": null
+    },
+    "instanceClassProperty2": {
+      "value": {}
+    },
+    "xyProperty2": {
+      "value": {
+        "x": 0,
+        "y": 0
+      }
+    },
+    "objectProperty2": {
+      "value": {}
+    },
+    "arrayProperty2": {
+      "value": []
+    },
+    "arrayNumbersProperty2": {
+      "value": []
+    },
+    "setProperty2": {
+      "value": []
+    },
+    "mapProperty2": {
+      "value": {}
+    },
+    "mapPropertyEmpty2": {
+      "value": {}
+    },
+    "modelProperty2": {
+      "value": null
+    },
+    "arrayModelProperty2": {
+      "value": []
+    },
+    "_noSaveToStorageProperty2": {
+      "value": ""
+    }
+  },
+  "uuid": "00000000-0000-0000-0000-3066eb5090f4"
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

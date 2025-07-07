@@ -1,4 +1,4 @@
-import SGModel from '/src/sg-model.js';
+import SGModel from './../../sg-model.js';
 
 const moduleCode = new URL(import.meta.url).pathname.split('/').pop().replace(/\.[^/.]+$/, '');
 
