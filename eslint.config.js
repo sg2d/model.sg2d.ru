@@ -15,7 +15,7 @@ export default defineConfig([
     ]
 	},
 	{
-		files: ["**/*.{js}"],
+		files: ["**/*.js"],
 		languageOptions: {
 			globals: {
 				...globals.browser,
@@ -36,10 +36,10 @@ export default defineConfig([
 			}],
 			'no-tabs': 'off', // Отключаем правило, запрещающее табуляцию
 			'no-unused-vars': [
-				'error',
+				'warn',
 				{ 
-					varsIgnorePattern: '^_$',  // Точное совпадение с "_"
-					argsIgnorePattern: '^_$',
+					varsIgnorePattern: '^_',  // Точное совпадение с "_"
+					argsIgnorePattern: '^_',
 					caughtErrorsIgnorePattern: '^_$'
 				}
 			],

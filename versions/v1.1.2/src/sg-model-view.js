@@ -39,7 +39,7 @@ class SGModelView extends SGModel {
 	
 	/**
 	 * Получить UUID SGModelView-инстанса для HTML-элемента
-	 * @param {HTMLElement} element 
+	 * @param {Element} element 
 	 * @returns {string|null} UUID инстанса или null
 	 */
 	static getElementUUID(element) {
@@ -127,8 +127,8 @@ class SGModelView extends SGModel {
 			const __uuid = String(instance.uuid).replaceAll('-', '_');
 			// 1. Получение/загрузка шаблонов
 			if (Utils.isObject(autoLoadBind.srcHTML)) {
-				if (autoLoadBind.srcHTML instanceof HTMLElement === false) {
-					throw new Error(`autoLoadBind.srcHTML is not a HTMLElement instance! See ${this.name}`);
+				if (autoLoadBind.srcHTML instanceof Element === false) {
+					throw new Error(`autoLoadBind.srcHTML is not a Element instance! See ${this.name}`);
 				}
 				eHtml = autoLoadBind.srcHTML;
 			} else {
@@ -239,7 +239,7 @@ class SGModelView extends SGModel {
 	/**
 	 * Вызывается при создании экземпляра
 	 * @protected
-	 * @see {string|HTMLElement|HTMLTemplateElement} [static autoLoadBind.srcHTML] - может быть путем к HTML-файлу (string), HTML-содержимое (string), HTMLElement/HTMLTemplateElement (object)
+	 * @see {string|Element|HTMLTemplateElement} [static autoLoadBind.srcHTML] - может быть путем к HTML-файлу (string), HTML-содержимое (string), Element/HTMLTemplateElement (object)
 	 * @see {string} [static autoLoadBind.templateId] - ИД шаблона, содержимое которого будет выведено во вьюху
 	 * @see {string} [static autoLoadBind.viewId] or [static autoLoadBind.containerId] or [static autoLoadBind.$container] - Куда выводить содержимое шаблона
 	 * @see {object} [static templates]
@@ -286,7 +286,7 @@ class SGModelView extends SGModel {
 				}
 				const targetId = containerId || viewId;
 				const template = this.constructor.templates[autoLoadBind.templateId] || document.querySelector(`template[id=${autoLoadBind.templateId}]`);
-				if (autoLoadBind.templateId && (targetId || (autoLoadBind.$container instanceof HTMLElement))) {
+				if (autoLoadBind.templateId && (targetId || (autoLoadBind.$container instanceof Element))) {
 					const eTarget = targetId && document.querySelector(targetId) || autoLoadBind.$container;
 					if (eTarget) {
 						let eContent;
@@ -369,13 +369,13 @@ class SGModelView extends SGModel {
 	/**
 	 * Находит элементы с атрибутом `sg-model`. Элементы с установленным `[SGModelView.#sgModelUUID]` игнорируются.
 	 * @param {string} [modelName] - Если указан, возвращает первый найденный элемент. Иначе — массив всех
-	 * @param {HTMLElement|string} [root] - Корневой элемент или CSS-селектор. По умолчанию `document.body`
-	 * @param {HTMLElement[]} [_results] - Внутренний параметр для рекурсии (не передавать вручную)
-	 * @returns {HTMLElement|HTMLElement[]|null} Элемент, массив элементов или `null`
+	 * @param {Element|string} [root] - Корневой элемент или CSS-селектор. По умолчанию `document.body`
+	 * @param {Element[]} [_results] - Внутренний параметр для рекурсии (не передавать вручную)
+	 * @returns {Element|Element[]|null} Элемент, массив элементов или `null`
 	 */
 	static #findElementsBySGModel(modelName = void 0, root = void 0, _results = []) {
 		root = (root && (typeof root === 'string' ? document.querySelector(root) : root)) || document.body;
-		if (root instanceof HTMLElement === false) {
+		if (root instanceof Element === false) {
 			throw new Error(`Incorrect type of parameter "root"!`);
 		}
 		if (modelName && !root[SGModelView.#sgModelUUID] && root.getAttribute(SGModelView.#ATTRIBUTES.SG_MODEL) === modelName) {
@@ -405,7 +405,7 @@ class SGModelView extends SGModel {
 
 	/**
 	 * Проверить - требуется ли тег SECTION для вставляемого содержимого
-	 * @param {HTMLElement} eRoot 
+	 * @param {Element} eRoot 
 	 * @returns {boolean}
 	 */
 	static #requiredSection(eRoot) {
@@ -425,7 +425,7 @@ class SGModelView extends SGModel {
 	
 	/**
 	 * Data and view binding (MVVM)
-	 * @param {string|HTMLElement} [root] Example "#my_div_id" or HTMLElement object
+	 * @param {string|Element} [root] Example "#my_div_id" or Element object
 	 * @param {boolean|string} [mTemplate] Предварительно вывести контент из шаблона (если задано SGModelView.FLAGS.IMMEDIATELY_RENDER_DEFAULT_TEMPLATE - то берётся шаблон по умолчанию)
 	 */
 	bindHTML(root = void 0, mTemplate = void 0) {
@@ -914,7 +914,7 @@ class SGModelView extends SGModel {
 			valueOrItem = SGModelView.#objWithValue;
 		}
 		
-		if (element instanceof HTMLElement) {
+		if (element instanceof Element) {
 
 			const sgInNode = (element[SGModelView.#sgNameInNode] ||= {});
 			
@@ -1189,8 +1189,8 @@ class SGModelView extends SGModel {
 
 	/**
 	 * Получить данные элемента/записи коллекции
-	 * @param {Event|HTMLElement} eventOrElement
-	 * @returns {object} Вернёт объект: { key {string}, value {mixed}, item {mixed}, collection, property {string}, type {SGModel.TYPES.%}, $item {HTMLElement}, $control {HTMLElement}, hash {string} }, где:
+	 * @param {Event|Element} eventOrElement
+	 * @returns {object} Вернёт объект: { key {string}, value {mixed}, item {mixed}, collection, property {string}, type {SGModel.TYPES.%}, $item {Element}, $control {Element}, hash {string} }, где:
 	 *	key - либо индекс элемента для массивов/Set-коллекции, либо имя свойства объекта или ключа элемента Map-коллекции
 	 *	value - значение элемента коллекции. Для keyName='index' преобразуется к Number, для keyName='id' преобразуется к BigInt
 	 *	item - запись коллекции (для массивов или Set-коллекции равно **value**)
@@ -1205,7 +1205,7 @@ class SGModelView extends SGModel {
 	getForItem(eventOrElement) {
 		const $control = (eventOrElement instanceof Event ? eventOrElement.target : eventOrElement);
 		eventOrElement = $control;
-		if ($control instanceof HTMLElement) {
+		if ($control instanceof Element) {
 			while (eventOrElement) {
 				if (eventOrElement[SGModelView.#sgModelUUID]) {
 					return {};
@@ -1329,7 +1329,7 @@ class SGModelView extends SGModel {
 		while (item = this.#elementsEvents.pop()) { // eslint-disable-line no-cond-assign
 			item.element.removeEventListener(item.event, item.callback);
 		}
-		if (root instanceof HTMLElement) {
+		if (root instanceof Element) {
 			delete root[SGModelView.#sgNameInNode];
 			delete root[SGModelView.#sgModelUUID];
 			root.removeAttribute('sg-uuid');
@@ -1359,7 +1359,7 @@ class SGModelView extends SGModel {
 }
 
 if (typeof globalThis === 'object' && globalThis !== null) globalThis.SGModelView = SGModelView;
-if (Utils.isNode && typeof module === 'object') module.exports = SGModelView; // eslint-disable-line no-undef
+if (Utils.isNode && typeof module === 'object') module.exports = SGModelView;
 else if (Utils.isBrowser) window['SGModelView'] = SGModelView;
 
 export default SGModelView;

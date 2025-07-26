@@ -18,13 +18,13 @@
 		"model",
 		"view"
 	],
-	"devDependencies": {
-		"@eslint/js": "^9.23.0",
-		"@stylistic/eslint-plugin": "^4.4.1",
-		"eslint": "^9.29.0",
-		"globals": "^16.2.0"
-	},
 	"scripts": {
 		"eslint": "eslint versions/v1.1.1/src/*.js"
+	},
+	"devDependencies": {
+		"@eslint/js": "^9.17.0",
+		"@stylistic/eslint-plugin": "^4.4.1",
+		"eslint": "^9.29.0",
+		"globals": "^16.0.0"
 	}
 }
