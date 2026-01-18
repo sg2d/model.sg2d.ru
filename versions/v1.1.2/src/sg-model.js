@@ -4,7 +4,7 @@ import Utils from './sg-utils.js';
 import SGTypes from './sg-types.js';
 import SGJson from './sg-json.js';
 
-/**
+/*!
  * SGModel - Библиотека-класс для структурирования веб-приложений с помощью биндинг-моделей. Библиотека хорошо адаптирована для наследования классов. Может использоваться как в браузере, так и на Node.js.
  * @english A library class for structuring web applications using binding models. The library is well adapted for inheritance classes. Can be used both in the browser and on Node.js.
  * @version 1.1.2
@@ -386,7 +386,7 @@ class SGModel {
 		});
 
 		// Дёргаем __initialize() и initialize() экземпляра после выполнения конструктора, что бы инициализировались приватные свойства (для SGModelView актуально)!
-		setTimeout(async () => {
+		setTimeout(() => {
 			this.__initialize(() => {
 				Promise.all([
 					this.initialize(),

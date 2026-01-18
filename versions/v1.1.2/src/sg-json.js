@@ -1,4 +1,6 @@
-/**
+"use strict";
+
+/*!
  * SGJSON - Работа с JSON в SGModel
  * @version 1.1.2
  * @requires ES2025+ (ES16+)
@@ -61,7 +63,7 @@ export default class SGJSON {
 	}
 
 	/**
-	 * Преобразовать коллекцию в обычный объект/массив +обработка вложенных элементов
+	 * Рекурсивное преобразование коллекции с учетом флагов и предотвращения циклических ссылок в обычный объект/массив
 	 */
 	static #convertCollection(instance, value, flags, _seen) {
 		if (Array.isArray(value)) {

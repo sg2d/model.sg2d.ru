@@ -4,7 +4,7 @@ import Utils from './sg-utils.js';
 import SGModel from './sg-model.js';
 import SGDevTools from './sg-devtools.js';
 
-/**
+/*!
  * SGModelView - Микрофреймворк для реализации паттерна MVVM, расширяющий SGModel и обеспечивающий автоматическую привязку данных из инстанса к HTML-элементам.
  * @english Microframework for implementing the MVVM pattern, extending SGModel and providing automatic binding of data from the instance to HTML elements.
  * @version 1.1.2
@@ -74,7 +74,7 @@ class SGModelView extends SGModel {
 	static enablePrintingUUIDClass = true;
 
 	/**
-	 * Переменная создаётся для каждого класа-потомка (this.constructor.initialized)
+	 * Переменная создаётся для каждого класса-потомка (this.constructor.initialized)
 	 * @type {boolean}
 	 * @readonly
 	 */
@@ -1359,7 +1359,7 @@ class SGModelView extends SGModel {
 }
 
 if (typeof globalThis === 'object' && globalThis !== null) globalThis.SGModelView = SGModelView;
-if (Utils.isNode && typeof module === 'object') module.exports = SGModelView;
+if (Utils.isNode && typeof module === 'object') module.exports = SGModelView; // eslint-disable-line no-undef
 else if (Utils.isBrowser) window['SGModelView'] = SGModelView;
 
 export default SGModelView;

@@ -1,4 +1,6 @@
-/**
+"use strict";
+
+/*!
  * SGUtils - функции-утилиты для SGModel и SGModelView
  * @version 1.1.2
  * @requires ES2025+ (ES16+)
@@ -8,8 +10,9 @@
  */
 
 // Среда выполнения кода
-export const isNode = ((typeof process === 'object' && process !== null) && (typeof process.versions === 'object') && process.versions.node !== undefined); // eslint-disable-line no-undef
-export const isBrowser = (typeof window === 'object' && window !== null && window.document !== undefined);
+
+export const isBrowser = ![typeof window, typeof document].includes('undefined');
+export const isNode = typeof process !== 'undefined' && !!process.versions && !!process.versions.node; // eslint-disable-line no-undef
 
 /**
  * Глобальный объект (window для браузеров, global для Node.js)

@@ -1,4 +1,6 @@
-/**
+"use strict";
+
+/*!
  * SGTypes - типизация в SGModel
  * @version 1.1.2
  * @requires ES2025+ (ES16+)
