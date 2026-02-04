@@ -16,7 +16,7 @@
 
 #### Исходники:
 
-* Директория текущей версии v1.1.1: [/src](https://github.com/sg2d/model.sg2d.ru/tree/master/src)
+* Директория текущей версии v1.1.2: [/src](https://github.com/sg2d/model.sg2d.ru/tree/master/src)
 * Предыдущие версии: [https://github.com/sg2d/model.sg2d.ru/tree/master/versions](https://github.com/sg2d/model.sg2d.ru/tree/master/versions)
 
 #### Страница автотестов:
@@ -493,8 +493,8 @@ for (let i = 0; i < 10; i++) {
 * `static autoLoadBind = { srcHTML }; ...; view.bindHTML('#my_view_id', 'tmp_filters');` // Ручная инициализация и связывание с данными (используется определённый template-шаблон, который создаётся т.к. задан `srcHTML`)
 * `static autoLoadBind = { srcHTML, templateId, containerId|viewId };` // Автоматическая загрузка контента вьюхи и связывание
 * `static autoLoadBind = { templateId, containerId|viewId };` // Автоматическая загрузка контента вьюхи и связывание, при этом template-шаблон уже должен существовать на странице (`srcHTML` не задан)
-* new MyModeView(); <div sg-model="MyModeView">...<span>Content...</span>...</div> // Использование атрибута **sg-model** на корневом элементе вьюхи, контент непосредственно в корневом элементе вьюхи (например, всё одном html-файле)
-* Атрибут **sg-model** на корневом элементе вьюхи, контент в отдельном html-файле в виде template-шаблона: class CustomView extends SGModeView { autoLoadBind = { srcHTML: './templates/my-template1.html' } }
+* `new MyModeView();`, в HTML `<div sg-model="MyModeView">...<span>Content...</span>...</div>` // Использование атрибута **sg-model** на корневом элементе вьюхи, контент непосредственно в корневом элементе вьюхи (например, всё одном html-файле)
+* Атрибут **sg-model** на корневом элементе вьюхи, контент в отдельном html-файле в виде template-шаблона: `class CustomView extends SGModeView { autoLoadBind = { srcHTML: './templates/my-template1.html' } }`
 
 ## Свойства экземпляра SGModelView
 

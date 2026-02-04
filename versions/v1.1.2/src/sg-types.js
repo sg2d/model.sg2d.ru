@@ -6,7 +6,7 @@
  * @requires ES2025+ (ES16+)
  * @link https://github.com/sg2d/model.sg2d.ru
  * @license SGTypes may be freely distributed under the MIT license
- * @copyright 2019-2025 © Калашников Илья (https://model.sg2d.ru, sg2d@yandex.ru)
+ * @copyright 2019-2026 © Калашников Илья (https://model.sg2d.ru, sg2d@yandex.ru)
  */
 
 import SGModel from './sg-model.js';

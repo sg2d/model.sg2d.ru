@@ -6,7 +6,7 @@
  * @requires ES2025+ (ES16+)
  * @link https://github.com/sg2d/model.sg2d.ru
  * @license This module with utility functions functions may be freely distributed under the MIT license
- * @copyright 2019-2025 © Калашников Илья (https://model.sg2d.ru, sg2d@yandex.ru)
+ * @copyright 2019-2026 © Калашников Илья (https://model.sg2d.ru, sg2d@yandex.ru)
  */
 
 // Среда выполнения кода
@@ -296,6 +296,48 @@ export function clone(source, _seen = new WeakMap()) {
 	}
 	return dest;
 };
+
+/**
+ * Декоратор-обёртка для задержки выполнения функции
+ * @param {function} func
+ * @param {number} [delayMs=500]
+ * @returns {function}
+ */
+export function debouncePolyfill(func, delayMs = 500) {
+	let timeout;	
+	return function(...args) {
+		clearTimeout(timeout);
+		timeout = setTimeout(() => func.apply(this, args), delayMs);
+	};
+}
+
+/**
+ * Декоратор debounce (обёртка для задержки выполнения функции)
+ * @param {number} [delayMs=500]
+ * @returns {function}
+ * @example
+ * ```ES2027+
+ * class MyClass1 {
+ *  //...
+ * 	@SGUtils.debounce(500);
+ * 	method1(param1, param2) {
+ * 		//...
+ *  }
+ *  //...
+ * }
+ * ```
+ */
+export function debounce(delayMs = 500) {
+	return function(target, context) { // eslint-disable-line no-unused-vars
+		let timeout;	
+		return function(...args) {
+			clearTimeout(timeout);
+			timeout = setTimeout(() => {
+				target.apply(this, args);
+			}, delayMs);
+		};
+	};
+}
 
 /**
  * Перезаписать рекурсивно значения всех свойств/элементов объекта/массива **dest** соответствующими значениями свойств/элементов объекта/массива **sources**

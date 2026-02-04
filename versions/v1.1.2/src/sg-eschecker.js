@@ -11,7 +11,7 @@
 const ESBUILD_MAX_VERSION_SUPPORT = 2024; // TODO: актуализировать периодически
 const MAX_ES_VERSION_DETECTED = 2029;
 const MAX_DOM_VERSION_DETECTED = 3;
-const __global = typeof window !== 'undefined' ? window : (typeof global !== 'undefined' ? global : {});
+const __global = typeof window !== 'undefined' ? window : (typeof global !== 'undefined' ? global : {}); // eslint-disable-line no-undef
 __global.__SGESChecker = {};
 (() => { // IIFE (Immediately Invoked Function Expression) поддерживается, по сути, с самой первой версии стандарта — ECMAScript 1 (1997 год). А arrow functions `() => {}` появились в ECMAScript 2015.
 	try {
@@ -199,6 +199,11 @@ __global.__SGESChecker = {};
 		temporal: {
 			Temporal: typeof Temporal !== 'undefined' ? 'ES2026' : '!ES2026'
 		},
+		explicitResourceManagement: {
+			using: (() => {
+				try { eval(`const r = { [Symbol.dispose]() {} }; { using y = r; }`); return 'ES2026'; } catch { return '!ES2026'; }
+			})(),
+		},
 		pipelineOperator: {
 			pipelineOperator: (() => {
 				try {
@@ -211,8 +216,8 @@ __global.__SGESChecker = {};
 			decorators: (() => {
 				try {
 					eval(`function d(c) { return c; } @d class X {}`);
-					return 'ES2027'; // TODO: проверить, что это действительно ES2027
-				} catch(_) { return '!ES2027'; }
+					return 'ES2026'; // TODO: проверить, что это действительно ES2026
+				} catch(_) { return '!ES2026'; }
 			})(),
 		},
 		dom: {
@@ -234,15 +239,20 @@ __global.__SGESChecker = {};
 					const ev = new Event('test');
 					return typeof ev.stopImmediatePropagation === 'function' ? 'DOML3' : '!DOML3';
 				} catch(_) { return '!DOML3'; }
-			})()
+			})(),
+			customElements: {
+				define: typeof customElements !== 'undefined' && typeof customElements.define === 'function' ? 'DOML1' : '!DOML1',
+			},
 		}
 	};
 
-	// Выясняем какая версия ECMAScript поддерживается
+	// Выясняем какая версия ECMAScript поддерживается и формируем true/false справочник по фичам
 	const supportedESVersions = new Set([1,2,3,4,5, ...Array.from({ length: 15 }, (_, i) => 2015 + i)]);
 	const supportedDOMVersions = new Set([1,2,3]);
+	const features = {};
 	for (let groupKey in checks) {
 		const group = checks[groupKey];
+		features[groupKey] = {};
 		for (let featureKey in group) {
 			const val = String(group[featureKey]);
 			const match = val.match(/\d+/);
@@ -263,6 +273,7 @@ __global.__SGESChecker = {};
 					}
 				}
 			}
+			features[groupKey][featureKey] = val.startsWith('!') ? false : true;
 		}
 	}
 	let maxSupportedESVersion = 0;
@@ -280,6 +291,7 @@ __global.__SGESChecker = {};
 
 	__global.__SGESChecker = {
 		checks: checks,
+		features: features,
 		esVersion: maxSupportedESVersion,
 		domVersion: maxSupportedDOMVersion,
 		url: window.location.href,
@@ -303,10 +315,28 @@ __global.__SGESChecker = {};
 __global.sgESCheck = () => __global.__SGESChecker;
 
 /**
+ * Получить информацию о поддержке конкретной фичи
+ * @returns {boolean}
+ */
+__global.sgESFeature = (key) => {
+	const checks = __global.__SGESChecker.features;
+	if (key.includes('/')) { // Если есть слеш — ищем в конкретной группе
+		const [group, name] = key.split('/');
+		return checks[group] && checks[group][name];
+	}
+	for (const group in checks) { // Иначе ищем по всем группам
+		if (Object.prototype.hasOwnProperty.call(checks[group], key)) {
+			return checks[group][key];
+		}
+	}
+	return undefined; // если не найдено
+};
+
+/**
  * Подгрузка скрипта с учетом версии ES и окружения
  * @param {string} src
  * @param {object} [options]
- * @param {number} [options.minES=2022] Минимальная поддерживаемая версия ES
+ * @param {number} [options.minES=2022] Минимальная поддерживаемая версия ES. Например, если используется top-await, то он ни как не преобразуется в ES2021 или ранее в виде полифила.
  * @param {string} [options.baseDir=''] Корневая директория минифицированных скриптов
  * @param {boolean} [options.forceMinified=false] Принудительно загрузить минифицированный скрипт
  * @returns {HTMLScriptElement}

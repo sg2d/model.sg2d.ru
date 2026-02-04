@@ -11,7 +11,7 @@ import SGDevTools from './sg-devtools.js';
  * @requires ES2025+ (ES16+)
  * @link https://github.com/sg2d/model.sg2d.ru
  * @license SGModelView may be freely distributed under the MIT license
- * @copyright 2019-2025 © Калашников Илья (https://model.sg2d.ru, sg2d@yandex.ru)
+ * @copyright 2019-2026 © Калашников Илья (https://model.sg2d.ru, sg2d@yandex.ru)
  * @extends SGModel
  */
 class SGModelView extends SGModel {
@@ -528,14 +528,14 @@ class SGModelView extends SGModel {
 			const sgInNode = (elementDOM[SGModelView.#sgNameInNode] ||= {});
 			
 			const sgProperty = elementDOM.getAttribute(SGModelView.#ATTRIBUTES.SG_PROPERTY);
-			const sgValue = elementDOM.getAttribute(SGModelView.#ATTRIBUTES.SG_VALUE); // Now attributes are implemented only for static output (only at initialization)
+			const sgValue = elementDOM.getAttribute(SGModelView.#ATTRIBUTES.SG_VALUE); // Сейчас sg-value реализованы только для статического использования
 			const sgType = elementDOM.getAttribute(SGModelView.#ATTRIBUTES.SG_TYPE);
 			const sgFormat = elementDOM.getAttribute(SGModelView.#ATTRIBUTES.SG_FORMAT); // TODO: to add function parameters
-			const sgAttributes = elementDOM.getAttribute(SGModelView.#ATTRIBUTES.SG_ATTRIBUTES); // Now attributes are implemented only for static output (only at initialization)
+			const sgAttributes = elementDOM.getAttribute(SGModelView.#ATTRIBUTES.SG_ATTRIBUTES); // Сейчас атрибуты реализованы только для статического вывода (только при инициализации)
 			const sgCSS = elementDOM.getAttribute(SGModelView.#ATTRIBUTES.SG_CSS);
 			const sgModel = elementDOM.getAttribute(SGModelView.#ATTRIBUTES.SG_MODEL); // Автоматическое связывание контента с данными (альтернативный способ - использовать static autoLoadBind.viewId)
 			const sgClick = elementDOM.getAttribute(SGModelView.#ATTRIBUTES.SG_CLICK);
-			const sgOptions = elementDOM.getAttribute(SGModelView.#ATTRIBUTES.SG_OPTIONS); // for SELECT element
+			const sgOptions = elementDOM.getAttribute(SGModelView.#ATTRIBUTES.SG_OPTIONS); // для элемента <SELECT>...</SELECT>
 			const sgFor = elementDOM.getAttribute(SGModelView.#ATTRIBUTES.SG_FOR);
 			const sgItemVariables = elementDOM.getAttribute(SGModelView.#ATTRIBUTES.SG_ITEM_VARIABLES);
 			const sgTemplate = elementDOM.getAttribute(SGModelView.#ATTRIBUTES.SG_TEMPLATE);
@@ -582,7 +582,7 @@ class SGModelView extends SGModel {
 				}
 			}
 			
-			// Now attributes are implemented only for static output (only at initialization)
+			// Сейчас атрибуты реализованы только для статического вывода (только при инициализации)
 			if (sgAttributes) {
 				try {
 					const attributes = JSON.parse(sgAttributes.replace(/(\w+):\s([\w]+)(\([^)]*\)){0,1}([,\s]{0,1})/g, '"$1": "$2$3"$4'));
@@ -601,7 +601,7 @@ class SGModelView extends SGModel {
 				}
 			}
 			
-			// Now attributes are implemented only for static output (only at initialization)
+			// Сейчас sg-value реализованы только для статического использования
 			if (sgValue) {
 				const fFormat = this[sgFormat] || Utils.fStub;
 				const method = sgValue.replace(/(\w+)(.*)/, '$1');
